@@ -226,8 +226,7 @@ I line(FILE*f, S*a, I*n, PDA*p) {  //just starting or just executed: *a=*n=*p=0,
  cleanup:
   if(fCheck && (strlen(s)==0 || s[strlen(s)-1]<0)) exit(0);
   S ptr=0;
-  // 151012AP was -1
-  if(strcmp(errmsg,"undescribed") && fer!=2) { oerr(); I ctl=0;
+  if(strcmp(errmsg,"undescribed") && fer!=-1) { oerr(); I ctl=0;
     if(fError){
       if(lineA){
         if(fnc){ I cnt=0,i;
@@ -402,8 +401,7 @@ I line(S s, S*a, I*n, PDA*p) {  // just starting or just executed: *a=*n=*p=0,  
 
   if(o)show(k); cd(k);
  cleanup:
-  // 151012AP was -1
-  if(fer!=2 && strcmp(errmsg,"undescribed")) { oerr(); I ctl=0;
+  if(fer!=-1 && strcmp(errmsg,"undescribed")) { oerr(); I ctl=0;
     if(fError) {
       if(lineA) {
         if(fnc) { I cnt=0,i; 
