@@ -105,7 +105,7 @@ I kinit() {       //oom (return bad)
 
   kerr("undescribed");
   SYMBOLS=newN(); //Initialize intern pool 
-  seedPRNG(randomBits()); 
+  seedPRNG(-271828/*randomBits()*/); 
   NIL=Kn();
   KFIXED=newK(0,0); kap(&KFIXED,&NIL);cd(NIL);
   d_ = sp(".k"); LS=sp(""); DO(3,IFP[i]=sp(IFS[i]))
