@@ -179,9 +179,12 @@ Z void trim(S s) {
 #ifndef WIN32
 
 I check() {      //in suspended execution mode: allows checking of state at time of error
+  I ofCheck=fCheck;
   fCheck=1; kerr("undescribed"); prompt(1); S a=0;  I n=0;  PDA q=0;
-  for(;;) { line(stdin, &a, &n, &q); if(fCheck==0)R 0; }
-  O("\n"); fCheck=0;
+  for(;;) { line(stdin, &a, &n, &q); if(fCheck==0)GC; }
+  O("\n");
+cleanup:
+  fCheck=ofCheck;
   R 0; }
 
 Z void handle_SIGINT(int sig) { interrupted = 1; }
@@ -199,7 +202,7 @@ I line(FILE*f, S*a, I*n, PDA*p) {  //just starting or just executed: *a=*n=*p=0,
   if(-1==(c=getline(&s,(size_t * __restrict__)&m,f))) GC;
   if(s[0]=='\\' && s[1]=='\n') {
 	 // 151012AP
-	 if(fLoad) { c=-1; GC; }			//escape file load
+	 if(!fCheck&&fLoad) { c=-1; GC; }   //escape file load
     if(fCheck) { fCheck=0; R 0; }   //escape suspended execution with single backslash
     if(*a) GC; }                    //escape continue with single backslash
   appender(a,n,s,c);         //"strcat"(a,s)

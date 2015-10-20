@@ -64,15 +64,19 @@ Z FILE *loadf(S s)
 
 K load(S s) //TODO: working dir is stable ... store then reset after reading scripts
 {
-  fLoad=1; fCmplt=0;
-  if(scrLim>124){O("limit\n");  R kerr("stack");} scrLim++;  
+  I ofLoad=fLoad,ofCmplt=fCmplt; //global state
+  K r;
+  fLoad=1;fCmplt=0;
+  if(scrLim>124){O("limit\n");r=kerr("stack");GC;} scrLim++;  
   FILE*f=loadf(s);
-  if(!f){O("%s.k: file not found\n",s); R FE;}
-  // 151012AP
-  lines(f); I r=fclose(f); if(r){fLoad=0;fCmplt=0;R FE;} scrLim--;
+  if(!f){O("%s.k: file not found\n",s);r=FE;GC;}
+  lines(f); if(fclose(f)){r=FE;GC;} scrLim--;
   if(fCmplt==1) { kerr("open-in-next-line"); oerr(); }
-  kerr("undescribed"); fer=fCmplt=fLoad=0;
-  R _n();
+  kerr("undescribed"); fer=0;
+  r=_n();
+cleanup:
+  fLoad=ofLoad;fCmplt=ofCmplt;
+  R r;
 }
 
 I stepopt(S s,I n)
