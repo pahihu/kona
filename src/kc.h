@@ -6,6 +6,8 @@ K newE(S s,K k);
 K newEntry(S s);
 K Kd();
 extern K KTREE;
+extern K KONA_WHO;
+extern K KONA_PORT;
 extern F mUsed;
 extern F mMax;
 extern I fWksp;

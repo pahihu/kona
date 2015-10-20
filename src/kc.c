@@ -275,6 +275,10 @@ I attend() {  //K3.2 uses fcntl somewhere
   I yes=1;	// for setsockopt() SO_REUSEADDR, below 
   int i, rv;
   struct addrinfo hints, *ai, *p;
+
+  KONA_WHO=newK(1,1);*kI(KONA_WHO)=0;
+  KONA_PORT=newK(1,1);*kI(KONA_PORT)=IPC_PORT?atoi(IPC_PORT):0;
+
   FD_ZERO(&master);	// clear the master and temp sets
   FD_ZERO(&read_fds);
 
@@ -452,6 +456,9 @@ void *socket_thread(void *arg) {
   hints.ai_protocol = IPPROTO_TCP;
   hints.ai_flags =    AI_PASSIVE;
 
+  KONA_WHO=newK(1,1);*kI(KONA_WHO)=0;
+  KONA_PORT=newK(1,1);*kI(KONA_PORT)=IPC_PORT?atoi(IPC_PORT):0;
+  
   // resolve local address and port
   if(IPC_PORT){if((rv=getaddrinfo(NULL, IPC_PORT, &hints, &result)) != 0){O("server: %s\n", gai_strerror(rv)); exit(1);}}
   if(HTTP_PORT){if((rv=getaddrinfo(NULL, HTTP_PORT, &hints, &result)) != 0){O("server: %s\n", gai_strerror(rv)); exit(1);}}
@@ -501,7 +508,7 @@ void *socket_thread(void *arg) {
 
 I attend() {
   S a=0;I n=0; PDA q=0; //command-line processing variables
-  
+
   //set up SIGINT handler, so C-c can break infinite loops cleanly
   SetConsoleCtrlHandler((PHANDLER_ROUTINE)handle_SIGINT, TRUE);
 

@@ -980,8 +980,8 @@ K _v(){R NYI;}
 K _i(){R NYI;}
 K _f(){R 0;} //Dummy function. Actual value computed inside of the parse function
 K _s(){R NYI;}
-K _p(){R NYI;}
-K _w(){R NYI;}
+K _p(){R ci(KONA_PORT);}
+K _w(){R ci(KONA_WHO);}
 K _u(){R NYI;}
 K _a(){R ci(KONA_ARGS);}
 K _k(){R NYI;}

@@ -18,13 +18,22 @@ M0 CP[10];
 
 Z I close_tape(I i);
 Z K modified_execute(K x);
+K KONA_WHO,KONA_PORT;
 
 void *get_in_addr(struct sockaddr *sa) {   //get sockaddr, IPv4 or IPv6
   if (sa->sa_family == AF_INET) R &(((struct sockaddr_in*)sa)->sin_addr);
   R  &(((struct sockaddr_in6*)sa)->sin6_addr); }
 
 I wipe_tape(I i) { if(CP[i].k)cd(CP[i].k); memset(&CP[i],0,sizeof(CP[0])); R 0;} //safe to call >1 time
-Z I close_tape(I i) { wipe_tape(i); I r=close(i); if(r)show(kerr("file")); FD_CLR(i, &master); O("ct-D\n"); R 0; }
+Z I close_tape(I i) {
+  wipe_tape(i); I r=close(i); if(r)show(kerr("file")); FD_CLR(i, &master);
+  K x=*denameS(".",".m.c",0); 
+  if(6==xt)R O("ct-D\n"),0;
+  if(3!=ABS(xt))R O("type error"),1;
+  *kI(KONA_WHO)=i;
+  KX(x);
+  *kI(KONA_WHO)=0;
+  R 0; }
 
 C bx[128]={0},by[128]={0};
 #ifndef WIN32
