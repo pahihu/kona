@@ -139,7 +139,7 @@ Z I nodeCount_(N n) {
 Z I nodeCount(N n) { R nodeCount_(n)-1; }
 
 S recur(S s) {
-  I sl=strlen(s); I f=0,i,j,k,c=1;
+  I sl=strlen(s); I f=0,i,j,k,p,q,t,c=1;
   for(i=1;i<sl-1;i++){if(s[i]==':' && s[i+1]=='{' && (isalnum(s[i-1]) || s[i-1]==' '))
     {f=1; break;} } //find begin :{ which is i
   if(!f) R NULL;
@@ -148,6 +148,8 @@ S recur(S s) {
   for(k=i+2;k<sl;k++){ if(s[k]=='{')c++; if(s[k]=='}')c--; if(!c)break; } //find end-} which is k
   I n=1+(i-1)-(j+1); char nm[n+1]; strncpy(nm, s+i-n, n); nm[n]='\0'; //n is strlen(nm)
   I m=k-i-2; char st[m+1]; strncpy(st, s+i+2, m); st[m]='\0'; //m:strlen(st), st:string within outer braces
+  f=0; for(p=0;p<strlen(st);p++)if(st[p]=='{'){f=1; break;}  //check for inner braces
+  if(f){for(q=strlen(st)-1;q>0;q--)if(st[q]=='}')break; for(t=p+1;t<q;t++)st[t]=' ';}  //blank out inner brace
   S rem=strstr(st,nm);  //remainder of st beginning with nm (if it exists)
   if(rem && ('['==*(rem+strlen(nm)) ||' '==*(rem+strlen(nm)))) {
     I offset=rem-st; C prior=*(s+i+2+offset-1); S res;  //prior is character before rem in s
@@ -203,7 +205,6 @@ I line(FILE*f, S*a, I*n, PDA*p) {  //just starting or just executed: *a=*n=*p=0,
 
   if(-1==(c=getline(&s,(size_t * __restrict__)&m,f))) GC;
   if(s[0]=='\\' && s[1]=='\n') {
-	 // 151012AP
 	 if(!fCheck&&fLoad) { c=-1; GC; }   //escape file load
     if(fCheck) { fCheck=0; R 0; }   //escape suspended execution with single backslash
     if(*a) GC; }                    //escape continue with single backslash
@@ -231,6 +232,7 @@ I line(FILE*f, S*a, I*n, PDA*p) {  //just starting or just executed: *a=*n=*p=0,
  cleanup:
   if(fCheck && (strlen(s)==0 || s[strlen(s)-1]<0)) exit(0);
   S ptr=0;
+  //151012AP was -1, Changed to fer!=2 for fclose. Reverted to -1 (regression issue #312). fclose problem?? (issue #384).
   if(strcmp(errmsg,"undescribed") && fer!=-1) { oerr(); I ctl=0;
     if(fError){
       if(lineA){
@@ -406,10 +408,11 @@ I line(S s, S*a, I*n, PDA*p) {  // just starting or just executed: *a=*n=*p=0,  
 
   if(o)show(k); cd(k);
  cleanup:
+  //151012AP was -1, Changed to fer!=2 for fclose. Reverted to -1 (regression issue #312). fclose problem?? (issue #384).
   if(fer!=-1 && strcmp(errmsg,"undescribed")) { oerr(); I ctl=0;
     if(fError) {
       if(lineA) {
-        if(fnc) { I cnt=0,i; 
+        if(fnc) { I cnt=0,i;
           for(i=0;i<strlen(lineA);i++) { if(lineA[i]==*fnc) cnt++; }
           if(cnt==1) { ctl=1; O("%s\n",lineA); S ptr=strchr(lineA,*fnc); DO(ptr-lineA,O(" ")) O("^\n"); }
           if(cnt>1 && fnci && fnci<127) { I num=0; 

@@ -236,6 +236,8 @@ Z I tests02()
   TC(5 3, {m:{x,y}[5]; {m[x]}[3]}[])              // issue #309
   TC_("5 5", "{[m] {}[]; {x;m}\'1 2}5")           // issue #341
   TC(.[ :[1;>:;<:];(1;2);:], (1;"valence"))       // issue #352
+  TC_("{[n]:[1=#n;,n;{x,\',/p[n _dv x]}\'n]}\"ab\"", "(\"ab\";\"ba\")") //issue #377
+  TC(.[3 3#0;(1 2;0 1);{x;y};1], 3 3#0 0 0 1 1 0 1 1 0) // issue #378
 
   //Error trap: {[a;b][c;d] a+b} -> parse error ; { {[a][b] }} -> parse error
   TC(.[*; (3;4); :], (0;12) )
@@ -244,6 +246,9 @@ Z I tests02()
   TC((.[0 10 100 _; ,!9; :]) , (1;"length"))
   //TC(.[=; 0; :] , (1;"valence") ) // ignore: better to return =[0;] than valence error
   TC((.[.:;,"{_foo[x]}";:]),(1;"reserved"))
+  TC((.[.:;,"{_vs.a[x]}";:]),(1;"parse"))
+  TC((.[.:;,"{_vs.abc[x]}";:]),(1;"parse"))
+  TC((.[.:;,"{_vs_a[x]}";:]),(1;"parse"))
   TC((@[.:;"{_foo[x]} 0";:]),(1;"reserved"))//.[NULL;...] errors inside bracket should not be interpreted as projections
   TC(a:1+`d, )
 

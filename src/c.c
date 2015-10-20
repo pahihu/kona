@@ -41,7 +41,11 @@ void boilerplate()
 //Q. What if K is sending a large message to a client or server. Does it block?
 //A. ?
 
-I filexist(S s){FILE *f=fopen(s,"r"); if(f){fclose(f); R 1;}else {show(kerr("file")); R 0;}}
+I filexist(S s){
+  FILE *f=fopen(s,"r");  if(f){fclose(f); R 1;}
+  S sk=strcat(s,".k");
+  FILE *g=fopen(sk,"r"); if(g){fclose(g); R 2;}
+  R 0;}
 
 K filename(S s)
 {
@@ -67,6 +71,7 @@ K load(S s) //TODO: working dir is stable ... store then reset after reading scr
   I ofLoad=fLoad,ofCmplt=fCmplt; //global state
   K r;
   fLoad=1;fCmplt=0;
+  if(!filexist(s)){O("%s: file not found\n",s);r=_n();GC;}
   if(scrLim>124){O("limit\n");r=kerr("stack");GC;} scrLim++;  
   FILE*f=loadf(s);
   if(!f){O("%s.k: file not found\n",s);r=FE;GC;}
