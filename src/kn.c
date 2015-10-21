@@ -31,7 +31,7 @@ Z I close_tape(I i) {
   if(6==xt)R O("ct-D\n"),0;
   if(3!=ABS(xt))R O("type error"),1;
   *kI(KONA_WHO)=i;
-  KX(x);
+  KX(x); cd(x);
   *kI(KONA_WHO)=0;
   R 0; }
 
@@ -132,8 +132,18 @@ K read_tape(I i, I type) {   // type in {0,1} -> {select loop, 4: resp reader}
     if(2==msg_type && 1==type) R h; 
 
     //Modified execution of received K value. First received transmission in a 3: or 4: 
-    z=modified_execute(h);
-    cd(h);
+    K mh=_n();
+    if(2>msg_type)mh=*denameS(".",msg_type?".m.g":".m.s",0);
+    if(6==mh->t) z=modified_execute(h);
+    else z=at(mh,h);
+    if(!z){
+      if(msg_type){
+        I n=snprintf(bz,128,"%s error",errmsg);if(n>=128)R WE;
+        z=newK(-3,strlen(bz)); strcpy(kC(z),bz);
+      }else O("%s error\n",errmsg);
+		kerr("undescribed");
+    }
+    cd(mh); cd(h);
     //indicates received communication from 4: synchronous method which expects response
     if(z) if(1==msg_type && 0==type) ksender(i,z,2);
     cd(z); z=0; }
