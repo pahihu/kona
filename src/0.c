@@ -999,13 +999,14 @@ K _4d(K x,K y) {      //see _3d
   if(1==xt){
     I sockfd=*kI(x); P(-1==ksender(sockfd,y,1),DOE)   K z=0;
     #ifndef WIN32
-    while(!(z=read_tape(sockfd,1))){}
+    while((2!=fer)&&!(z=read_tape(sockfd,1))){}
     #else
-    while(!(z=read_tape(0,sockfd,1))){}
+    while((2!=fer)&&!(z=read_tape(0,sockfd,1))){}
     #endif
-    P(!z || z==(K)-1,DOE)    R z;}
+    P(z==(K)-1,DOE)
+    P(!z,0) R z;}
   if(-4==xt && 2==xn) R _4d_(kS(x)[0],kS(x)[1],y);      //(`"www.google.com";`http) or (`"173.194.43.80";`http)
-  if(0==xt && 4==kK(x)[0]->t && 1==kK(x)[1]->t && 0<=*kI(kK(x)[1])){  //`"www.google.com";80) or (`"173.194.43.80";80)
+  if(0==xt && 2==xn && 4==kK(x)[0]->t && 1==kK(x)[1]->t && 0<=*kI(kK(x)[1])){  //`"www.google.com";80) or (`"173.194.43.80";80)
     C port[6]; int n=snprintf(port,6,"%lld",*kI(kK(x)[1])); if(n>=6) R WE;
     R _4d_(*kS(kK(x)[0]),port,y); }
   R TE; }
