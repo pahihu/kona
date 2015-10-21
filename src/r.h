@@ -77,6 +77,8 @@ extern K KFIXED;
 extern K KONA_ARGS;
 extern K KONA_WHO;
 extern K KONA_PORT;
+extern K KONA_GSET;
+extern K KONA_IDX;
 K kap(K *a,V v);
 K _acos(K x);
 K _asin(K x);

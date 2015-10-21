@@ -976,8 +976,8 @@ K _h()
   R Ks(sp(c));  //oom
 }
 K _d(){R Ks(d_);}
-K _v(){R NYI;}
-K _i(){R NYI;}
+K _v(){R ci(KONA_GSET);}
+K _i(){R ci(KONA_IDX);}
 K _f(){R 0;} //Dummy function. Actual value computed inside of the parse function
 K _s(){R NYI;}
 K _p(){R ci(KONA_PORT);}

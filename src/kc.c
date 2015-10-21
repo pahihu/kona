@@ -19,6 +19,8 @@
 ;    // Need semicolon, probably missing from <pthread.h>.
 #endif
 
+K KONA_GSET=0,KONA_IDX=0;
+
 Z I randomBits();
 I oerr(){R O("%s %s\n",errmsg,"error");}
 
@@ -121,6 +123,8 @@ I kinit() {       //oom (return bad)
   kap(&KTREE,&x); cd(x);
   KONA_WHO=newK(1,1);*kI(KONA_WHO)=0;
   KONA_PORT=newK(1,1);*kI(KONA_PORT)=0;
+  KONA_GSET=_n();
+  KONA_IDX=_n();
   R 0; }
 
 Z I randomBits(){
