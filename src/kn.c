@@ -61,7 +61,7 @@ Z I close_tape(I i,I sockfd) {
   if(6==xt)R O("ct-D\n"),0;
   if(3!=ABS(xt))R O("type error"),1;
   *kI(KONA_WHO)=i;
-  KX(x); cd(x);
+  KX(x);
   *kI(KONA_WHO)=0;
   R 0; }
 
@@ -70,20 +70,16 @@ C bx[128]={0},by[128]={0};
 Z K modified_execute(K x) //TODO: consider: this should be modified to use error trap. _4d should be modified to expect error trap output. 
 {
   //K-Lite manual gives {:[4:x; .x; .[.;x]} as processing function
-#ifdef WIN32
-  I status = pthread_mutex_lock(&execute_mutex); 
-  if(status != 0) {perror("Lock mutex in mod_ex()"); abort();}
-#endif
+  if(pthread_mutex_lock(&execute_mutex)){
+    perror("Lock mutex in mod_ex()"); abort();}
 
   K a=(K)-1;
   if(4==xt || 3==ABS(xt)) a=X(CSK(x));
   if(!xt && xn>0) a=vf_ex(offsetDot,x);
   
   if((K)-1!=a){
-#ifdef WIN32
-    status = pthread_mutex_unlock(&execute_mutex); 
-    if(status != 0) {perror("Unlock mutex in mod_ex()"); abort();}
-#endif
+    if(pthread_mutex_unlock(&execute_mutex)){
+      perror("Unlock mutex in mod_ex()"); abort();}
     R a;
   }
   R ci(x);
@@ -198,9 +194,8 @@ K read_tape(I i, I j, I type) {   // type in {0,1} -> {select loop, 4: resp read
       R r; }
 
     //Modified execution of received K value. First received transmission in a 3: or 4: 
-    K m=_n();
-    if(2>msg_type)m=*denameS(".",msg_type?".m.g":".m.s",0);
-	  z=(6==m->t)?modified_execute(h):at(m,h);
+    K m=(2>msg_type)?*denameS(".",msg_type?".m.g":".m.s",0):0;
+	  z=(!m||6==m->t)?modified_execute(h):at(m,h);
 	  if(msg_type){
   		K u=newK(0,2),s=Ki(0);
   		M(u,s)
@@ -214,7 +209,7 @@ K read_tape(I i, I j, I type) {   // type in {0,1} -> {select loop, 4: resp read
     else if(!z){
       O("%s error\n",errmsg);
       kerr("undescribed"); }
-    cd(m); cd(h);
+    cd(h);
     //indicates received communication from 4: synchronous method which expects response
     if(z) if(1==msg_type && 0==type) ksender(j,z,2);
     cd(z); z=0; }

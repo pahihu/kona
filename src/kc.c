@@ -13,7 +13,9 @@
 
 #ifndef WIN32
 #include <netinet/tcp.h>
+#include <pthread.h>
 #else
+extern void usleep(unsigned int);
 #include <sys/types.h>
 #include <pthread.h>
 ;    // Need semicolon, probably missing from <pthread.h>.
@@ -200,9 +202,7 @@ I lines(FILE*f) {
   S a=0;I n=0;PDA p=0; while(-1!=line(f,&a,&n,&p)){} R 0;}
     //You could put lines(stdin) in main() to have not-multiplexed command-line-only input
 
-#ifdef WIN32
 pthread_mutex_t execute_mutex = PTHREAD_RECURSIVE_MUTEX_INITIALIZER;
-#endif
 
 I line(FILE*f, S*a, I*n, PDA*p) {  //just starting or just executed: *a=*n=*p=0,  intermediate is non-zero
   S s=0; I b=0,c=0,m=0;
@@ -230,16 +230,14 @@ I line(FILE*f, S*a, I*n, PDA*p) {  //just starting or just executed: *a=*n=*p=0,
   *n=strlen(*a); //strlen might have been changed in 'trim' or in 'recur'
   if((*a)[0]=='\\')fbs=1; else fbs=0;
 
-#ifdef WIN32
-  I status = pthread_mutex_lock(&execute_mutex); 
-  if(status != 0) {perror("Lock mutex in line()"); abort();}
-#endif
+  if(pthread_mutex_lock(&execute_mutex)){
+    perror("Lock mutex in line()"); abort();}
+
   RTIME(d,k=ex(wd(*a,*n)))
-#ifdef WIN32
-  status = pthread_mutex_unlock(&execute_mutex); 
-  if(status != 0) {perror("Unlock mutex in line()"); abort();}
-#endif
-  
+
+  if(pthread_mutex_unlock(&execute_mutex)){
+    perror("Unlock mutex in line()"); abort();}
+
   #ifdef DEBUG
     if(o&&k)O("Elapsed: %.7f\n",d);
   #endif
@@ -278,6 +276,26 @@ I line(FILE*f, S*a, I*n, PDA*p) {  //just starting or just executed: *a=*n=*p=0,
   if(o && !fLoad)prompt(b+fCheck);
   kerr("undescribed"); fer=fnci=fom=0; fnc=lineA=lineB=0;
   R c; }
+
+I tmr_ival=0;
+V timer_thread(V arg)
+{
+  for(;;){
+    if(tmr_ival){
+      K a=_n(),h=*denameS(".",".m.ts",0),z=0;
+      if(6!=h->t){
+        if(pthread_mutex_lock(&execute_mutex)){
+          perror("Lock mutex in timer_thread())"); abort();}
+        z=at(h,a);
+        if(pthread_mutex_unlock(&execute_mutex)){
+          perror("Unlock mutex in timer_thread())"); abort();}
+      }
+      if(z)cd(z); cd(a);
+    }
+    usleep(tmr_ival?1000*tmr_ival:10000);
+  }
+  R 0;
+}
 
 #ifndef WIN32
 
@@ -341,6 +359,10 @@ I attend() {  //K3.2 uses fcntl somewhere
     if (listen(listener, 10) == -1) { perror("listen"); exit(3); }
     FD_SET(listener, &master);
     fdmax = listener; }
+
+  pthread_t thread;
+  if(pthread_create(&thread, NULL, timer_thread, NULL)){
+    perror("Create timer thread"); abort(); }
 
   for(;;) { // main loop  
     scrLim = 0;

@@ -523,7 +523,7 @@ I wrep(K x,V v,I y) {   //write representation. see rep(). y in {0,1}->{net, dis
   I m=y?2:0;
 
   if(y){*w=-3; w[1]=1; w[2]=t; w[3]=n;}
-  else{memcpy(w,&(x->t),sizeof(x->t)+sizeof(x->n));/*BSWAP*/}
+  else{memcpy(w,&(x->t),sizeof(x->t)+sizeof(x->n));}
 
   V d=w+2+m; //disk/destination for lists/vectors
 
@@ -535,10 +535,10 @@ I wrep(K x,V v,I y) {   //write representation. see rep(). y in {0,1}->{net, dis
   else if( '\007'==t || '\010'==t) {   //TODO: write seven_types to disk
                                        //TODO: calculate return length r optimally for seven_type since seven_type can nest
     if(1==xn && 1==kVC(x)->n-1 && offsetColon==(V)kS(kK(x)[CODE])[0]){
-      K k=*kW(x); I s=sva(k); w[m]=1==s?'\007':'\010';  w[1+m]=(L)offsetColon; /*BSWAP*/ }
+      K k=*kW(x); I s=sva(k); w[m]=1==s?'\007':'\010';  w[1+m]=(L)offsetColon;}
       //TODO: work for more than just unreserved monadic, dyadic verbs
     else R (L)SYE; }
-  else {V s=ke(x); I b=n*bp(t)+(3==ABS(t)); if(t>0)d-=sizeof(I); if(4==t){s=*kS(x); b=1+strlen(*kS(x)); } memcpy(d,s,b); /*BSWAP for -2,-1,1,2*/}
+  else {V s=ke(x); I b=n*bp(t)+(3==ABS(t)); if(t>0)d-=sizeof(I); if(4==t){s=*kS(x); b=1+strlen(*kS(x)); } memcpy(d,s,b);}
   R e+r;
 }
 
@@ -579,9 +579,9 @@ K rrep(V v, V aft,I*b, I y, I x) { //why aft? maybe not the best? but invariant.
 
   //if(y)w[1]; //mmap reference count
   I t;
-  membswpI(&t,w+m,sizeof(I),x); //type BSWAP
+  membswpI(&t,w+m,sizeof(I),x); //type
   I n;
-  if(t<=0 || 5==t)membswpI(&n,w+1+m,sizeof(I),x); //BSWAP
+  if(t<=0 || 5==t)membswpI(&n,w+1+m,sizeof(I),x);
   else if('\012'==t); //TODO: some verb/function types increase r or n size
   else n=1;
 
@@ -600,10 +600,10 @@ K rrep(V v, V aft,I*b, I y, I x) { //why aft? maybe not the best? but invariant.
 
     CS(-4,while(v+r < aft && c < n) r+=rrep_4(kS(z)+c++,v+r,aft); P(c!=n,NE) ) //TODO: oom
     CS(-3,memcpy(kC(z),w+2+m,n*sizeof(C)))//K3.2 does not verify final '\0' (does not read any extra bytes at all)
-    CS(-2,membswpF(kC(z),w+2+m,n*sizeof(F),x))//maybe could factor above and below (but sizeof C != sizeof I/F) BSWAP
-    CS(-1,membswpI(kC(z),w+2+m,n*sizeof(I),x)) //BSWAP
-    CS( 1,membswpI(kI(z),w+1+m,1*sizeof(I),x)) //BSWAP
-    CS( 2,membswpF(kF(z),w+1+m,1*sizeof(F),x)) //BSWAP
+    CS(-2,membswpF(kC(z),w+2+m,n*sizeof(F),x))//maybe could factor above and below (but sizeof C != sizeof I/F)
+    CS(-1,membswpI(kC(z),w+2+m,n*sizeof(I),x))
+    CS( 1,membswpI(kI(z),w+1+m,1*sizeof(I),x))
+    CS( 2,membswpF(kF(z),w+1+m,1*sizeof(F),x))
     CS( 3,memcpy(kC(z),w+1+m,1*sizeof(C))) //K3.2 take first C but do not check remaining C values of full I at w[3]
     CS( 4,r+=rrep_4(kS(z),(S)(w+1+m),aft)-sizeof(I))
         //TODO: oom. K3.2 reads to the end of the file no problem even if null is missing. K3.2 has bug on `x or `xx (<3)
@@ -611,7 +611,7 @@ K rrep(V v, V aft,I*b, I y, I x) { //why aft? maybe not the best? but invariant.
         //TODO: verb cases:  +, {x}, 2:("f",2)  (third case probably not supported but see).
         // Do projections get written? Note: _bd (-); _bd (+); _bd (:); etc are revealing
         //using old K3 IO format, using outdated Kona internal verb representation:
-    CSR('\007',) CS('\010', f=newK(-4,2); M(z,f) kV(z)[CODE]=f; if(x)w[1+m]=bswapI(w[1+m]);*kK(f)=(V)(L)w[1+m]; /*BSWAP*/ r+=000000000000000;)
+    CSR('\007',) CS('\010', f=newK(-4,2); M(z,f) kV(z)[CODE]=f; if(x)w[1+m]=bswapI(w[1+m]);*kK(f)=(V)(L)w[1+m]; r+=000000000000000;)
     CD: R NE; }  //unsupported type. was:  if(t<-4 || t>7 || n<0) R NE; //verbs actually have some weird types though. 8==\010, etc
 
   *b+= MAX(r,(2+m)*sizeof(I));
