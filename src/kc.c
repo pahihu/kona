@@ -380,7 +380,7 @@ PHANDLER_ROUTINE handle_SIGINT(int sig) {
   //no point in setting "interrupted=1", as exit happens anyway.
   _Exit(0); }
 
-fd_set master; int fds[10],nfds;
+fd_set master; int nfds;
 void *socket_thread(void *arg) {
   fd_set read_fds;
   FD_ZERO(&master); FD_ZERO(&read_fds);
@@ -416,7 +416,7 @@ void *socket_thread(void *arg) {
   if(listen(listener, 10)==SOCKET_ERROR){O("listen() failed with error: %ld\n", WSAGetLastError()); exit(3);} 
   else FD_SET(listener, &master);
 
-  SOCKET SockSet[10]; 
+  SOCKET SockSet[FD_SETSIZE]; 
   for(i=0;i<10;i++) SockSet[i]=INVALID_SOCKET;
   I nfd=1;   //Count of FDs including listener & clients
   I nca=0;   //Count of most clients ever activated
@@ -429,19 +429,21 @@ void *socket_thread(void *arg) {
     i=select(nfd,&read_fds,0,0,0); if(-1==i) O("select error\n");
     if(FD_ISSET(listener, &read_fds)) {
       SockSet[nxt] = accept(listener, NULL, NULL);
-      if(SockSet[nxt]==INVALID_SOCKET) exit(4); 
+      if(INVALID_SOCKET==SockSet[nxt]){O("accept() failed with %ld\n",WSAGetLastError()); exit(4);}
       else {
         FD_SET(SockSet[nxt], &master); nfd++; 
         if(!free) {nca++; nxt=nca;} } } 
     else {
       for(i=0; i<nca; i++) {
         if(FD_ISSET(SockSet[i], &read_fds)) {
-          z=read_tape(i,SockSet[i],0);
-          FD_CLR(SockSet[i], &master); FD_ZERO(&read_fds);
-          closesocket(SockSet[i]); SockSet[i]=INVALID_SOCKET;
-          wipe_tape(i); nfd--; } } }
+          if ((K)-1==read_tape(i,SockSet[i],0)) {
+            // FD_CLR(SockSet[i], &master); FD_ZERO(&read_fds);
+            //closesocket(SockSet[i]);
+            SockSet[i]=INVALID_SOCKET;
+            // wipe_tape(i);
+            nfd--; } } } }
     free=0;
-    for(i=0; i<nca; i++) {if(SockSet[i]==INVALID_SOCKET) {free=1; nxt=i; break;} } }   
+    for(i=0; i<nca; i++) {if(INVALID_SOCKET==SockSet[i]) {free=1; nxt=i; break;} } }   
   R 0; }
 
 I attend() {

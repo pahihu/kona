@@ -523,7 +523,7 @@ I wrep(K x,V v,I y) {   //write representation. see rep(). y in {0,1}->{net, dis
   I m=y?2:0;
 
   if(y){*w=-3; w[1]=1; w[2]=t; w[3]=n;}
-  else{memcpy(w,&(x->t),sizeof(x->t)+sizeof(x->n));}
+  else{memcpy(w,&(x->t),sizeof(x->t)+sizeof(x->n));/*BSWAP*/}
 
   V d=w+2+m; //disk/destination for lists/vectors
 
@@ -535,10 +535,10 @@ I wrep(K x,V v,I y) {   //write representation. see rep(). y in {0,1}->{net, dis
   else if( '\007'==t || '\010'==t) {   //TODO: write seven_types to disk
                                        //TODO: calculate return length r optimally for seven_type since seven_type can nest
     if(1==xn && 1==kVC(x)->n-1 && offsetColon==(V)kS(kK(x)[CODE])[0]){
-      K k=*kW(x); I s=sva(k); w[m]=1==s?'\007':'\010';  w[1+m]=(L)offsetColon; }
+      K k=*kW(x); I s=sva(k); w[m]=1==s?'\007':'\010';  w[1+m]=(L)offsetColon; /*BSWAP*/ }
       //TODO: work for more than just unreserved monadic, dyadic verbs
     else R (L)SYE; }
-  else {V s=ke(x); I b=n*bp(t)+(3==ABS(t)); if(t>0)d-=sizeof(I); if(4==t){s=*kS(x); b=1+strlen(*kS(x)); } memcpy(d,s,b);}
+  else {V s=ke(x); I b=n*bp(t)+(3==ABS(t)); if(t>0)d-=sizeof(I); if(4==t){s=*kS(x); b=1+strlen(*kS(x)); } memcpy(d,s,b); /*BSWAP for -2,-1,1,2*/}
   R e+r;
 }
 
@@ -563,8 +563,9 @@ I rep(K x,I y) {   //#bytes in certain net/disk representations
   R MAX(r,m);
 }
 
-K rrep(V v, V aft,I*b, I y) { //why aft? maybe not the best? but invariant. size count changes. haven't closely compared elegance
+K rrep(V v, V aft,I*b, I y, I x) { //why aft? maybe not the best? but invariant. size count changes. haven't closely compared elegance
   //y: kind of a crutch to prevent fork. {0,1}-> {_db type, _2m_r type}
+  //x: bswap
   I m = y?2:0;  //addend to offset
 
   I s=aft-v;;//subtle error here but not really...filesize already assumed to fit in float in parent
@@ -578,9 +579,9 @@ K rrep(V v, V aft,I*b, I y) { //why aft? maybe not the best? but invariant. size
 
   //if(y)w[1]; //mmap reference count
   I t;
-  memcpy(&t,w+m,sizeof(I)); //type
+  membswpI(&t,w+m,sizeof(I),x); //type BSWAP
   I n;
-  if(t<=0 || 5==t)memcpy(&n,w+1+m,sizeof(I));
+  if(t<=0 || 5==t)membswpI(&n,w+1+m,sizeof(I),x); //BSWAP
   else if('\012'==t); //TODO: some verb/function types increase r or n size
   else n=1;
 
@@ -595,14 +596,14 @@ K rrep(V v, V aft,I*b, I y) { //why aft? maybe not the best? but invariant. size
   I c=0; // k->n counter
   switch(t) {   //most of this can be refactored into changing parameters to a single memcpy call
     CSR( 0,)//fall through
-    CS ( 5,while(v+r < aft && c < n) { K k=rrep(v+r,aft,&r,y); M(z,k) memcpy(&(kK(z)[c++]),&k,sizeof(K)); } if(c!=n){cd(z);R NE;} )
+    CS ( 5,while(v+r < aft && c < n) { K k=rrep(v+r,aft,&r,y,x); M(z,k) memcpy(&(kK(z)[c++]),&k,sizeof(K)); } if(c!=n){cd(z);R NE;} )
 
     CS(-4,while(v+r < aft && c < n) r+=rrep_4(kS(z)+c++,v+r,aft); P(c!=n,NE) ) //TODO: oom
     CS(-3,memcpy(kC(z),w+2+m,n*sizeof(C)))//K3.2 does not verify final '\0' (does not read any extra bytes at all)
-    CS(-2,memcpy(kC(z),w+2+m,n*sizeof(F)))//maybe could factor above and below (but sizeof C != sizeof I/F)
-    CS(-1,memcpy(kC(z),w+2+m,n*sizeof(I)))
-    CS( 1,memcpy(kI(z),w+1+m,1*sizeof(I)))
-    CS( 2,memcpy(kF(z),w+1+m,1*sizeof(F)))
+    CS(-2,membswpF(kC(z),w+2+m,n*sizeof(F),x))//maybe could factor above and below (but sizeof C != sizeof I/F) BSWAP
+    CS(-1,membswpI(kC(z),w+2+m,n*sizeof(I),x)) //BSWAP
+    CS( 1,membswpI(kI(z),w+1+m,1*sizeof(I),x)) //BSWAP
+    CS( 2,membswpF(kF(z),w+1+m,1*sizeof(F),x)) //BSWAP
     CS( 3,memcpy(kC(z),w+1+m,1*sizeof(C))) //K3.2 take first C but do not check remaining C values of full I at w[3]
     CS( 4,r+=rrep_4(kS(z),(S)(w+1+m),aft)-sizeof(I))
         //TODO: oom. K3.2 reads to the end of the file no problem even if null is missing. K3.2 has bug on `x or `xx (<3)
@@ -610,7 +611,7 @@ K rrep(V v, V aft,I*b, I y) { //why aft? maybe not the best? but invariant. size
         //TODO: verb cases:  +, {x}, 2:("f",2)  (third case probably not supported but see).
         // Do projections get written? Note: _bd (-); _bd (+); _bd (:); etc are revealing
         //using old K3 IO format, using outdated Kona internal verb representation:
-    CSR('\007',) CS('\010', f=newK(-4,2); M(z,f) kV(z)[CODE]=f; *kK(f)=(V)(L)w[1+m]; r+=000000000000000;)
+    CSR('\007',) CS('\010', f=newK(-4,2); M(z,f) kV(z)[CODE]=f; if(x)w[1+m]=bswapI(w[1+m]);*kK(f)=(V)(L)w[1+m]; /*BSWAP*/ r+=000000000000000;)
     CD: R NE; }  //unsupported type. was:  if(t<-4 || t>7 || n<0) R NE; //verbs actually have some weird types though. 8==\010, etc
 
   *b+= MAX(r,(2+m)*sizeof(I));
@@ -772,7 +773,7 @@ K _2m(K a) { //again, minor copy/paste here
   R z;
 }
 
-K _2m_r(V v, V aft,I*b) {R rrep(v,aft,b,1);}
+K _2m_r(V v, V aft,I*b) {R rrep(v,aft,b,1,0);}
 
 K _2d(K a,K b) {
   //K3.2 dlopen,dlsym,dlerr but not dlclose
@@ -803,6 +804,14 @@ K _2d(K a,K b) {
   R z;
 }
 
+void dm1(S msg,M1*m)
+{
+  O("=== %s ===\n",msg);
+  O("a: %d\n",m->a);
+  O("n: %lld\n",m->n);
+  O("d: %d\n",m->d);
+}
+
 Z I sendall(I s,S b,I k) {I t=0,r=k,n=0;while(t<k){n=send(s,b+t,r,0);if(-1==n)break;t+=n;r-=n;}R -1==n?n:0;} //from beej
 
 I ksender(I sockfd,K y,I t) {
@@ -810,6 +819,7 @@ I ksender(I sockfd,K y,I t) {
   K k; U(k=_bd(y))
   M1*m=(V)kC(k);
   m->d=t; //{0,1,2} -> {3:,4:,4: resp}
+  //dm1("ksender",m);
   if(-1==(r=sendall(sockfd,kC(k),k->n)))perror("conn: send error");
   cd(k);
   R r; }
@@ -977,7 +987,7 @@ K _4d(K x,K y) {      //see _3d
     #ifndef WIN32
     while((2!=fer)&&!(z=read_tape(sockfd,sockfd,1))){}
     #else
-    while((2!=fer)&&!(z=read_tape(0,sockfd,1))){}
+    while((2!=fer)&&!(z=read_tape(FD_SETSIZE,sockfd,1))){}
     #endif
     P(z==(K)-1,DOE)
     P(!z,0) R z;}
@@ -1179,7 +1189,7 @@ K _3m(K x) {
 
 //TODO: Manual's section on interprocess communication. {-h, .m.u, .m.c, .m.g, .m.s, .m.h}
 K _3m(K x) {
-  if(1==xt){I i=close(*kI(x)); R i?DOE:_n();} // 3: 1
+  if(1==xt){I i=closesocket(*kI(x)); R i?DOE:_n();} // 3: 1
   else P(xt|| xn!=2 || kK(x)[0]->t!=4 || kK(x)[1]->t!=1, TE)
   //3:`"999.999.999.999",1234   // same host: 3:`,1234
   S host=CSK(*kK(x)), errstr;
@@ -1212,7 +1222,7 @@ K _3m(K x) {
   I yes=1; setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, (cS)&yes, sizeof(I));//disable nagle
   freeaddrinfo(servinfo);
 
-  //wipe_tape(sockfd); ?
+  wipe_tape(sockfd);
   R Ki(sockfd);
 }
 
