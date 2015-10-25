@@ -600,8 +600,8 @@ K rrep(V v, V aft,I*b, I y, I x) { //why aft? maybe not the best? but invariant.
 
     CS(-4,while(v+r < aft && c < n) r+=rrep_4(kS(z)+c++,v+r,aft); P(c!=n,NE) ) //TODO: oom
     CS(-3,memcpy(kC(z),w+2+m,n*sizeof(C)))//K3.2 does not verify final '\0' (does not read any extra bytes at all)
-    CS(-2,membswpF(kC(z),w+2+m,n*sizeof(F),x))//maybe could factor above and below (but sizeof C != sizeof I/F)
-    CS(-1,membswpI(kC(z),w+2+m,n*sizeof(I),x))
+    CS(-2,membswpF(kF(z),w+2+m,n*sizeof(F),x))//maybe could factor above and below (but sizeof C != sizeof I/F)
+    CS(-1,membswpI(kI(z),w+2+m,n*sizeof(I),x))
     CS( 1,membswpI(kI(z),w+1+m,1*sizeof(I),x))
     CS( 2,membswpF(kF(z),w+1+m,1*sizeof(F),x))
     CS( 3,memcpy(kC(z),w+1+m,1*sizeof(C))) //K3.2 take first C but do not check remaining C values of full I at w[3]
@@ -939,30 +939,25 @@ Z void execute(LPSTR argv, I fWait) {
   CloseHandle( pi.hThread ); }
 
 K _4d_(S srvr,S port,K y) {
-  int iRetval; DWORD dwRetval; I i=1,r; S errstr;
-  struct addrinfo *result = NULL; struct addrinfo *ptr = NULL; struct addrinfo hints;
-  struct sockaddr_in  *sockaddr_ipv4; LPSOCKADDR sockaddr_ip;  //struct sockaddr_in6 *sockaddr_ipv6;
-  C ipstringbuffer[46]; DWORD ipbufferlength=46;
-  // initialize WinSock
-  ninit();
+  int rv; I i=1,r,neterrno; //S errstr;
+  struct addrinfo *result = NULL,*ptr = NULL,hints;
   ZeroMemory( &hints, sizeof(hints) );
-  hints.ai_family = AF_UNSPEC; hints.ai_socktype = SOCK_STREAM; hints.ai_protocol = IPPROTO_TCP;
-  dwRetval = getaddrinfo(srvr, port, &hints, &result);
-  if(dwRetval != 0) { O("getaddrinfo failed with error: %d\n", dwRetval); R DOE; }
+  hints.ai_family = AF_UNSPEC;
+  hints.ai_socktype = SOCK_STREAM;
+  if((rv=getaddrinfo(srvr, port, &hints, &result))){O("getaddrinfo failed with error: %d\n", rv); R DOE; }
   I sockfd;  
   for(ptr=result; ptr != NULL ;ptr=ptr->ai_next)
-    if((sockfd=socket(ptr->ai_family,ptr->ai_socktype,ptr->ai_protocol))==-1)continue;
-    else if(connect(sockfd,ptr->ai_addr,ptr->ai_addrlen)==-1){errstr=strerror(errno); r=closesocket(sockfd); if(r)R FE; continue;}
+    if(INVALID_SOCKET==(sockfd=socket(ptr->ai_family,ptr->ai_socktype,ptr->ai_protocol)))continue;
+    else if(-1==connect(sockfd,ptr->ai_addr,ptr->ai_addrlen)){neterrno=WSAGetLastError(); r=closesocket(sockfd); if(r)R FE; continue;}
     else break;
-  if(ptr==NULL){fprintf(stderr, "conn: failed to connect (%s)\n",errstr); freeaddrinfo(result); R DOE;}
+  if(!ptr){fprintf(stderr, "conn: failed to connect (lld%s)\n",neterrno); freeaddrinfo(result); R DOE;}
   I n=strlen(kC(y)); C msg[n+5]; for(i=0;i<n+1;i++){msg[i]=kC(y)[i];}
   msg[n]='\r'; msg[n+1]='\n'; msg[n+2]='\r'; msg[n+3]='\n'; msg[n+4]='\0';
-  if(send(sockfd, &msg, strlen(msg), 0)==-1){O("errno:%d\n",errno); r=closesocket(sockfd); if(r)R FE; freeaddrinfo(result); R WE;}
-  C buf[20000]; n=recv(sockfd,&buf,20000,0); r=closesocket(sockfd); if(r)R FE;
-  K z=newK(n==1?3:-3,n); memcpy(kC(z),&buf,n);
+  if(send(sockfd, msg, strlen(msg), 0)==-1){O("errno:%d\n",errno); r=closesocket(sockfd); if(r)R FE; freeaddrinfo(result); R WE;}
+  C buf[20000]; n=recv(sockfd,buf,20000,0); r=closesocket(sockfd); if(r)R FE;
+  K z=newK(n==1?3:-3,n); memcpy(kC(z),buf,n);
   freeaddrinfo(result);
-  if(n==0)R _n();
-  else R z; }
+  R(n)?z:_n(); }
 
 #endif
 
@@ -1157,7 +1152,7 @@ K _3m(K x) {
   hints.ai_family = AF_UNSPEC;
   hints.ai_socktype = SOCK_STREAM;
 
-  if ((rv = getaddrinfo(host, port, &hints, &servinfo)) != 0) { fprintf(stderr, "conn: %s\n", gai_strerror(rv)); R DOE; }
+  if ((rv = getaddrinfo(host, port, &hints, &servinfo))) { fprintf(stderr, "conn: %s\n", gai_strerror(rv)); R DOE; }
   // loop through all the results and connect to the first we can
   for(p = servinfo; p != NULL; p = p->ai_next)
     if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {  continue; } //perror("client: socket");
@@ -1165,7 +1160,7 @@ K _3m(K x) {
       //perror("client: connect");
     else break;
 
-  if (p == NULL) { fprintf(stderr, "conn: failed to connect (%s)\n", errstr);freeaddrinfo(servinfo); R DOE; }
+  if (!p) { fprintf(stderr, "conn: failed to connect (%s)\n", errstr);freeaddrinfo(servinfo); R DOE; }
 
   //char s[INET6_ADDRSTRLEN];
   //inet_ntop(p->ai_family, get_in_addr((struct sockaddr *)p->ai_addr), s, sizeof s);
@@ -1192,37 +1187,32 @@ K _3m(K x) {
   if(1==xt){I i=closesocket(*kI(x)); R i?DOE:_n();} // 3: 1
   else P(xt|| xn!=2 || kK(x)[0]->t!=4 || kK(x)[1]->t!=1, TE)
   //3:`"999.999.999.999",1234   // same host: 3:`,1234
-  S host=CSK(*kK(x)), errstr;
+  S host=CSK(*kK(x));
   char port[256];
   snprintf(port,256,"%lld",*kI(kK(x)[1]));
-  // initialize WinSock
-  ninit();
-  struct addrinfo *servinfo = NULL, *p = NULL, hints;
+  int rv; struct addrinfo *servinfo = NULL, *p = NULL, hints;
   ZeroMemory( &hints, sizeof(hints));
-  hints.ai_family = AF_UNSPEC; hints.ai_socktype = SOCK_STREAM; hints.ai_protocol = IPPROTO_TCP;
+  hints.ai_family = AF_UNSPEC; hints.ai_socktype = SOCK_STREAM;
 
-  int rv = getaddrinfo(host, port, &hints, &servinfo);
-  if(rv != 0) { O("getaddrinfo failed:%d\n", rv); exit(4); }
+  if((rv = getaddrinfo(host, port, &hints, &servinfo))){O("getaddrinfo failed:%d\n", rv); exit(4);}
   //else O("getaddressinfo OK\n");
 
   SOCKET sockfd = INVALID_SOCKET;
-  p=servinfo; sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
-  if(sockfd == INVALID_SOCKET) { O("Error at socket():%ld]n", WSAGetLastError()); freeaddrinfo(servinfo); exit(4); }
-  //else O("socket() OK\n");
 
   // loop through all the results and connect to the first we can
   for(p = servinfo; p != NULL; p = p->ai_next)
-    if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1)
-      { perror("client: socket()"); O("client socket(): %ld\n", WSAGetLastError()); continue; }
-    else if (connect(sockfd, p->ai_addr, p->ai_addrlen) == -1)
-      { O("client connect(): %d\n", WSAGetLastError()); rv=closesocket(sockfd); if(rv)R FE; continue; }
+    if(INVALID_SOCKET==(sockfd=socket(p->ai_family,p->ai_socktype,p->ai_protocol))){
+      O("client socket(): %ld\n", WSAGetLastError()); continue; }
+    else if(-1==connect(sockfd, p->ai_addr, p->ai_addrlen)){
+      O("client connect(): %d\n", WSAGetLastError());
+      rv=closesocket(sockfd); if(rv)R FE; continue; }
     else break;
 
-  if (p == NULL) { fprintf(stderr, "conn: failed to connect (%d)\n", WSAGetLastError());freeaddrinfo(servinfo); R DOE; }
+  if (!p) { fprintf(stderr, "conn: failed to connect (%d)\n", WSAGetLastError());freeaddrinfo(servinfo); R DOE; }
   I yes=1; setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, (cS)&yes, sizeof(I));//disable nagle
   freeaddrinfo(servinfo);
 
-  wipe_tape(sockfd);
+  wipe_tape(FD_SETSIZE);
   R Ki(sockfd);
 }
 

@@ -2,7 +2,7 @@
 #include <windows.h>
 
 /* forum post by cyi823 5oct2005 at c-plusplus.net */
-void usleep(unsigned int usec)
+void win_usleep(unsigned int usec)
 {
   HANDLE timer;
   LARGE_INTEGER due;

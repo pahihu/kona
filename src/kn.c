@@ -177,8 +177,8 @@ K read_tape(I i, I j, I type) {   // type in {0,1} -> {select loop, 4: resp read
     M1*p=(V)kC(CP[i].k);
     I msg_type = p->d; //p->d dissappears after wipe_tape
     K h = _db(CP[i].k);
-    if(!h) GC;
-    wipe_tape(j);
+    if(!h)GC;
+    wipe_tape(i);
 
     //blocking read inside 4: receives response //response sent by server to client after a 4: request is not executed by client
     if(2==msg_type && 1==type){

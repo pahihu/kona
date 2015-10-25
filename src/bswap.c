@@ -5,13 +5,13 @@
 
 #include "bswap.h"
 
-#if defined(__GNUC__) && !defined(__clang__)
+#if defined(__GNUC__) && !defined(__clang__) && !defined(__MINGW32__)
 #include <bits/byteswap.h>
 #define bswap32 __bswap_32
 #define bswap64 __bswap_64
 #endif
 
-#ifdef _MSVC
+#ifdef _MSC_VER
 #include <stdlib.h>
 #define bswap32 _byteswap_ulong
 #define bswap64 _byteswap_uint64
@@ -26,20 +26,22 @@
 #ifndef bswap32
 uint32_t bswap32(uint32_t n)
 {
-  C d[4];
+  UC d[4];
 
   memcpy(d,&n,4);
-  R (d[0]<<24)+(d[1]<<16)+(d[2]<< 8)+d[3];
+  R ((uint32_t)(d[0])<<24)+((uint32_t)(d[1])<<16)+
+    ((uint32_t)(d[2])<< 8)+ (uint32_t)(d[3]);
 }
 
 uint64_t bswap64(uint64_t n)
 {
-  C d[8];
+  UC d[8];
 
   memcpy(d,&n,8);
   R ((uint64_t)(d[0])<<56)+((uint64_t)(d[1])<<48)+
     ((uint64_t)(d[2])<<40)+((uint64_t)(d[3])<<32)+
-    (d[4]<<24)+(d[5]<<16)+(d[6]<< 8)+d[7];
+    ((uint64_t)(d[4])<<24)+((uint64_t)(d[5])<<16)+
+    ((uint64_t)(d[6])<< 8)+ (uint64_t)(d[7]);
 }
 #endif
 
