@@ -905,7 +905,7 @@ Z void execute(S *argvP, I fWait) {
 K _4d_(S srvr,S port,K y){
   struct addrinfo hints, *servinfo, *p; int rv,sockfd; S errstr; I r;
   memset(&hints,0,sizeof hints); hints.ai_family=AF_UNSPEC; hints.ai_socktype=SOCK_STREAM;
-  if(rv=getaddrinfo(srvr,port,&hints,&servinfo)!=0){fprintf(stderr,"conn: %s\n",gai_strerror(rv)); R DOE;}
+  if((rv=getaddrinfo(srvr,port,&hints,&servinfo))){fprintf(stderr,"conn: %s\n",gai_strerror(rv)); R DOE;}
   for(p=servinfo; p!=NULL; p=p->ai_next)
     if((sockfd=socket(p->ai_family,p->ai_socktype,p->ai_protocol))==-1)continue;
     else if(connect(sockfd,p->ai_addr,p->ai_addrlen)==-1){errstr=strerror(errno); r=close(sockfd); if(r)R FE; continue;}
@@ -1152,7 +1152,7 @@ K _3m(K x) {
   hints.ai_family = AF_UNSPEC;
   hints.ai_socktype = SOCK_STREAM;
 
-  if ((rv = getaddrinfo(host, port, &hints, &servinfo))) { fprintf(stderr, "conn: %s\n", gai_strerror(rv)); R DOE; }
+  if ((rv=getaddrinfo(host, port, &hints, &servinfo))) { fprintf(stderr, "conn: %s\n", gai_strerror(rv)); R DOE; }
   // loop through all the results and connect to the first we can
   for(p = servinfo; p != NULL; p = p->ai_next)
     if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {  continue; } //perror("client: socket");
@@ -1194,7 +1194,7 @@ K _3m(K x) {
   ZeroMemory( &hints, sizeof(hints));
   hints.ai_family = AF_UNSPEC; hints.ai_socktype = SOCK_STREAM;
 
-  if((rv = getaddrinfo(host, port, &hints, &servinfo))){O("getaddrinfo failed:%d\n", rv); exit(4);}
+  if((rv=getaddrinfo(host, port, &hints, &servinfo))){O("getaddrinfo failed:%d\n", rv); exit(4);}
   //else O("getaddressinfo OK\n");
 
   SOCKET sockfd = INVALID_SOCKET;
