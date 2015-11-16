@@ -194,8 +194,8 @@ K insertGradeU(K a,I r)
   R x;
 }
 Z clock_t t0;
-Z void trst(){t0=clock();}
-Z void elapsed(S m){
+void trst(){t0=clock();}
+void elapsed(S m){
   clock_t e=clock()-t0;
   I ms=(I)(1000.0*(double)e/CLOCKS_PER_SEC);
   O("%s %lld\n",m,ms);trst();}
