@@ -278,9 +278,6 @@ K group(K x)
   c=newK(-1,n);M(b,c);h=kI(c);
   DO(n,h[g[i]]=i);
   //Step through, on duplicate set uniques-=1, mark by inverting sign of corresponding index
-  //I *h=kI(c);
-  if(-2==t)DO(n-1,if(kF(x)[g[n-i-1]]==kF(x)[g[n-i-2]])  {--u;g[n-i-1]*=-1;})
-  if(-1==t)DO(n-1,if(kI(x)[g[n-i-1]]==kI(x)[g[n-i-2]])  {--u;g[n-i-1]*=-1;})
   if( 0==t)DO(n-1,if(matchI(kK(x)[g[n-i-1]],kK(x)[g[n-i-2]])){--u;g[n-i-1]*=-1;})
  
   z=newK(0,u);
