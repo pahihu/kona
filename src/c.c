@@ -316,6 +316,7 @@ K backslash(S s, I n, K*dict)
               "_dv      delete value\n"
               "_dvl     delete several values\n"
               "_hash    hash, (x;_hash x)?y\n"
+              "_hat     caret/without, x _hat y\n"
               "_in      true if x is in y\n"
               "_lin     _in for several values\n"
               "_lsq     matrix division\n"
