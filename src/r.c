@@ -101,7 +101,7 @@ S_DYAD(hat,  "{:[(1~4:x)|(2~4:x); _f[!x;y];:[@y;_f[x;,y]; x _dvl y]]}") //or "ca
 S_TRIAD(ssr, "{if[_n~x;:_n];i:1+2*!_.5*#x:(0,/(0,+/~+\\(>\':0,\"[\"=y)-<\':(\"]\"=y$:),0)+/:x _ss y)_ x;,/ :[7=4:z;@[x;i;z];4:z$:;@[x;i;:[;z]];@[x;i;:;z]]}") //missing a few things
 
 #define W(x)      x
-#define _SYSTEMN  W(T) W(a) W(d) W(f) W(h) W(i) W(k) W(m) W(n) W(p) W(s) W(t) W(u) W(v) W(w)
+#define _SYSTEMN  W(T) W(a) W(c) W(d) W(f) W(h) W(i) W(k) W(m) W(n) W(p) W(s) W(t) W(u) W(v) W(w)
 #define _MATH     W(acos) W(asin) W(atan) W(ceil) W(cos) W(cosh) W(exp) W(floor) W(log) W(sin) W(sinh) W(sqr) W(sqrt) W(tan) W(tanh)
 //#define _SYSTEM1  _MATH W(abs) W(bd) W(ceiling) W(ci) W(db) W(dj) W(exit) W(getenv) W(gtime) W(host) W(ic) W(inv) W(jd) W(lt) W(ltime) W(size) 
 //#define _SYSTEM2  W(bin) W(binl) W(di) W(dot) W(draw) W(dv) W(dvl) W(hat) W(in) W(lin) W(lsq) W(mul) W(setenv) W(sm) W(ss) W(sv) W(vsx)
@@ -1034,6 +1034,7 @@ K _u(){R NYI;}
 K _a(){R ci(KONA_ARGS);}
 K _k(){Z K x=0;if(!x){Z S d=KBUILD_DATE;x=newK(-3,strlen(d));M(x);strcpy(kC(x),d);}R ci(x);}
 K _m(){R NYI;}
+K _c(){R ci(KONA_CLIENT);}
 
 /////////////////////////////////////////
 //Utility Functions /////////////////////
