@@ -151,6 +151,8 @@ K backslash(S s, I n, K*dict)
               "\\  scan monad   trace n times      n f\\x    10(|+\\)\\1 1\n"
                "/  over         {x+y+z}/[1 2 3;4;7 8 9]  f/[x;y;z]\n"
               "\\  scan         {x+y+z}\[1 2 3;4;7 8 9]  f\\[x;y;z]\n"
+               "/  join         \",\"/(\"a\";\"b\")\n"
+              "\\  split        \",\"\\\"a,b\"\n"
                "'  each         \"abc\" ,' \"def\"    join each  \n"
                "'  each         !:' 2 3 4    enumerate each  \n"
                "/: eachright    #:/:(2;2 2;2 2 2)    count each right\n"
