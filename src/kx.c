@@ -38,6 +38,7 @@ __thread I frg=0;    // Flag reset globals
          I fnci=0;   // indicator of next function pointer position
          I fom=0;    // Flag overMonad (curried)
 
+Z I empty(K x){ R x&&!xt&&!xn; }
 Z K cjoin(K x,K y) {
   P(3!=xt,TE)
   if(3==ABS(yt))R ci(y);
@@ -945,13 +946,20 @@ Z K ex2(V*v, K k)  //execute words --- all returns must be Ks. v: word list, k: 
 
     if(fer>0) { cd(c); cd(d); cd(b); R _n(); }
 
-    if(cirRef(*w,d) || (((*w)->t==6 && d) && (d->t==0 || d->t==5 || ABS(d->t)!=d->t)) ){
+    /* XXX
+    if(*w){O("\n%lld w: ",rc(*w));show(*w);}else O("\n  w: NULL");
+    if(b){O("\n%lld b: ",rc(b));show(b);}
+    if(c){O("\n%lld c: ",rc(c));show(c);}
+    if(d){O("\n%lld d: ",rc(d));show(d);}
+    */
+
+    if(cirRef(*w,d) /*|| (((*w)->t==6 && d) && (d->t==0 || d->t==5 || ABS(d->t)!=d->t))*/){
       K x = d;
       if(rc(x)) {d=kclone(x); cd(x);}
     }
     else if((*w)->t!=6){ 
       K x = *w;
-      if(rc(x)>1) {*w=kclone(x); cd(x);}
+      if(rc(x)>1&&!empty(b)) { *w=kclone(x); cd(x); } // XXX
     }
 
     K h=dot_tetradic_2(w,b,c,d);
@@ -1022,6 +1030,7 @@ Z K ex2(V*v, K k)  //execute words --- all returns must be Ks. v: word list, k: 
 }
 
 I cirRef(K x,K y){
+  if(x&&(x==y))R 1; // XXX
   I f=0;
   if(xt==6 || !y || (yt!=0 && yt!=5) || (UI)x<DT_SIZE) R 0;
   DO(yn, f=cirRef_(x,kK(y)[yn-i-1],f))

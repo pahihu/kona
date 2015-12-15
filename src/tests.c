@@ -36,7 +36,7 @@ I tc(S a, S b) //test comparison .  R 0,1,2
 
   KTREE=Kd();
   K x = X(a); fer=fom=0; if(cls){cd(cls);cls=0;}
-  //O("testing: %s\n",b);
+  // fprintf(stderr,"testing: %s\n",b);
   K y = X(b); fer=fom=0; if(cls){cd(cls);cls=0;}
   I m=matchI(x,y);
 
@@ -711,6 +711,8 @@ Z I tests02()
   TC(("";"lph";""), "a"\"alpha")
   TC((,"a";"pha"), "l"\"alpha")
   TC(("";"";"";""), "a"\"aaa")
+  TC_("x:.+(`a`b;1 2); y:x; f:{.[x;,`a;:;11]}; f`y; x",".+(`a`b;1 2)")
+  TC_("x:.+(`a`b;1 2); y:x; f:{.[x;,`a;:;11]}; f`y; y",".+(`a`b;11 2)")
 #ifdef K3_ARITH
   TC(0i, 0i+0i)                           // plus
   TC(0i, 0i+0I)

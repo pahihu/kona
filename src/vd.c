@@ -143,6 +143,7 @@ K dot_ref(K *p, K *x, K *z, I s, K c, K y)
     cd(args);
     U(r)
     cd(*p); 
+    // XXX
     if (5==r->t || 0==r->t)
     {
       *p=kclone(r);
@@ -277,6 +278,7 @@ K dot_tetradic(K a, K b, K c, K y)//Handles triadic and tetradic case
 
     p = denameS(d_,*kS(a),1);
     U(p) //oom
+    if(1<rc(*p)){K x=*p;*p=kclone(x);cd(x);}
   }
   else q = kclone(a); 
 
