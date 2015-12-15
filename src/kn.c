@@ -24,8 +24,9 @@ void nfinish()
 {
 #ifdef WIN32
   extern I listener;
-  if (IPC_PORT || HTTP_PORT)
-    closesocket(listener);
+  if (IPC_PORT || HTTP_PORT) {
+    closesocket(listener); listener=0;
+  }
   WSACleanup();
 #endif
 }

@@ -81,33 +81,6 @@ Z K csplit(K x,K y) {//scan 2x
   R z;
 }
 
-Z K csplit0(K x,K y) {//scan 2x
-  P(3!=xt,TE);
-  P(3!=ABS(yt),TE);
-  int delim=*kC(x);S s=kC(y);
-  I p0,p1,zn=0,i=0;
-  while(i<yn){
-    while(i<yn&&delim==s[i])i++;
-    I j=i,n=0;
-    while(i<yn&&delim!=s[i]){i++;n++;}
-    if(n){p0=j;p1=n;zn++;} }
-  if(!zn)R newK(0,0);
-  else if(1==zn){
-    if(yn==p1)R enlist(y);
-    K z=newK(-3,p1);M(z);
-    memcpy(kC(z),s+p0,p1);
-    y=enlist(z);cd(z);
-    R y;
-  }
-  I j=0;K z=newK(0,zn);M(z);
-  DO(zn,
-    while(j<yn&&delim==s[j])j++;
-    p0=j;p1=0;
-    while(j<yn&&delim!=s[j]){j++;p1++;}
-    K d=newK(-3,p1);M(d,z);memcpy(kC(d),s+p0,p1);kK(z)[i]=d)
-  R z;
-}
-
 //TODO: for derived verbs like +/ you can add the sub-pieces in parallel
 Z K overDyad(K a, V *p, K b) {
   V *o=p-1; K(*f)(K,K);
