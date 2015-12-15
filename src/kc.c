@@ -157,6 +157,7 @@ I kinit() {       //oom (return bad)
   KONA_PORT=newK(1,1);*kI(KONA_PORT)=0;
   KONA_GSET=_n();
   KONA_IDX=_n();
+  KONA_CLIENT=_host(_h());
   khinit();
   R 0; }
 
@@ -419,7 +420,9 @@ I attend() {  //K3.2 uses fcntl somewhere
             wipe_tape(newfd); //new conn needs this since connections can die without notification (right?)
             FD_SET(newfd, &master); // add to master set 
             if (newfd > fdmax) fdmax = newfd;
-            setsockopt(newfd, IPPROTO_TCP, TCP_NODELAY, &yes, sizeof(I)); } }//disable nagle
+            setsockopt(newfd, IPPROTO_TCP, TCP_NODELAY, &yes, sizeof(I)); 
+            CP[newfd].a=ntohl(((struct sockaddr_in*)&remoteaddr)->sin_addr.s_addr);
+          } }//disable nagle
             //printf("server: new connection from %s on socket %d\n", inet_ntop(remoteaddr.ss_family, 
             //        get_in_addr((struct sockaddr*)&remoteaddr), remoteIP, INET6_ADDRSTRLEN), newfd);
         else if(a) continue; //K3.2 blocks if in the middle of processing the command-line (should we sleep here?)
@@ -439,6 +442,9 @@ void *socket_thread(void *arg) {
   fd_set read_fds;
   FD_ZERO(&master); FD_ZERO(&read_fds);
   int rv, i;
+
+  struct sockaddr_storage remoteaddr; // client address
+  socklen_t addrlen;
 
   // create socket for server
   I yes=1;struct addrinfo *result=NULL, *p=NULL, hints; 
@@ -478,11 +484,13 @@ void *socket_thread(void *arg) {
     read_fds = master;
     i=select(nfd,&read_fds,0,0,0); if(-1==i) O("select error\n");
     if(FD_ISSET(listener, &read_fds)) {
-      SockSet[nxt] = accept(listener, NULL, NULL);
+      addrlen = sizeof remoteaddr; 
+      SockSet[nxt] = accept(listener, (struct sockaddr *)&remoteaddr, &addrlen);
       if(INVALID_SOCKET==SockSet[nxt]){O("accept() failed with %ld\n",WSAGetLastError()); exit(4);}
       else {
         wipe_tape(nxt);
         FD_SET(SockSet[nxt], &master); nfd++; 
+        CP[nxt].a=ntohl(((struct sockaddr_in*)&remoteaddr)->sin_addr.s_addr);
         if(!free) {nca++; nxt=nca;} } } 
     else {
       for(i=0; i<nca; i++) {
