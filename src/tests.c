@@ -708,9 +708,9 @@ Z I tests02()
   TC(" ", ";"/" ")
   TC(" ; ; ", ";"/(," ";," ";," "))
   TC((,"alpha"), " "\"alpha")             // c\ split
-  TC((,"lph"), "a"\"alpha")
+  TC(("";"lph";""), "a"\"alpha")
   TC((,"a";"pha"), "l"\"alpha")
-  TC((), "a"\"aaa")
+  TC(("";"";"";""), "a"\"aaa")
 #ifdef K3_ARITH
   TC(0i, 0i+0i)                           // plus
   TC(0i, 0i+0I)
