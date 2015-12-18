@@ -7,11 +7,11 @@
 #include "ko.h"
 
 Z I w=0;
-K _kclone(K a,I d);
+K _kclone(K a);
 K kcloneI(K a,cS f,int n){
   if(w)O("kclone %s:%d ",f,n);
-  R _kclone(a,1);}
-K _kclone(K a,I d)//Deep copy -- eliminate where possible
+  R _kclone(a);}
+K _kclone(K a)//Deep copy -- eliminate where possible
 {
   if(!a) R 0;
   I t=a->t,n=a->n;
@@ -20,10 +20,8 @@ K _kclone(K a,I d)//Deep copy -- eliminate where possible
   else if(3==ABS(t)) DO(n, kC(z)[i]=kC(a)[i]) 
   else if(2==ABS(t)) DO(n, kF(z)[i]=kF(a)[i]) 
   else if(-5==t||1==ABS(t)) DO(n, kI(z)[i]=kI(a)[i]) 
-  //else if(0==    t ) DO(n, kK(z)[i]=_kclone(kK(a)[i])) 
-  //else if(5==    t ) DO(n, kK(z)[i]=_kclone(kK(a)[i]))
-  else if(0==    t ) DO(n, kK(z)[i]=d?_kclone(kK(a)[i],d):ci(kK(a)[i])) 
-  else if(5==    t ) DO(n, kK(z)[i]=d?_kclone(kK(a)[i],d):ci(kK(a)[i]))
+  else if(0==    t ) DO(n, kK(z)[i]=_kclone(kK(a)[i])) 
+  else if(5==    t ) DO(n, kK(z)[i]=_kclone(kK(a)[i]))
   else if(7==    t )
   {
     I k=0;
@@ -43,7 +41,7 @@ K _kclone(K a,I d)//Deep copy -- eliminate where possible
                   if(VA(w))v[i]=w;  //TODO: is this ok for NAMES? see similar code in capture()
                   else
                   {
-                    K r=_kclone(*(K*)w,1); //oom
+                    K r=_kclone(*(K*)w); //oom
                     V q=newE(LS,r); //oom
                     kap((K*) kV(z)+LOCALS,&q);//oom
                     cd(q);//kap does ci
@@ -56,14 +54,14 @@ K _kclone(K a,I d)//Deep copy -- eliminate where possible
             v=(V*)kK(kv);
             memcpy(v,kW(a),3*sizeof(V));
         )
-      CS(3,M(z,kv=_kclone((K)kV(a)[CODE],1)))
+      CS(3,M(z,kv=_kclone((K)kV(a)[CODE])))
     }
     kV(z)[CODE]=kv;
     kV(z)[DEPTH]=kV(a)[DEPTH];   
     kV(z)[CONTeXT]=kV(a)[CONTeXT];   
-    cd(kV(z)[PARAMS]); kV(z)[PARAMS]=_kclone(kV(a)[PARAMS],1); //oom ; fill instead of kclone?
-    cd(kV(z)[LOCALS]); kV(z)[LOCALS]=_kclone(kV(a)[LOCALS],1); //oom ; fill instead of kclone?
-    kV(z)[CONJ]=_kclone(kV(a)[CONJ],1);  //oom
+    cd(kV(z)[PARAMS]); kV(z)[PARAMS]=_kclone(kV(a)[PARAMS]); //oom ; fill instead of kclone?
+    cd(kV(z)[LOCALS]); kV(z)[LOCALS]=_kclone(kV(a)[LOCALS]); //oom ; fill instead of kclone?
+    kV(z)[CONJ]=_kclone(kV(a)[CONJ]);  //oom
   }
 
   R z;
