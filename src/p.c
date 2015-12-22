@@ -8,6 +8,7 @@
 S lineA;
 S lineB;
 
+#if 0
 Z S mm[] = {
   "UNMARKED",
   "IGNORE",
@@ -54,6 +55,10 @@ Z void dum7(K*_v,I a){
           else dum7((K*)e,a+2); } } } }
   else{ A(a);O("%p ",_v);showx(v); }
 }
+#else
+#define dumm(x,y)
+#define dum7(x,y)
+#endif
 
 //Parser
 
@@ -299,7 +304,7 @@ K wd_(S s, I n, K*dict, K func) //parse: s input string, n length ;
   marker(mark_verb,  MARK_VERB)  // ( D+: | _AA+ | V ) where D := [0-9] , V := ~!@#$%^&*_-+=|<,>.?:
   marker(mark_ignore,MARK_IGNORE)// get leftover spaces, anything else we want to ignore
 
-  // ZZZ dumm(m,n);
+  dumm(m,n);
 
   DO(n,if(m[i]==MARK_UNMARKED){cd(v);cd(km); R PE;}) 
   //DO(n,if(m[i]>0 && (!i || m[i]!=ABS(m[i-1]) )){cd(v);cd(km); R PE;})  //this is true but unnecessary. we handle "_db_bd 1"
@@ -335,7 +340,7 @@ K wd_(S s, I n, K*dict, K func) //parse: s input string, n length ;
 
   kV(v)[CODE]=kw; // return what we just built
   kW(v)[c]=0;
-  // ZZZ dum7(&v,0);
+  dum7(&v,0);
   R v; 
 }
 
