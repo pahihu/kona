@@ -18,4 +18,4 @@ K plus(K a,K b);
 K newK(I t,I n);
 K at(K x,K y);
 K power(K a,K b);
-K plus_over(K x,K y);
+K overDyad(K a,V*p,K b);
