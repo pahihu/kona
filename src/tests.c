@@ -35,9 +35,9 @@ I tc(S a, S b) //test comparison .  R 0,1,2
   kreci=0;
 
   KTREE=Kd();
-  K x = X(a); fer=fom=0; if(cls){cd(cls);cls=0;}
+  K x = X(a); fer=fer1=fom=0; if(cls){cd(cls);cls=0;}
   // fprintf(stderr,"testing: %s\n",b);
-  K y = X(b); fer=fom=0; if(cls){cd(cls);cls=0;}
+  K y = X(b); fer=fer1=fom=0; if(cls){cd(cls);cls=0;}
   I m=matchI(x,y);
 
   if(!m)
@@ -246,6 +246,16 @@ Z I tests02()
   TC_( "(2 0;2 1)", "for:{[n;f]f\'!n}; {[i]for[i]{[j]i,j}}2" )                 //issue #388
   TC_( "(();,1 0;(2 0;2 1))", "for:{[n;f]f\'!n}; for[3]{[i]for[i]{[j]i,j}}" )  //issue #388
   TC(21.8, c: 1 4 3 0.5 -2; mdev:{x-(+/x)%#x}; fo:{+/ _sqr mdev x}; fo c)      //issue #390
+  TC(2, mi:{:[x!2;(x-1)%2; _ ((x-1),x)%2.0]}; {mi x}5; {mi x}5)                //issue #391
+  TC(1, m:{:[x!2; 1; 2]}; {m x}5; {m x}5)                                      //issue #391
+  TC(1, m:{:[x; 1; 2]}; {m x}5; {m x}5)                                        //issue #391
+  TC(1, m:{:[x; 1; 2]}; {m 3}5; {m 3}5)                                        //issue #391
+  TC(6, mi:{:[x!2;(x-1)%2; _ ((x-1),x)%2.0]}; am:{(+/x)%#x}; p: 1 4 6 7 8; km:{am x[mi(#x)]}; km p; km p) //#391
+  TC(2 2#16.434 9.6192 7.2 12.114, e:2 2 # 2.1 4.008 3 0.3; e _mul e)          //issue #392
+  TC_("2 2#0 1 1 0", "p:{:[1<x;,/(>:\'(x,x)#1,x#0)[;0,\'1+_f x-1];,!x]}; p 2; p 2")   //issue #393
+  TC_("1.5", "i:{(2#x)#1.,x#0.};f:{(+%\':+x)[;!-1+#x]};*{+/(f(+\\x))[!-1+#x;]*|i -1+#x}2 2#2. 3 1 2")   //issue #396
+  TC(9, {c:{. x};c "9"}0)                         // issue 397
+  TC(3, :(3;4)@0)                                 // issue 397
 
   //Error trap: {[a;b][c;d] a+b} -> parse error ; { {[a][b] }} -> parse error
   TC(.[*; (3;4); :], (0;12) )

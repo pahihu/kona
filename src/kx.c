@@ -21,6 +21,7 @@ I cirRef(K p,K y);
 I cirRef_(K p,K y,I f);
 
 __thread I fer=0;    // Flag Early Return 
+__thread I fer1=0;
 __thread I fwh=0;    // Flag While
 __thread I stk=0;    // Stack counter
 __thread I stk1=0;   // Additional stack counter
@@ -577,8 +578,7 @@ K vf_ex(V q, K g)
       DO(p->n,e=EVP(DI(tree,i)); cd(*e); *e=0; if(r && i<r->n) *e=ci(kK(r)[i]); if(!*e && j<g->n) *e=ci(kK(g)[j++])) //merge in: CONJ with function args
 
       fw=kV(f)[CACHE_WD]; I t=0;
-      if(!fw || (t=(UI)kS(kK(fw)[CODE])[0]>DT_SIZE || (UI)kS(kK(fw)[CODE])[1]>DT_SIZE)
-                && !((UI)kS(kK(fw)[CODE])[1]<DT_SIZE && (UI)kS(kK(fw)[CODE])[2]<DT_SIZE) ) {
+      if(!fw || (t=(UI)kS(kK(fw)[CODE])[0]>DT_SIZE || (UI)kS(kK(fw)[CODE])[1]>DT_SIZE) ) {
         if(t) cd(kV(f)[CACHE_WD]);
         K fc = kclone(f); //clone the function to pass for _f
         cd(kV(fc)[CONJ]); kV(fc)[CONJ]=0;
@@ -703,8 +703,10 @@ Z K ex0(V*v,K k,I r) //r: {0,1,2} -> {code, (code), [code]}
           R _n())
     CD: z=newK(0,n?e:0); 
         if(n)for(i=n-1;i>=-1;i--)if(-1==i||bk(v[i])){         
-          if(offsetColon==(v+1+i)[0] && (UI)(v+1+i)[1]>DT_SIZE)fer=1; x=ex1(v+1+i,0,&i,n,0); 
-          if(fer>0 && !fCheck){cd(z); R x;} M(x,z) kK(z)[--e]=bk(x)?2==r?0:_n():x;}  // (c:9;a+b;c:1) oom
+          if(offsetColon==(v+1+i)[0] && (UI)(v+1+i)[1]>DT_SIZE)fer=1;
+          x=ex1(v+1+i,0,&i,n,0); 
+          if(fer1 || fer>0 && (v[0]==(V)offsetColon || v[2]==(V)1) && !fCheck){cd(z); fer1=1; R x;}
+          M(x,z) kK(z)[--e]=bk(x)?2==r?0:_n():x;}  // (c:9;a+b;c:1) oom
   }
 
   //Note on brackets: [] is _n, not (). Expression [1;1] (0-type with two atoms) is different from [1 1] (integer vector)
@@ -1008,12 +1010,21 @@ Z K ex2(V*v, K k)  //execute words --- all returns must be Ks. v: word list, k: 
             if(kV(t3)[CACHE_TREE] && kK(t3)[CACHE_TREE]->n)cd(kK(t3)[CACHE_TREE]);
             kV(t3)[CACHE_TREE]=dot_monadic(j2); cd(j0); cd(j1); cd(j2); } }
         else{
-          if(kV(t3)[CACHE_TREE])cd(kK(t3)[CACHE_TREE]);
+          if( kV(kK(prnt)[CACHE_WD])[LOCALS] && kK(kK(prnt)[CACHE_WD])[LOCALS]->n 
+              && kV(prnt)[CACHE_TREE] && kK(prnt)[CACHE_TREE]->n
+              && (!kV(kK(kK(kK(prnt)[CACHE_WD])[LOCALS])[0])[1]
+                  || !kV(kK(kK(kK(kK(prnt)[CACHE_WD])[LOCALS])[0])[1])[CONJ]) ) {
+            if(kV(t3)[CACHE_TREE])cd(kK(t3)[CACHE_TREE]);
+            K j0=dot_monadic(kV(t3)[PARAMS]); K j1=dot_monadic(kV(prnt)[CACHE_TREE]); 
+            K j2=join(ci(j0),j1); cd(j0); kV(t3)[CACHE_TREE]=dot_monadic(j2); cd(j0); cd(j1); cd(j2); } } }
+      else{
+        if(kV(prnt)[CACHE_TREE] && 1==kK(prnt)[CACHE_TREE]->n && !kV(prnt)[CACHE_WD] && !kV(t3)[CACHE_TREE]){
           K j0=dot_monadic(kV(t3)[PARAMS]); K j1=dot_monadic(kV(prnt)[CACHE_TREE]); 
-          K j2=join(ci(j0),j1); cd(j0); kV(t3)[CACHE_TREE]=dot_monadic(j2); cd(j0); cd(j1); cd(j2); } }
-      else if(kV(prnt)[CACHE_TREE] && 1==kK(prnt)[CACHE_TREE]->n && !kV(prnt)[CACHE_WD] && !kV(t3)[CACHE_TREE]) {
-        K j0=dot_monadic(kV(t3)[PARAMS]); K j1=dot_monadic(kV(prnt)[CACHE_TREE]); 
-        K j2=join(ci(j0),j1); cd(j0); kV(t3)[CACHE_TREE]=dot_monadic(j2); cd(j0); cd(j1); cd(j2); }
+          K j2=join(ci(j0),j1); cd(j0); kV(t3)[CACHE_TREE]=dot_monadic(j2); cd(j0); cd(j1); cd(j2); }
+        else if(kV(t3)[PARAMS] && kK(t3)[PARAMS]->n && kV(prnt)[CACHE_TREE] && kK(prnt)[CACHE_TREE]->n==1){
+          K j0=dot_monadic(kV(t3)[PARAMS]); K j1=dot_monadic(kV(prnt)[CACHE_TREE]); K j2=join(ci(j0),j1); cd(j0);
+          if(kV(t3)[CACHE_TREE] && kK(t3)[CACHE_TREE]->n)cd(kK(t3)[CACHE_TREE]);
+          kV(t3)[CACHE_TREE]=dot_monadic(j2); cd(j0); cd(j1); cd(j2); } }
       cd(prnt); }
     prnt=ci(t3); }
 
