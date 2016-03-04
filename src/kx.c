@@ -38,6 +38,7 @@ __thread I frg=0;    // Flag reset globals
          V fncp[128];// DT pointers of executed functions
          I fnci=0;   // indicator of next function pointer position
          I fom=0;    // Flag overMonad (curried)
+         I fam=1;    // Flag amend: 1=OK to print response
 
 Z K cjoin(K x,K y) {
   P(3!=xt,TE)
@@ -87,10 +88,11 @@ K overDyad(K a, V *p, K b) {
   V *o=p-1; K(*f)(K,K);
 
   K k=0; I i=0;
-  if(*o==offsetJoin&&!b->t&&!b->n)R 0<a->t?enlist(a):ci(a);
+  if(a&&*o==offsetJoin&&!b->t&&!b->n)R 0<a->t?enlist(a):ci(a);
   if(b->t==0) while(i<b->n && !kK(b)[i]->t){++i;}
-  if( *o!=(V)0x34 || (*o==(V)0x34 && i==b->n) ) {    //only a partial fix for join-over (where all elts of b are lists)
-    if(VA(*o) && (f=DT[(L)*o].alt_funcs.verb_over)) k=f(a,b); } //k==0 just means not handled. Errors are not set to come from alt_funcs
+  if( *o!=offsetJoin || (*o==offsetJoin && i==b->n) ) { //only a partial fix for join-over (where all elts of b are lists)
+    if(VA(*o) && (f=DT[(L)*o].alt_funcs.verb_over)) k=f(a,b); } //k==0 just means not handled.
+                                                                //Errors are not set to come from alt_funcs
   P(k,k)
 
   K u=0,v=0;
@@ -124,10 +126,9 @@ Z K scanDyad(K a, V *p, K b) //k4 has 1 +\ 2 3 yield 3 6 instead of 1 3 6
   if(VA(*o) && (f=DT[(L)*o].alt_funcs.verb_scan))k=f(a,b); //k==0 just means not handled. Errors are not set to come from alt_funcs
   P(k,k)
 
-  if(!a){
-    I fn=0;if(*o<(V)DT_SIZE || 7==(*(K*)*o)->t)fn=1;  //f is a function
-    else if(3==(*(K*)*o)->t)R csplit(*(K*)*o,b);
-  }
+  if(!a
+     && !(*o<(V)DT_SIZE || 7==(*(K*)*o)->t)    //f is NOT a function
+     && 3==(*(K*)*o)->t) R csplit(*(K*)*o,b);
 
   K u=0; K y=a?u=enlist(a),joinI(&u,b):ci(b); cd(u); //oom
   if(yt  > 0 || yn == 0) R y;
@@ -151,7 +152,7 @@ Z K overMonad(K a, V *p, K b)
   K u=b,c=0;I flag=0;
 
   I useN=0,n=0,useB=0;
-  if(a) {if(1 == a->t){useN=1; n=*kI(a);} else if(7==a->t){useB=1;}}
+  if(a) {if(1==a->t){useN=1; n=*kI(a);} else if(7==a->t || 6==a->t){useB=1;}}
   P(n<0,IE)
 
   if(useN) //n f/x
@@ -256,7 +257,8 @@ Z K each2(K a, V *p, K b)
       if(f)d=dv_ex(a,p-1,kK(b)[i]);
       else d=dv_ex(0,p-1,kK(b)[i]);
       if(grnt && !prnt)prnt=ci(grnt); M(d,z) kK(z)[i]=d)
-    R demote(z);
+    z=demote(z); if(z->t==1)z->t=-1;
+    R z;
   }
 }
 
@@ -657,8 +659,14 @@ Z V ex_(V a, I r)//Expand wd()->7-0 types, expand and evaluate brackets
 
 K ex(K a) {   //Input is (usually, but not always) 7-0 type from wd()
   U(a); if(a->t==7 && kVC(a)>(K)DT_SIZE && 7==kVC(a)->t && 6==kVC(a)->n)fwh=1;
-  K z=ex_(&a,0); cd(a); if(fer==1)fer=0; 
-  fwh=stk=stk1=prj=prj2=fsf=0; if(prnt)cd(prnt); prnt=0; R z; 
+  K z=ex_(&a,0); cd(a); if(fer==1)fer=fer1=0; 
+  fwh=stk=stk1=prj=prj2=fsf=0;
+  #ifdef NSL
+  if(prnt && encp==3){cd(prnt); prnt=0;} else prnt=0;      //NSL works, tests fail
+  #else
+  if(prnt)cd(prnt); prnt=0;                                //tests work, NSL no response
+  #endif
+  R z;
 }
 
 Z K ex0(V*v,K k,I r) //r: {0,1,2} -> {code, (code), [code]} 
@@ -673,13 +681,16 @@ Z K ex0(V*v,K k,I r) //r: {0,1,2} -> {code, (code), [code]}
   {
     CS(0, for(i=-1;i<n;i++)                      //  c:9;a+b;c:1
             if(-1==i||bk(v[i])){
-              cd(z); frg++; x=ex1(v+1+i,0,&i,n,1); frg--; 
+              cd(z); frg++; fam=1; x=ex1(v+1+i,0,&i,n,1); frg--; 
               if(!frg){encp=0; 
                 if(encf){cd(encf); encf=0;} 
                 if(grnt){cd(grnt); grnt=0;}} 
               U(x) z=bk(x)?_n():x; 
               if(fer>0 && !fCheck)R z; 
-              if(grnt && (!prnt || rc(prnt)==2)){if(prnt)cd(prnt); prnt=ci(grnt);} })
+              #ifndef NSL
+              if(grnt && (!prnt || rc(prnt)==2)){if(prnt)cd(prnt); prnt=ci(grnt);} //tests work, NSL no response
+              #endif
+            } )      
     CS(4, for(i=-1;i<n;i++)
             if(-1==i||bk(v[i])){
               U(x=ex1(v+1+i,0,&i,n,1)) 
@@ -841,7 +852,7 @@ K ex1(V*w,K k,I*i,I n,I f)//convert verb pieces (eg 1+/) to seven-types, default
   if(offsetColon==w[0] && (UI)w[1]>DT_SIZE && (UI)w[2]>DT_SIZE && fwh==0) 
     {fer=1; if(f)*i=n; else *i=-1; K tmp=*(K*)*(w+1); R ci(tmp); }
   //if(in(*w,adverbs)) R NYI;//Adverb at beginning of snippet eg '1 2 3 or ;':1 2 3; or 4;\1+1;4
-  if( DT_ADVERB_OFFSET <= (L)*w && (L)*w < DT_VERB_OFFSET ) {
+  if( DT_ADVERB_OFFSET<=(L)*w && (L)*w<DT_VERB_OFFSET && offsetScan!=(L)*(w+1)) {
     if(offsetScan==(L)*w) {
       if(0==strcmp(fBreak,"n")) R ex2(w+1,k);
       if(0==strcmp(fBreak,"t")) R ex2(w+1,k);
@@ -854,10 +865,9 @@ K ex1(V*w,K k,I*i,I n,I f)//convert verb pieces (eg 1+/) to seven-types, default
   if(!c || !VA(w[c-1]) || (c>1 && offsetColon==w[c-1] ) ) R ex2(w,k); //typical list for execution
 
   if(w[0]==offsetColon && (UI)w[1]>DT_SIZE){ 
-    if(w[-1]!=offsetColon) fer=1; 
     I d=0; while(w[d] && !bk(w[d])){d++;} 
     K a=Kv(); a->n=0; K kb=newK(-4,d); M(a,kb) V*b=(V*)kK(kb); DO(d-1, b[i]=w[i+1];) b[d-1]=0; kV(a)[CODE]=kb; 
-    V x=ex_(&a,0); cd(a); R x; }
+    V x=ex_(&a,0); cd(a); if(w[-1]!=offsetColon)fer=1; R x; }
 
   //K3.2 crash bug: ."1",123456#"+"
   // build a 7type1 from the words if they end in a verb or adverb
@@ -901,9 +911,11 @@ Z K ex2(V*v, K k)  //execute words --- all returns must be Ks. v: word list, k: 
       if(prnt && kV(prnt)[CODE] && kK(prnt)[CODE]->t==-3 && kC(kK(prnt)[CODE])[0]=="{"[0] &&
         kC(kK(prnt)[CODE])[kK(prnt)[CODE]->n-1]=="}"[0] && strchr(kC(kK(prnt)[CODE]),"y"[0])){
         if(encf)cd(encf); encf=ci(prnt);}
-      if(encp!=2 || !prnt){
-        if(prnt){if(grnt)cd(grnt); grnt=prnt;} prnt=ci(z);}
-        //more verbosely: if(prnt){if(grnt)cd(grnt); grnt=ci(prnt); cd(prnt);} prnt=ci(z);} 
+      #ifdef NSL
+      if(encp!=2 || !prnt)prnt=z;                                              //NSL works, tests fail
+      #else
+      if(encp!=2 || !prnt){if(prnt){if(grnt)cd(grnt);grnt=prnt;}prnt=ci(z);}   //tests work, NSL no response
+      #endif
       else {cd(z); R prnt;} }
     R z; }
 
@@ -911,7 +923,7 @@ Z K ex2(V*v, K k)  //execute words --- all returns must be Ks. v: word list, k: 
   //TODO: brackets may also appear as:     +/\/\[]    {x}/\/\[]    a/\/\[]    (!200)\\[10;20]
 
   if(bk(v[1])) { K z= ex_(*v,1); if(fer==2 && !fCheck)R (K)0;
-    if(prnt && z->t==7) {
+    if(prnt && z && z->t==7) {
       if(kV(prnt)[PARAMS] && !kK(prnt)[PARAMS]->n && kV(z)[LOCALS] && !kK(z)[LOCALS]->n
          && kV(prnt)[LOCALS] && kK(prnt)[LOCALS]->n) {
         kV(z)[CACHE_TREE]=kclone(kK(prnt)[CACHE_TREE]); if(prnt)cd(prnt); prnt=ci(z); }
@@ -973,7 +985,7 @@ Z K ex2(V*v, K k)  //execute words --- all returns must be Ks. v: word list, k: 
   while(v[1] && adverbClass(v[2+i])) i++;
   //TODO: Catch 0-returned-errors here and below
   if(!sva(v[0]) && (i || 2==sva(v[1]))) {  //na+. or nv. case  (n noun, a adverb, + means regex one+ and . means regex anything )
-    t2=ex2(v+2+i,k); if(fer>0 && strcmp(errmsg,"undescribed")) R t2;
+    t2=ex2(v+2+i,k); fam=1; if(fer>0 && strcmp(errmsg,"undescribed")) R t2;
        //these cannot be placed into single function call b/c order of eval is unspecified
     t3=ex_(v[1],1);
     if(t3>(K)DT_SIZE && t3->t==7 && t3->n==3) {
@@ -1025,14 +1037,17 @@ Z K ex2(V*v, K k)  //execute words --- all returns must be Ks. v: word list, k: 
           K j0=dot_monadic(kV(t3)[PARAMS]); K j1=dot_monadic(kV(prnt)[CACHE_TREE]); K j2=join(ci(j0),j1); cd(j0);
           if(kV(t3)[CACHE_TREE] && kK(t3)[CACHE_TREE]->n)cd(kK(t3)[CACHE_TREE]);
           kV(t3)[CACHE_TREE]=dot_monadic(j2); cd(j0); cd(j1); cd(j2); } }
-      cd(prnt); }
+      #ifndef NSL
+      if(grnt)cd(prnt); else grnt=prnt;                    //tests work, NSL no response
+      #endif
+    }
     prnt=ci(t3); }
 
   u=*v; //Fixes a bug, see above. Not thread-safe. Adding to LOCALS probably better
   *v=VA(t3)?t3:(V)&t3;
-  if(*(v+i)==(V)offsetEach){if(grnt)cd(grnt); grnt=ci(prnt);}
+  if(*(v+i)==(V)offsetEach && !grnt)grnt=ci(prnt);
   e=dv_ex(0,v+i,t2); *v=u;
-  if(*(v+i)==(V)offsetEach){if(grnt)cd(grnt); grnt=0;}
+  if(*(v+i)==(V)offsetEach && prnt==grnt){cd(grnt);grnt=0;}
   cd(t2); if(!VA(t3) && (encp!=3 || (encp==3 && kV(t3)[CACHE_WD])))cd(t3);
     //the encp conditions address the 2 variations of issue #247, neither of which work in k2.8 or k3.2
   R e; 

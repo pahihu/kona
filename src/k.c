@@ -108,9 +108,9 @@ I charpos(S s,C c){I i=0;while(s[i] && c!=s[i])i++; R i;}
 
 I isCharVerb(C c) {R stringHasChar(vc,c);}
 L charsVerb(C c)  {R charpos(vc,c);}
-Z C verbsChar(V p)  {R ((L)p>=DT_VERB_OFFSET && (L)p < DT_SPECIAL_VERB_OFFSET)?vc[((L)p-DT_VERB_OFFSET)/2]:'\0';}
+C verbsChar(V p)  {R ((L)p>=DT_VERB_OFFSET && (L)p < DT_SPECIAL_VERB_OFFSET)?vc[((L)p-DT_VERB_OFFSET)/2]:'\0';}
 
-Z C adverbsChar(V p){R ((L)p>=DT_ADVERB_OFFSET)?ac[((L)p-DT_ADVERB_OFFSET)%3]:'\0';}
+C adverbsChar(V p){R ((L)p>=DT_ADVERB_OFFSET)?ac[((L)p-DT_ADVERB_OFFSET)%3]:'\0';}
 L charsAdverb(C c) {R charpos(ac,c);}
 
 I sva(V p) //simpleVerbArity: Use boundaries of arrays to determine verb class in O(1) constant time
