@@ -331,14 +331,14 @@ K group(K x)
   CSR(1,)CSR(2,R intGroup(x))
   CSR(3,R charGroup(x))
   CSR(4,R symGroup(x)) }
-  
+ 
   M(b=grade_up(x));g=kI(b);
   //Nastier code would eliminate this second sort.
   c=newK(-1,n);M(b,c);h=kI(c);
   DO(n,h[g[i]]=i);
   //Step through, on duplicate set uniques-=1, mark by inverting sign of corresponding index
   if( 0==t)DO(n-1,if(matchI(kK(x)[g[n-i-1]],kK(x)[g[n-i-2]])){--u;g[n-i-1]*=-1;})
- 
+
   z=newK(0,u);
   M(b,c,z);
   I k=0,p=0,v;

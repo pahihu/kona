@@ -34,6 +34,7 @@ __thread K cls=0;    // Closure: level 2 linkage
 __thread K encf=0;   // Enclosing Function
 __thread I encp=0;   // Enclosing Function Param
 __thread I frg=0;    // Flag reset globals
+__thread I fdc=1;    // Flag denameD create
          S fnc=0;    // Most recent function from Dispatch Table
          V fncp[128];// DT pointers of executed functions
          I fnci=0;   // indicator of next function pointer position
@@ -241,23 +242,27 @@ Z K scanMonad(K a, V *p, K b)
   R u;
 }
 
-Z K each2(K a, V *p, K b)
-{
-  I bt=b->t, bn=b->n;
+Z K each2(K a, V *p, K b) {
+  I bt=b->t, bn=b->n; K prnt0=0,grnt0=0;
   if(bt > 0) R dv_ex(0,p-1,b);
-  else
-  {
+  else {
     K z = newK(0,bn),d=0; U(z)
     K g; I f=*p==(V)offsetEach && (*(p-1)==(V)offsetOver || *(p-1)==(V)offsetScan) && *(p-2)<(V)DT_SIZE;
     if(0 >bt) DO(bn, g=newK(ABS(bt),1); M(g,z) memcpy(g->k,((V)b->k)+i*bp(bt),bp(bt));
-      if(f)d=dv_ex(a,p-1,g);
-      else d=dv_ex(0,p-1,g);
+      if(f)d=dv_ex(a,p-1,g); else d=dv_ex(0,p-1,g);
       cd(g); M(d,z) kK(z)[i]=d)
-    if(0==bt) DO(bn,
-      if(f)d=dv_ex(a,p-1,kK(b)[i]);
-      else d=dv_ex(0,p-1,kK(b)[i]);
-      if(grnt && !prnt)prnt=ci(grnt); M(d,z) kK(z)[i]=d)
+    if(0==bt){
+      if(prnt)prnt0=ci(prnt); if(grnt)grnt0=ci(grnt);
+      DO(bn,
+        if(f)d=dv_ex(a,p-1,kK(b)[i]);
+        else {
+          if(prnt0){cd(prnt);prnt=ci(prnt0);} if(grnt0){cd(grnt);grnt=ci(grnt0);}
+          d=dv_ex(0,p-1,kK(b)[i]);}
+        if(!d || !z){if(prnt0){cd(prnt0);prnt0=0;} if(grnt0){cd(grnt0);grnt0=0;}}
+        if(grnt && !prnt)prnt=ci(grnt);
+        M(d,z) kK(z)[i]=d)}
     z=demote(z); if(z->t==1)z->t=-1;
+    if(prnt0){cd(prnt0);prnt0=0;} if(grnt0){cd(grnt0);grnt0=0;}
     R z;
   }
 }
@@ -333,8 +338,7 @@ Z K dv_ex(K a, V *p, K b)
   V *o = p-1;
 
   //Arity of V?A_1...A_n-1 for X V?A_1...A_n Y; 0 for X Y, X A Y
-  I k=adverbClass(*p)?adverbClass(*o)?1:sva(*o):sva(*p);
-  k=adverbClass(*p)?adverbClass(*o)?1:valence(*o):valence(*p); //also t7 basic
+  I k=adverbClass(*p)?adverbClass(*o)?1:valence(*o):valence(*p); //also t7 basic
 
   V adverb=*p; //TODO: Implement adverb "Error Reports" error checking from manual
 
@@ -438,10 +442,10 @@ K vf_ex(V q, K g)
   I n=-1,j=0;
   if(!k&&!(*(V*)q)){cd(g); R 0;}// (2="2") 2 err
 
-  K h=0;  //issue #297
-  if(q>(V)DT_SIZE){ h=(K)(*(V*)q);
-     if(h->t==7 && kK(h)[CODE] && kK(h)[CODE]->t==-4 && kK(h)[CODE]->n==3 && (UI)kK(kK(h)[CODE])[0]>DT_SIZE
-       && (*(K*)(kS(kK(h)[CODE])[0]))->t==0 ) { z=dot(*(K*)(kS(kK(h)[CODE])[0]),g); GC; } }
+  if(q>(V)DT_SIZE){ K h=(K)(*(V*)q);
+    if(h->t==7 && h->n==1 && kK(h)[CODE] && (UI)kK(kK(h)[CODE])[0]>DT_SIZE){
+      if(kK(h)[CODE]->n==3 && (*(K*)(kS(kK(h)[CODE])[0]))->t==0 ) { z=dot(*(K*)(kS(kK(h)[CODE])[0]),g); GC; } 
+      if((UI)kK(kK(h)[CODE])[1]==0x3a && g->t==0 ){ z=dot( *(K*)(kS(kK(h)[CODE])[0]), kK(g)[0] ); GC; } } }
 
   n=valence(q); I ee=0;
   if(q>(V)DT_SIZE){
@@ -517,7 +521,7 @@ K vf_ex(V q, K g)
                  //Consider if it could be in use as part of assignment, etc.
     if(!z)GC;
     I ae=0; K*m=(K*)kV(z)+CONJ;
-    if(special)n=2; // .'"98" cases. allows a:.[+] then a 2 3  (. is forced 2-adic & not .[;;;]) is this a kluge?
+    if(special && gn==1)n=2; // .'"98" cases. allows a:.[+] then a 2 3  (. is forced 2-adic & not .[;;;]) is this a kluge?
     if(3<kK(z)[CODE]->n  && (V*)kK(kK(z)[CODE])[1]==(V)offsetAt && (V*)kK(kK(z)[CODE])[2]==(V)offsetEach){ae=1; n=1;}
     if(!*m) *m=newK(0,n);
     if(!*m){cd(z);GC;}
@@ -584,7 +588,7 @@ K vf_ex(V q, K g)
         if(t) cd(kV(f)[CACHE_WD]);
         K fc = kclone(f); //clone the function to pass for _f
         cd(kV(fc)[CONJ]); kV(fc)[CONJ]=0;
-        kV(fc)[DEPTH]++; fw=wd_(kC(o),o->n,&tree,fc); kV(f)[CACHE_WD]=fw; cd(fc); }
+        kV(fc)[DEPTH]++; fdc=0;fw=wd_(kC(o),o->n,&tree,fc); kV(f)[CACHE_WD]=fw; cd(fc); }
 
       #ifdef DEBUG
       if(stk1>5) {cd(g); kerr("stack"); R _n();}
@@ -661,11 +665,7 @@ K ex(K a) {   //Input is (usually, but not always) 7-0 type from wd()
   U(a); if(a->t==7 && kVC(a)>(K)DT_SIZE && 7==kVC(a)->t && 6==kVC(a)->n)fwh=1;
   K z=ex_(&a,0); cd(a); if(fer==1)fer=fer1=0; 
   fwh=stk=stk1=prj=prj2=fsf=0;
-  #ifdef NSL
-  if(prnt && encp==3){cd(prnt); prnt=0;} else prnt=0;      //NSL works, tests fail
-  #else
-  if(prnt)cd(prnt); prnt=0;                                //tests work, NSL no response
-  #endif
+  if(prnt)cd(prnt); prnt=0;
   R z;
 }
 
@@ -686,10 +686,8 @@ Z K ex0(V*v,K k,I r) //r: {0,1,2} -> {code, (code), [code]}
                 if(encf){cd(encf); encf=0;} 
                 if(grnt){cd(grnt); grnt=0;}} 
               U(x) z=bk(x)?_n():x; 
-              if(fer>0 && !fCheck)R z; 
-              #ifndef NSL
-              if(grnt && (!prnt || rc(prnt)==2)){if(prnt)cd(prnt); prnt=ci(grnt);} //tests work, NSL no response
-              #endif
+              if(fer>0 && !fCheck)R z;
+              if(grnt && (!prnt || rc(prnt)==2)){if(prnt)cd(prnt); prnt=ci(grnt);}
             } )      
     CS(4, for(i=-1;i<n;i++)
             if(-1==i||bk(v[i])){
@@ -911,11 +909,7 @@ Z K ex2(V*v, K k)  //execute words --- all returns must be Ks. v: word list, k: 
       if(prnt && kV(prnt)[CODE] && kK(prnt)[CODE]->t==-3 && kC(kK(prnt)[CODE])[0]=="{"[0] &&
         kC(kK(prnt)[CODE])[kK(prnt)[CODE]->n-1]=="}"[0] && strchr(kC(kK(prnt)[CODE]),"y"[0])){
         if(encf)cd(encf); encf=ci(prnt);}
-      #ifdef NSL
-      if(encp!=2 || !prnt)prnt=z;                                              //NSL works, tests fail
-      #else
-      if(encp!=2 || !prnt){if(prnt){if(grnt)cd(grnt);grnt=prnt;}prnt=ci(z);}   //tests work, NSL no response
-      #endif
+      if(encp!=2 || !prnt){if(prnt){if(grnt)cd(grnt);grnt=prnt;}prnt=ci(z);}
       else {cd(z); R prnt;} }
     R z; }
 
@@ -1003,7 +997,16 @@ Z K ex2(V*v, K k)  //execute words --- all returns must be Ks. v: word list, k: 
             //Not thread-safe. Adding ex_ result to LOCALS on 7-1 is probably better. See below
     v[1]=VA(t3)?t3:(V)&t3;
     t0=ex_(*v,1); if(fer>0 && strcmp(errmsg,"undescribed")){cd(t2); R(t0);}
-    if(!prnt && t0->t==7 && t0->n==3){if(prnt)cd(prnt); prnt=ci(t0);}
+    if(t0>(K)DT_SIZE && t0->t==7 && t0->n==3) {
+      if(prnt && kV(prnt)[CACHE_TREE] && kV(prnt)[CACHE_WD] && !kK(t0)[LOCALS]->n) {
+        if(kK(prnt)[CACHE_TREE]->n) {
+          K j0=dot_monadic(kV(t0)[PARAMS]); K j1=dot_monadic(kV(prnt)[CACHE_TREE]); 
+          K j2=join(ci(j0),j1); cd(j0); cd(kK(t0)[CACHE_TREE]); kV(t0)[CACHE_TREE]=dot_monadic(j2); cd(j0); cd(j1); cd(j2); fsf=1; }
+        else if(kV(prnt)[CONJ]) {
+          K j0=dot_monadic(kV(t0)[PARAMS]); K j1=dot_monadic(kV(prnt)[CACHE_TREE]); 
+          K j2=join(ci(j0),j1); cd(j0); kV(t0)[CACHE_TREE]=dot_monadic(j2); cd(j0); cd(j1); cd(j2); } }
+      if(prnt)cd(prnt); prnt=ci(t0); }
+    if(!prnt && t0->t==7 && t0->n==3)prnt=ci(t0);
     e= dv_ex(t0,v+1+i,t2); v[1]=u; cd(t0); cd(t2); if(!VA(t3)) cd(t3);
     R e; }
 
@@ -1037,9 +1040,7 @@ Z K ex2(V*v, K k)  //execute words --- all returns must be Ks. v: word list, k: 
           K j0=dot_monadic(kV(t3)[PARAMS]); K j1=dot_monadic(kV(prnt)[CACHE_TREE]); K j2=join(ci(j0),j1); cd(j0);
           if(kV(t3)[CACHE_TREE] && kK(t3)[CACHE_TREE]->n)cd(kK(t3)[CACHE_TREE]);
           kV(t3)[CACHE_TREE]=dot_monadic(j2); cd(j0); cd(j1); cd(j2); } }
-      #ifndef NSL
-      if(grnt)cd(prnt); else grnt=prnt;                    //tests work, NSL no response
-      #endif
+      if(grnt)cd(prnt); else grnt=prnt;
     }
     prnt=ci(t3); }
 
