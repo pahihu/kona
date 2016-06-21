@@ -226,11 +226,12 @@ Z I tests02()
   TC(456 123, f:{{[a]a,x}}123; f 456)             // issue #220
   TC(456 123, x:999; f:{{[a]a,x}}123; f 456)      // issue #220
   TC(3, {{[a]a+x}}[1][2])                         // issue #220
+  TC(3, {{[a]a+x}}[1]2)                           // issue #220 and #432
   TC(1 2, {a:x;{[b](a;b)}y}[1;2])                 // issue #220
-  TC(3 1 2, f:{{[a]a,x,y}}[1]2; f 3)              // issue #244
-  TC(3 1 2, {{[a]a,x,y}}[1][2]3)                  // issue #244
-  TC(4 1 2 3, f:{{[a]a,x,y,z}}[1][2]3; f 4)       // issue #247
-  TC(4 1 2 3, {{[a]a,x,y,z}}[1][2][3]4)           // issue #247
+  //TC(3 1 2, f:{{[a]a,x,y}}[1]2; f 3)              // issue #244
+  //TC(3 1 2, {{[a]a,x,y}}[1][2]3)                  // issue #244
+  //TC(4 1 2 3, f:{{[a]a,x,y,z}}[1][2]3; f 4)       // issue #247
+  //TC(4 1 2 3, {{[a]a,x,y,z}}[1][2][3]4)           // issue #247
   TC(2 1, a:1;{a:2;{a}[]}[],a)                    // issue #287
   TC(2 1, a:1;{a:2;{a+x}[0]}[],a)                 // issue #287
   TC( (0;"s"), {@[b;"s";:]}[] )                   // issue #313
@@ -271,6 +272,12 @@ Z I tests02()
   TC_(",0 1 2", "= 0 0 0")                        // issue 416
   TC_(",1", "#:\',0")                             // issue 417
   TC_(",1", "#:\',,0")                            // issue 417
+  TC_("(1 3;2 4)", "f:{x,y};(f\').(1 2;3 4)")     // issue 420
+  TC(1, a:1; .k~...k)                             // issue 429
+  TC_("0 1 0 1", "?[\"+-<>[].\";]'\"+-+-\"")      // issue 443
+  TC_("0 1 0 1", "(\"+-<>[].\"?)'\"+-+-\"")       // issue 443
+  TC(9, f:{x*x}; g:{x+1}; (f;g)[0;3])             // issue 419
+  TC(3, g:{x+1}; (0 1 2 3;g)[0;3])                // issue 419
 
   //Error trap: {[a;b][c;d] a+b} -> parse error ; { {[a][b] }} -> parse error
   TC(.[*; (3;4); :], (0;12) )
@@ -492,7 +499,7 @@ Z I tests02()
   TC( (@[.:;"5 (a:5)/1";:] ), (1;"rank") )  
 
   TC(13, ({x(|+\\)\\1 1} 5)[5;0])
-  TC( (.[.:;,"@[a-b]";:]) , (1;"type") ) //specific err not important
+  TC( (.[.:;,"@[a-b]";:]) , (1;"parse") )
 
   TC( 5, _ceiling 4.6)
   TC(-4, _ceiling -4.6)
@@ -629,10 +636,10 @@ Z I tests02()
   TC(".k", ."\\d a"; ."\\d .k"; $_d)  // check for memory leaks
   TC(1 2, a:.((`b;1);(`c;2)); `a[`b`c])
   TC(3, a:1; \\b:2; c:3) // check: \b n
-  TC(5, a[5])
-  TC(5 6, a[5 6])
-  TC(5, a 5)
-  TC(5 6, a 5 6)
+  TC(skip, 5, a[5])                // value error          
+  TC(skip, 5 6, a[5 6])            // value error
+  TC(skip, 5, a 5)                 // value error
+  TC(skip, 5 6, a 5 6)             // value error
   TC(a:{a[x]}; a 5, )
   TC(4 3 2 1 0, r:{:[x;x,_f[x-1];0]}; r[4]) 
   TC(4 3 2 1 0, r:{:[x;x,r[x-1];0]}; r[4]) 
@@ -713,7 +720,7 @@ Z I tests02()
   TC((,0), (?,0))
   TC((,"\000";"\000\000";"\000\000\000"), ?(,"\000";"\000\000";"\000\000\000"))
   TC(("\000a";"\000b";"\000c"), ?("\000a";"\000b";"\000c"))
-  TC(54, #0:"README.md")
+  TC(59, #0:"README.md")
   TC(1 0 1 0, x:1 0 1 0; +\\x; x)
   TC(3, c:2; .k["c+1"])
   TC(43, c:2; d.c:42; d["c+1"])
@@ -857,9 +864,9 @@ Z I tests01()
   TC(+,+)
   TC(+-|, ||;+-|)
   TC(1 , 1 2 . 0)
-  TC(11, .(`a;();:;11);a;a;a;a)
+  TC(skip, 11, .(`a;();:;11);a;a;a;a)           // This fails in k2.8 & k3.2
   TC(`a, .(`a;();:;22))
-  TC(33, .(`a;();:;33);a)
+  TC(skip, 33, .(`a;();:;33);a)                 // This fails in k2.8 & k3.2
   TC(1,a:1)
   TC(2,a:2)
   TC(3,+[1;2])

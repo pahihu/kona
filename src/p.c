@@ -7,6 +7,8 @@
 
 S lineA;
 S lineB;
+__thread I fdc=1;   // Flag denameD create
+I fll=0;            //flag line length
 
 #if 0
 Z S mm[] = {
@@ -167,7 +169,7 @@ Z I mark_name(S s,I n,I i,I*m)
     while(i+c<n&&isalnum_(s[i+c]))c++;if(i+c>=n)break;
     if('.'==s[i+c])c++;               
   }
-  if(1<i&&'.'==s[i-1]&&0==m[i-2])c=0;
+  if(1<i&&'.'==s[i-1]&&(0==m[i-2]&&'.'!=s[i-2]))c=0;
   R c;
 }
 
@@ -323,7 +325,7 @@ K wd_(S s, I n, K*dict, K func) //parse: s input string, n length ;
   I oc=overcount(m,n);
   K kw=newK(-4,1+oc); M(v,km,ks2,kw) V*w=(V*)kK(kw);//words. Assumes terminal extra NULL
 
-  I c=0,j=0;
+  I c=0,j=0;  if(!fll)fll=strlen(s2); else fll=-1;
   DO(y, i+=-1+(j=capture(s2,y,i,m,w,&c,(K*)kV(v)+LOCALS,dict,func)); if(!j){M(0,v,km,ks2,kw)} ) 
   //O("sl:");DO(n  ,if(!s2[i])break;O("%4c" ,s2[i]))O("\n"); O("ml:");DO(n  ,O("%4ld",m[i]))O("\n"); O("##:");DO(n  ,O("%4ld",  i ))O("\n"); 
   cd(km);cd(ks2);
@@ -383,11 +385,39 @@ Z I param_validate(S s,I n) // Works on ([]) and {[]} but pass inside exclusive 
   R 4==p?1:2; //State-4 yield 1 (pass, good parameters), otherwise yield 2 (fail, bad paramters)
 }
 
+Z K* inKtreeR(K*p,S t,I create) {
+  if(!*t)R p;
+  if('.'==*t)t++;
+  I c=0,a=(*p)->t;
+  while(t[c] && '.'!=t[c])c++;
+  S u=strdupn(t,c);//oom
+  S k=sp(u); //oom
+  free(u);
+  t+=c;
+  P('_'==*k,(K*)kerr("reserved"))// ... not positive this goes here. does it fit in LOC? or parser maybe?
+
+  //Probably the below error check (and any others in front of LOC) should be moved into LOC
+  //and LOC should have the potential to return 0 (indicating other errors as well, e.g. out of memory)
+  P(!(6==a || 5==a),(K*)TE)
+  K e=0;
+  if(create) { e=(K)lookupEntryOrCreate(p,k); P(!e,(K*)ME) }
+  else { K a=*p; if(5==a->t)e=DE(a,k); P(!e,(K*)0) }
+  if('.'==*t && (!t[1] || '.'==t[1])) { t++; p=(K*)EAP(e); }    //attribute dict
+  else p=EVP(e); //value
+  R inKtreeR(p,t,create);
+}
+
+K* inKtree(K*d, S t, I create) {
+  if(!simpleString(t)) R 0; //some kind of error
+  R inKtreeR('.'==*t||!*t?&KTREE:d,t,create);
+}
+
 //TODO: capture - oom all
 I capture(S s,I n,I k,I*m,V*w,I*d,K*locals,K*dict,K func) 
   //IN string, string length, pos in string, markings; 
   //OUT words, current #words; IN locals-storage, names-storage, charfunc/NULL
 {
+  if(fll && fll!=n)fll=-1;
   V z=0,*p=w+*d; *p=0;
   I r=1,v=0,y=0,a,b=0,c;S u="",e;K g;I l;
 
@@ -590,17 +620,18 @@ I capture(S s,I n,I k,I*m,V*w,I*d,K*locals,K*dict,K func)
                           {if(':'==s[k+r])r++; z=denameS(kV(func)[CONTeXT],u,1);}
                         else if(dict==(K*)kV(func)+LOCALS && ':'==s[k+r] && -MARK_VERB==m[k+r]) z=denameD(dict,u,1); 
                           //K3.2:  a+:1 format applies to context-globals not locals
-                        else z=denameS(kV(func)[CONTeXT],u,1);//Otherwise check the context (refactor with above?) 
-                          //The way this else-branch is set up, {b;b:1} will create context-global b though K3.2 won't. Seems OK
+                        else z=denameS(kV(func)[CONTeXT],u,0);//Otherwise check the context (refactor with above?) 
                       }
                       else {
-                        I i;for(i=0;i<strlen(s);i++)if(s[i]==':'||s[i]=='x'){fdc=1;break;}
-                        I all=1;for(i=0;i<strlen(lineA);i++)if(!isalnum_(lineA[i])){all=0;break;}
-                        if(lineA[0]=='_')all=0;
-                        #ifndef DEBUG
-                        if(!fdc||all)O("value error\n");
-                        #endif
-                        z=denameD(dict,u,fdc&&!all);}
+                        if(fll>0)fdc=0;
+                        I i;for(i=k;i<strlen(s);i++)if(s[i]==':'||s[i]=='x'){fdc=1;break;}
+                        z=inKtree(dict,u,0);
+                        if((!fdc)&&!z){L err=(L)VLE;
+                           #ifndef DEBUG
+                           oerr(); O("%s\n%c\n",u,'^');
+                           #endif
+                           R err;}
+                        z=denameD(dict,u,fll&&fdc); }
       ) 
     CS(MARK_VERB   ,  // "+" "4:" "_bin"  ;  grab "+:", "4::"
                       if(s[k]=='\\'){z=(V)0x7c; break;}   //trace or scan

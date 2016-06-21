@@ -13,12 +13,13 @@
 extern volatile sig_atomic_t interrupted;
 
 Z K bv_ex(V *p,K k);
-Z K dv_ex(K a,V *p,K b);
+K dv_ex(K a,V *p,K b);
 Z K ex0(V *v,K k,I r);
 Z K ex2(V *v,K k);
 Z V ex_(V a,I r);
 I cirRef(K p,K y);
 I cirRef_(K p,K y,I f);
+K kdef(V v);
 
 __thread I fer=0;    // Flag Early Return 
 __thread I fer1=0;
@@ -34,7 +35,6 @@ __thread K cls=0;    // Closure: level 2 linkage
 __thread K encf=0;   // Enclosing Function
 __thread I encp=0;   // Enclosing Function Param
 __thread I frg=0;    // Flag reset globals
-__thread I fdc=1;    // Flag denameD create
          S fnc=0;    // Most recent function from Dispatch Table
          V fncp[128];// DT pointers of executed functions
          I fnci=0;   // indicator of next function pointer position
@@ -331,7 +331,7 @@ Z K eachpair2(K a, V *p, K b)  //2==k necessary?
 
 //TODO: Try (?) and grow adverb results as vectors before devolving to 0-type
 //TODO: consider merging dv_ex with vf_ex
-Z K dv_ex(K a, V *p, K b)
+K dv_ex(K a, V *p, K b)
 {
   if(!p || !*p) R 0; //TODO: ???
   U(b)
@@ -395,8 +395,10 @@ Z K dv_ex(K a, V *p, K b)
   if(flag) tmp=vf_ex(*p,b); 
   else {
     if(stk>2e6) R kerr("stack"); stk++;
-    if(encp && (encp!=2 || (strchr(kC(kK(encf)[CODE]),"z"[0]))) && encp!=3 && DT_SIZE<(UI)*p)tmp=vf_ex(&encf,g);
-    else tmp=vf_ex(*p,g);
+//        **** Next 2 lines removed to fix #432. They may be needed when returning to #244 and #247
+//  if(encp && (encp!=2 || (strchr(kC(kK(encf)[CODE]),"z"[0]))) && encp!=3 && DT_SIZE<(UI)*p)tmp=vf_ex(&encf,g);
+//  else
+      tmp=vf_ex(*p,g);
     stk--; if(grnt && !prnt)prnt=ci(grnt); }
 
   memset(kK(g),0,g->n*sizeof(K)); cd(g); //Special privileges here...don't ci() members beforehand
@@ -515,13 +517,16 @@ K vf_ex(V q, K g)
     if(2==n && 1==adverbClass(*u) ) n=gn; //   / \ '  but maybe should exclude '
   }
 
-  if(n && (argc < gn || (gn < n && (!special||gn<=1) ))) //Project. Move this ahead of verbs when finished
+  if(kK(*(K*)q)[CODE]->n==3 && offsetWhat==(V)kV(kK(*(K*)q)[CODE])[1]){
+    z=what(*(K*)kV(kK(*(K*)q)[CODE])[0],*(K*)kV(g)); GC; }
+
+  if(n && (argc<gn || (gn<n && (!special||gn<=1) ))) //Project. Move this ahead of verbs when finished
   {
     z=kclone(f); //Is this an opportunity to capture an under-referenced function?
                  //Consider if it could be in use as part of assignment, etc.
     if(!z)GC;
     I ae=0; K*m=(K*)kV(z)+CONJ;
-    if(special && gn==1)n=2; // .'"98" cases. allows a:.[+] then a 2 3  (. is forced 2-adic & not .[;;;]) is this a kluge?
+    if(special && gn!=4)n=2; // .'"98" cases. allows a:.[+] then a 2 3  (. is forced 2-adic & not .[;;;]) is this a kluge?
     if(3<kK(z)[CODE]->n  && (V*)kK(kK(z)[CODE])[1]==(V)offsetAt && (V*)kK(kK(z)[CODE])[2]==(V)offsetEach){ae=1; n=1;}
     if(!*m) *m=newK(0,n);
     if(!*m){cd(z);GC;}
@@ -532,7 +537,7 @@ K vf_ex(V q, K g)
       K zz= ex2(&w[0],0); cd(g); cd(z); R zz; }
     GC;
   }//K3.2 Projection {[a;b;c]}[;1][1;] returns self. Indicates different (7-0 style?) method
-  
+
   V v;K tree;
   SW(t)
   {
@@ -588,7 +593,7 @@ K vf_ex(V q, K g)
         if(t) cd(kV(f)[CACHE_WD]);
         K fc = kclone(f); //clone the function to pass for _f
         cd(kV(fc)[CONJ]); kV(fc)[CONJ]=0;
-        kV(fc)[DEPTH]++; fdc=0;fw=wd_(kC(o),o->n,&tree,fc); kV(f)[CACHE_WD]=fw; cd(fc); }
+        kV(fc)[DEPTH]++; fw=wd_(kC(o),o->n,&tree,fc); kV(f)[CACHE_WD]=fw; cd(fc); }
 
       #ifdef DEBUG
       if(stk1>5) {cd(g); kerr("stack"); R _n();}
@@ -616,7 +621,9 @@ K vf_ex(V q, K g)
       ff=1; DO(kK(z)[PARAMS]->n, if(!strcmp(*kS(kK(kK(kK(z)[PARAMS])[i])[0]),"y")){ff=0; break;} ) }  
     if(ff) {
       K d=kK(kK(KTREE)[0])[1]; K y=0;
-      DO(d->n, if(!strcmp(*kS(kK(kK(d)[i])[0]),"y")){y=kclone(kK(d)[i]); break;})
+      if(6!=d->t && !(5==d->t && 6==kK(kK(d)[0])[1]->t))
+        DO(d->n, if(!strcmp(*kS(kK(kK(d)[i])[0]),"y")){y=kclone(kK(d)[i]); break;})
+      else R NYI;
       if(y) {
         K p=kK(g)[0]; cd(kK(y)[1]); kK(y)[1]=kclone(p); K ye=enlist(y);
         K j0=dot_monadic(kK(z)[CACHE_TREE]); K j2=join(ci(j0),ye); cd(j0);
@@ -625,12 +632,11 @@ K vf_ex(V q, K g)
     if(z && z->t==7 && z->n==3 && kV(z)[CODE] && strchr(kC(kK(z)[CODE]),"x"[0]) && kV(z)[PARAMS] && kK(z)[PARAMS]->n) {
       ff=1; DO(kK(z)[PARAMS]->n, if(!strcmp(*kS(kK(kK(kK(z)[PARAMS])[i])[0]),"x")){ff=0; break;} ) }  
     if(ff) {
-      K d=kK(kK(KTREE)[0])[1]; K x=0;
-      DO(d->n, if(!strcmp(*kS(kK(kK(d)[i])[0]),"x")){x=kclone(kK(d)[i]); break;})
-      if(x) {
-        K p=kK(g)[0]; cd(kK(x)[1]); kK(x)[1]=kclone(p); K xe=enlist(x);
-        K j0=dot_monadic(kK(z)[CACHE_TREE]); K j2=join(ci(j0),xe); cd(j0);
-        cd(kK(z)[CACHE_TREE]); kK(z)[CACHE_TREE]=dot_monadic(j2); cd(x); cd(xe); cd(j0); cd(j2); encp=1; } } }
+      K xx=newK(4,1); *kK(xx)=(V)sp("x");
+      K x=newK(0,3); kK(x)[0]=xx; kK(x)[1]=(K)_n(); kK(x)[2]=(K)_n();
+      K p=kK(g)[0]; cd(kK(x)[1]); kK(x)[1]=kclone(p); K xe=enlist(x);
+      K j0=dot_monadic(kK(z)[CACHE_TREE]); K j2=join(ci(j0),xe); cd(j0);
+      cd(kK(z)[CACHE_TREE]); kK(z)[CACHE_TREE]=dot_monadic(j2); cd(x); cd(xe); cd(j0); cd(j2); encp=1; } }
 
 cleanup:
   cd(g);
@@ -764,86 +770,46 @@ Z K ex0(V*v,K k,I r) //r: {0,1,2} -> {code, (code), [code]}
   R z;
 }
 
-Z K bv_ex(V*p,K k)
-{
-  V q=*p;
-  K x;
+Z K bv_ex(V*p,K k) {
+  V q=*p; K x; I n=0;   //assert 0!=k->n    assert k==b->n (otherwise, projection/VE, which shouldn't reach here)
 
-  //assert 0!=k->n
-  //assert k==b->n (otherwise, projection/VE, which shouldn't reach here)
-  I n=0;
+  //This may contribute to bv_ex subtriadic problems
+  if(!adverbClass(*p) && valence(*p)<3){ if(k->n<2)R VE;  R dv_ex(kK(k)[0],p,kK(k)[1]); }
 
- 
-  
-  //This block may contribute to bv_ex subtriadic problems
-  if(!adverbClass(*p) && valence(*p) < 3)
-  {
-    if(k->n < 2) { R VE; }
-    R dv_ex(kK(k)[0],p,kK(k)[1]);
-  }
-
-  if(offsetOver==(L)q)
-  {
+  if(offsetOver==(L)q) {
     DO(k->n-1, x=kK(k)[i+1]; if(!x->n)R ci(*kK(k)); if(!atomI(x)){if(n&&n!=x->n)R LE;else n=x->n)} //return x_0 if any empty list x_{i>0}
     n=MAX(1,n);//if nothing was a list set to 1
-    K z=ci(*kK(k));
-    K g=newK(0,k->n);
-    M(z,g);
-    DO(n, *kK(g)=z;
-          DO2(g->n-1, x=itemAtIndex(kK(k)[j+1],i); M(x,g) kK(g)[j+1]=x;)
-          x=bv_ex(p-1,g);
-          M(x,g)
-          DO2(g->n, cd(kK(g)[j]); kK(g)[j]=0) //set to 0 in case OOM happens
+    K z=ci(*kK(k)); K g=newK(0,k->n); M(z,g);
+    DO(n, *kK(g)=z; DO2(g->n-1, x=itemAtIndex(kK(k)[j+1],i); M(x,g) kK(g)[j+1]=x;)
+          x=bv_ex(p-1,g); M(x,g) DO2(g->n, cd(kK(g)[j]); kK(g)[j]=0) //set to 0 in case OOM happens
           z=x) 
-    cd(g);
-    R z;
-  }
+    cd(g); R z; }
 
-  if(offsetScan==(L)q)
-  {
-    DO(k->n-1, x=kK(k)[i+1]; if(!x)continue; if(!x->n)R ci(*kK(k)); if(!atomI(x)){if(n&&n!=x->n)R LE;else n=x->n)} //return x_0 if any empty list x_{i>0}
+  if(offsetScan==(L)q) {
+    DO(k->n-1, x=kK(k)[i+1]; if(!x)continue; if(!x->n)R ci(*kK(k)); if(!atomI(x)){if(n&&n!=x->n)R LE;else n=x->n)}
+       //return x_0 if any empty list x_{i>0}
     if(!n) R bv_ex(p-1,k); //  {x+y+z}\[1;1;1] yields 1 but {x+y+z}\[1;1;1 1] yields (1 1;3 3;5 5)  
     n=MAX(1,n);//if nothing was a list set to 1
-    K z=newK(0,1); 
-    K g=newK(0,k->n);
-    M(z,g);
-    kK(z)[0]=ci(*kK(k));
+    K z=newK(0,1); K g=newK(0,k->n); M(z,g); kK(z)[0]=ci(*kK(k));
     DO(n,*kK(g)=ci(kK(z)[z->n-1]); DO2(g->n-1, x=itemAtIndex(kK(k)[j+1],i); M(x,z,g) kK(g)[j+1]=x;)
          x=bv_ex(p-1,g); M(x,z,g) DO2(g->n, cd(kK(g)[j]); kK(g)[j]=0 ) //set to 0 in case OOM happens
          kap(&z,&x); cd(x);) 
-    cd(g);
-    z=collapse(z); //unnecessary?
-    R z;
-  }
+    cd(g); z=collapse(z); //unnecessary?
+    R z; }
 
-  if(offsetEach==(L)q)
-  {
+  if(offsetEach==(L)q) {
     DO(k->n, x=kK(k)[i];if(!x)continue; if(!x->n)R newK(0,0); if(!atomI(x)){if(n&&n!=x->n)R LE;else n=x->n)} //return () on any empty list
     I c=!n;//collapse needed
     n=MAX(1,n);//if nothing was a list set to 1
     K z=newK(0,n), g=newK(0,k->n); M(g,z)//break [;;...] into subpieces for f, store in g
-    DO(n, K x; DO2(k->n, x=itemAtIndex(kK(k)[j],i); M(x,g,z) kK(g)[j]=x) x=bv_ex(p-1,g); M(x,z,g) kK(z)[i]=x; DO2(k->n, cd(kK(g)[j]); kK(g)[j]=0))//sic =0
-    cd(g);
-    if(c)z=collapse(z);else z=demote(z);
-    R z;
-  }
+    DO(n, K x; DO2(k->n, x=itemAtIndex(kK(k)[j],i); M(x,g,z) 
+          kK(g)[j]=x) x=bv_ex(p-1,g); M(x,z,g) kK(z)[i]=x; DO2(k->n, cd(kK(g)[j]); kK(g)[j]=0))//sic =0
+    cd(g); if(c)z=collapse(z);else z=demote(z); R z; }
 
-  if(offsetEachright==(L)q) 
-  {
-    P(k->n!=2,VE)
-    K a=kK(k)[0],b=kK(k)[1];
-    R eachright2(a,p,b);
-  }
-  if(offsetEachleft ==(L)q)
-  {
-    P(k->n!=2,VE)
-    K a=kK(k)[0],b=kK(k)[1];
-    R eachleft2(a,p,b);
-  }
+  if(offsetEachright==(L)q) { P(k->n!=2,VE) K a=kK(k)[0],b=kK(k)[1]; R eachright2(a,p,b); }
+  if(offsetEachleft ==(L)q) { P(k->n!=2,VE) K a=kK(k)[0],b=kK(k)[1]; R eachleft2(a,p,b); }
   if(offsetEachpair ==(L)q) R NYI;//todo: is this reachable?
-
-  R vf_ex(*p,k);
-}
+  R vf_ex(*p,k); }
 
 K ex1(V*w,K k,I*i,I n,I f)//convert verb pieces (eg 1+/) to seven-types, default to ex2 (full pieces in between semicolons/newlines) 
 {
@@ -886,6 +852,7 @@ K ex1(V*w,K k,I*i,I n,I f)//convert verb pieces (eg 1+/) to seven-types, default
         b[j]=q;
   )
   kV(a)[CODE] = kb;
+  if(fll>0 && 2==kb->n && kdefClass(kV(kb)[0])){K z=kdef(kV(kb)[0]); cd(a); R z;}
   R a;
 }
 
@@ -1007,7 +974,10 @@ Z K ex2(V*v, K k)  //execute words --- all returns must be Ks. v: word list, k: 
           K j2=join(ci(j0),j1); cd(j0); kV(t0)[CACHE_TREE]=dot_monadic(j2); cd(j0); cd(j1); cd(j2); } }
       if(prnt)cd(prnt); prnt=ci(t0); }
     if(!prnt && t0->t==7 && t0->n==3)prnt=ci(t0);
-    e= dv_ex(t0,v+1+i,t2); v[1]=u; cd(t0); cd(t2); if(!VA(t3)) cd(t3);
+    if(*(v+1+i)==offsetDot && t0->t==7 && t0->n==1 && kK(kK(t0)[CODE])[1]==(V)offsetEach) {
+      K p=kV(t0)[CODE]; I i=p->n-2;  V*q=(V*) kK(p)+i; e=bv_ex(q,t2); }
+    else{e= dv_ex(t0,v+1+i,t2); v[1]=u;}
+    cd(t0); cd(t2); if(!VA(t3)) cd(t3);
     R e; }
 
   //vn. case
