@@ -220,7 +220,11 @@ Z I mark_verb(S s,I n,I i,I*m)
   if(m[i])R 0;
 
   c=0; //case: reserved verb _bin _bd _ssr
-  if('_'==s[i]) while(i+c<n && isalpha(s[i+1+c]))c++;
+  if('_'==s[i]) {
+     if(i+c<n && isalpha(s[i+1+c])){
+        c++;while(i+c<n && isalnum(s[i+1+c]))c++;  // 160725AP
+     }
+  }
   if(c>1)R 1+c;
 
   if( s[i]=='\\' && (s[i-1]==' ' || s[i+1]==')' )) R 1;

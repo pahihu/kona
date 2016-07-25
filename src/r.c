@@ -5,6 +5,8 @@
 #include <netinet/in.h>
 #endif
 
+#include "openssl/md5.h"
+
 #include <sys/time.h>
 
 #include "km.h"
@@ -207,6 +209,15 @@ K _getenv(K a) //lfop
   if(u) {c=strlen(u); U(z=newK(-3,c)) memcpy(kC(z),u,c);} //sic? Apparently you're not supposed to free(u=getenv())
   else z=_n();
   R z;
+}
+
+K _md5(K a)
+{
+   S msg=CSK(a);
+   UC md[16];
+   K z;MD5(msg,strlen(msg),md);
+   U(z=newK(-3,32));DO(16,sprintf(kC(z)+(i<<1),"%02x",md[i]));
+   R z;
 }
 
 

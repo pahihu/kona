@@ -112,3 +112,4 @@ K _sv(K x,K y);
 K _vs(K x,K y);
 K _vsx(K x,K y);
 K mstat(void);
+K _md5(K a);
