@@ -246,8 +246,7 @@ I lines(FILE*f) {
     //You could put lines(stdin) in main() to have not-multiplexed command-line-only input
 
 I line(FILE*f, S*a, I*n, PDA*p) {  //just starting or just executed: *a=*n=*p=0,  intermediate is non-zero
-  S s=0; I b=0,c=0,m=0;
-  K k; F d;
+  S s=0; I b=0,c=0,m=0; K k; F d; fer=0;
 
   //I o = isatty(STDIN) && f==stdin; //display results to stdout?
   I o = isatty(STDIN); //display results to stdout?
@@ -283,12 +282,13 @@ I line(FILE*f, S*a, I*n, PDA*p) {  //just starting or just executed: *a=*n=*p=0,
     if(o&&k)O("Elapsed: %.7f\n",d);
   #endif
 
-  if(o)show(k); cd(k);
+  //if(o && fam)show(k); cd(k); fam=1;    //fam checking suppressed to fix issue #433
+  if(o)show(k); cd(k); fam=1;
  cleanup:
   if(fCheck && (strlen(s)==0 || s[strlen(s)-1]<0)) exit(0);
   S ptr=0;
-  //151012AP was -1, Changed to fer!=2 for fclose. Reverted to -1 (regression issue #312). fclose problem?? (issue #384).
-  if(strcmp(errmsg,"undescribed") && fer!=-1) { oerr(); I ctl=0;
+  if(!strcmp(errmsg,"value"));
+  else if(strcmp(errmsg,"undescribed") && fer!=-1) { oerr(); I ctl=0;
     if(fError){
       if(2==fError)exit(1);
       if(lineA){
@@ -317,7 +317,7 @@ I line(FILE*f, S*a, I*n, PDA*p) {  //just starting or just executed: *a=*n=*p=0,
               O("symbols  : "); I cnt=nodeCount(SYMBOLS); O("\n");
               O("count    : %lld\n",cnt); fWksp=0; }
   if(o && !fLoad)prompt(b+fCheck);
-  kerr("undescribed"); fer=fnci=fom=0; fnc=lineA=lineB=0; if(cls){cd(cls);cls=0;}
+  kerr("undescribed"); fll=fer=fer1=fnci=fom=0; fnc=lineA=lineB=0; if(cls){cd(cls);cls=0;}
   R c; }
 
 I tmr_ival=0;

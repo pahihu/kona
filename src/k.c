@@ -108,9 +108,9 @@ I charpos(S s,C c){I i=0;while(s[i] && c!=s[i])i++; R i;}
 
 I isCharVerb(C c) {R stringHasChar(vc,c);}
 L charsVerb(C c)  {R charpos(vc,c);}
-Z C verbsChar(V p)  {R ((L)p>=DT_VERB_OFFSET && (L)p < DT_SPECIAL_VERB_OFFSET)?vc[((L)p-DT_VERB_OFFSET)/2]:'\0';}
+C verbsChar(V p)  {R ((L)p>=DT_VERB_OFFSET && (L)p < DT_SPECIAL_VERB_OFFSET)?vc[((L)p-DT_VERB_OFFSET)/2]:'\0';}
 
-Z C adverbsChar(V p){R ((L)p>=DT_ADVERB_OFFSET)?ac[((L)p-DT_ADVERB_OFFSET)%3]:'\0';}
+C adverbsChar(V p){R ((L)p>=DT_ADVERB_OFFSET)?ac[((L)p-DT_ADVERB_OFFSET)%3]:'\0';}
 L charsAdverb(C c) {R charpos(ac,c);}
 
 I sva(V p) //simpleVerbArity: Use boundaries of arrays to determine verb class in O(1) constant time
@@ -126,6 +126,8 @@ I adverbClass(V p) //0: not an adverb, 1: / \ ', 2: /: \: ':
   if (q<DT_SIZE) R DT[q].adverbClass;
   R 0;
 } 
+
+I kdefClass(I n){R n==98||n==101||n==107||n==108||n==111||n==112||n==113||n==114||n==115||n==117||n==121||n==123;}
 
 Z I specialValence(V p){ R (p==offsetSSR||p==offsetWhat)?3:(p==offsetAt||p==offsetDot)?4:0;}
 I valence(V p)

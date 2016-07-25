@@ -30,6 +30,8 @@ extern S fnc;
 extern V fncp[128];
 extern I fnci;
 extern I fom;
+extern I fam;
+extern I fll;
 extern __thread K cls;
 S sp(S k);
 extern S d_;

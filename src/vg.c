@@ -173,12 +173,12 @@ uint32_t fnv1a(UC *x,I n)//Fowler-Noll-Vo FNV-1a hash
   DO(n,h^=x[i];h*=16777619UL)R h;
 }
 
-Z uI hcode(K x)
+Z UI hcode(K x)
 {
   I t=ABS(xt);uI u=0;
   SW(t){
   CSR(7,R t)//nyi
-  CSR(6,R (uI)&NIL)
+  CSR(6,R (UI)&NIL)
   CSR(5,R t)//nyi
   CSR(4,DO(xn,S v=kS(x)[i];if(!SV(v,1))SV(v,1)=fnv1a((UC*)v,strlen(v));u+=SV(v,1))R xt+u)
   CSR(3,R xt+fnv1a((UC*)kC(x),xn))
@@ -264,9 +264,9 @@ Z K symGroup(K x)
   I j=0;
   K uk=newK(-1,xn);M(uk);I*u=kI(uk);
   setS(1,0);setS(2,0);
-  DO(xn,S s=kS(x)[i];if(!SV(s,2)){u[j]=(I)s;SV(s,2)=++j;}SV(s,1)++)
+  DO(xn,S s=kS(x)[i];if(!SV(s,2)){u[j]=(L)s;SV(s,2)=++j;}SV(s,1)++)
   K y=newK(0,j);M(y,uk);
-  DO(j,S s=(S)u[i];K z=newK(-1,SV(s,1));M(z,y,uk);kK(y)[i]=z;u[i]=0)
+  DO(j,S s=(S)(L)u[i];K z=newK(-1,SV(s,1));M(z,y,uk);kK(y)[i]=z;u[i]=0)
   DO(xn,S s=kS(x)[i];I w=SV(s,2)-1;K z=kK(y)[w];kI(z)[u[w]++]=i)
   cd(uk);
   R y;
@@ -295,7 +295,7 @@ Z K intGroup(K x)
   K ck=newK(-1,xn);M(ck,xok,ok,h);I*c=kI(ck);
   DO(xn,m|=kU(x)[i]);if(m)while(!(m&1)){m>>=1;sa++;}
   DO(xn,uI v=kU(x)[i];
-      if(!v){if(!h0)h0=j++;xo[i]=h0;c[h0]++;}
+      if(!v){if(!h0)h0=++j;xo[i]=h0-1;c[h0-1]++;}
       else{v>>=sa;uI u=m<h->n?v:hc(v);
       uI p;if(!hg(h,u,v,&p)){hs(h,p,v);o[p]=j++;}
       I w=o[p];xo[i]=w;c[w]++;})
@@ -331,14 +331,14 @@ K group(K x)
   CSR(1,)CSR(2,R intGroup(x))
   CSR(3,R charGroup(x))
   CSR(4,R symGroup(x)) }
-  
+ 
   M(b=grade_up(x));g=kI(b);
   //Nastier code would eliminate this second sort.
   c=newK(-1,n);M(b,c);h=kI(c);
   DO(n,h[g[i]]=i);
   //Step through, on duplicate set uniques-=1, mark by inverting sign of corresponding index
   if( 0==t)DO(n-1,if(matchI(kK(x)[g[n-i-1]],kK(x)[g[n-i-2]])){--u;g[n-i-1]*=-1;})
- 
+
   z=newK(0,u);
   M(b,c,z);
   I k=0,p=0,v;
