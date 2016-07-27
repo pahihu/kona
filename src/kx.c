@@ -42,7 +42,8 @@ __thread I frg=0;    // Flag reset globals
          I fam=1;    // Flag amend: 1=OK to print response
 
 Z K cjoin(K x,K y) {
-  P(3!=xt,TE)
+  P(3!=ABS(xt),TE)
+  P((-3==xt)&&xn,TE)
   if(3==ABS(yt))R ci(y);
   P(yt,TE);
   if(!yn)R newK(-3,0);
@@ -50,7 +51,7 @@ Z K cjoin(K x,K y) {
   DO(yn,v=kK(y)[i];if(-3!=v->t)R TE;zn+=v->n)
   zn+=yn?(yn-1)*xn:0;
   K z=newK(-3,zn);M(z);S p=kC(z);
-  DO(yn-1,v=kK(y)[i];memcpy(p,kC(v),v->n);p+=v->n;memcpy(p,kC(x),xn);p+=xn)
+  DO(yn-1,v=kK(y)[i];memcpy(p,kC(v),v->n);p+=v->n;if(xn)memcpy(p,kC(x),xn);p+=xn)
   v=kK(y)[yn-1];memcpy(p,kC(v),v->n);
   R z;
 }
@@ -187,7 +188,7 @@ Z K overMonad(K a, V *p, K b)
         U(c=dv_ex(0,o,u))
         if(1==ABS(b->t) && 3==ABS(c->t)) flag=1; } cd(c); R u;}
     else{  //f is data
-      a=*(K*)*o;if(3==a->t)R cjoin(a,b);
+      a=*(K*)*o;if((3==a->t)||(-3==a->t&&!a->n))R cjoin(a,b);
       while(1){   // f/x
         if(matchI(b,c) || (u!=b && matchI(u,c)))flag=1;
         if(u!=b) cd(u);
