@@ -5,7 +5,7 @@
 #include <netinet/in.h>
 #endif
 
-#include "openssl/md5.h"
+#include "md5.h"
 
 #include <sys/time.h>
 
@@ -232,9 +232,9 @@ K _getenv(K a) //lfop
 
 K _md5(K a)
 {
-   S msg=CSK(a);
-   UC md[16];
-   K z;MD5(msg,strlen(msg),md);
+   S msg=CSK(a);UC md[16];K z;
+   MD5_CTX ctx;
+   MD5_Init(&ctx);MD5_Update(&ctx,msg,strlen(msg));MD5_Final(md,&ctx);
    U(z=newK(-3,32));DO(16,sprintf(kC(z)+(i<<1),"%02x",md[i]));
    R z;
 }
