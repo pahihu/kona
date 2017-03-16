@@ -308,7 +308,7 @@ K backslash(S s, I n, K*dict)
               "_jd      Julian day count from date _jd 20110315\n"
               "_lt      convert output of _t to local time\n"
               "_ltime   localized version of _gtime\n"
-              "_md5     string MD5 hash"
+              "_md5     string MD5 hash\n"
               "_size    size of file (bytes)\n"
               "\n"
               "Dyadic Verbs:\n"
