@@ -749,6 +749,8 @@ Z I tests02()
   TC_("x:.+(`a`b;1 2); y:x; f:{.[x;,`a;:;11]}; f`y; y",".+(`a`b;11 2)")
   TC_(",0 1 2", "= 0 0 0")
   TC("6cf192c1938b79012c323fa30e62787e", _md5"this is a not so secret message")
+  TC(1, -20<10)
+  TC(1, -20.0<10.0)
 #ifdef K3_ARITH
   TC(0i, 0i+0i)                           // plus
   TC(0i, 0i+0I)
