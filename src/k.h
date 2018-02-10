@@ -109,7 +109,7 @@ I simpleString(S a);
 F FF(F f);
 S CSK(K x);
 K KX(K x);
-K wd(S s,I n);
+K wd(S s,int n);
 K ex(K a);
 K X(S s);
 I miN(I a,I b);
@@ -133,5 +133,4 @@ extern L offsetOver, offsetScan, offsetEach, offsetEachright, offsetEachleft, of
 K TABLE_END();
 void nfinish();
 I rc(K x);
-K joinI(K*a,K b);
 K _hash(K x);

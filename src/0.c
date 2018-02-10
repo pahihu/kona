@@ -4,6 +4,7 @@
 #ifndef WIN32
 #include <netinet/tcp.h> //#include <sys/socket.h> //#include <netinet/in.h>
 #include <dlfcn.h>
+#include <sys/wait.h>
 #else
 #include <unistd.h>
 #include "win/dlfcn.h"
@@ -90,8 +91,8 @@ K _0m(K a) {
     I k=0; for(j=0;j<=i;j++){if(ss[j]!='\004')ss[k++]=ss[j];}
     z=newK(-3,k-1); for(j=0;j<k-1;++j){kC(z)[j]=ss[j];}
     GC; }
-  else if( (3==ABS(t) && (!strcmp(m,"/dev/fd/0") || !strcmp(m,"/dev/stdin"))) //read stdin
-           || 4==t && (!strcmp(*kS(a),"/dev/fd/0") || !strcmp(*kS(a),"/dev/stdin")) ){
+  else if( (3==ABS(t) && (!strcmp(m,"/dev/fd/0") || !strcmp(m,"/dev/stdin"))) || //read stdin
+	   (4==t && (!strcmp(*kS(a),"/dev/fd/0") || !strcmp(*kS(a),"/dev/stdin"))) ){
     b=getdelim_(&v,&s,EOF,stdin);
     P(freopen_stdin() == NULL, FE)
     if(b==-1){z=newK(0,0); GC;} }
@@ -131,14 +132,14 @@ Z I ok_0dw(K b) {       //b must be +-3, or 0 containing {+3,-3,()}
 Z K _0d_write(K a,K b) {     //assumes a->t in {3,-3,4}
   I t=b->t, n=b->n; K k;
   P(!ok_0dw(b),TE)
-  S m=CSK(a); I s=0,f;
+  S m=CSK(a); I s=0,f=0;
 
   struct stat sb;
   if(stat(m,&sb)!=-1 && (sb.st_mode & S_IFMT)==S_IFIFO){                                 //write to FIFO
     f=open(m,O_WRONLY); P(f<0,DOE)
     if(3==ABS(t)){S msg=kC(b); if(write(f, msg, strlen(msg)+1)==-1) R WE;}
     else if(0==t){S msg; DO(n, if(ABS(kK(b)[i]->t)!=3) R DOE; msg=kC(kK(b)[i]); if(write(f, msg, strlen(msg)+1)==-1) R WE;)}
-    else {I r=close(f); if(r)R FE; R DOE;} 
+    else {I r=close(f); if(r)R FE; R DOE;}
     I r=close(f); if(r)R FE; R _n(); }
 
   if(3==ABS(t))s=n;
@@ -556,7 +557,8 @@ I rep(K x,I y) {   //#bytes in certain net/disk representations
   I m=sizeof(I)*(y?4:2), r=m, n=xn, q=0;  //y crutch for factor {0,1}->{net size, disk size}
   SW(xt) {
     CSR(0,) CS(5, DO(xn,r+=rep(kK(x)[i],y)))
-    CSR('\007',) CS('\010', if(1==xn);    ) //TODO - seven_types on disk  (1==xn --> no size increase)
+    CSR('\007',) CS('\010', if(1==xn)
+       ;  )  //TODO - seven_types on disk  (1==xn --> no size increase)
     CS(-4, DO(n, r+=1+strlen(kS(x)[i])))
     CS(-3, r+= (1+n)*sizeof(C))
     CS(-2, r+=     n*sizeof(F))
@@ -902,7 +904,7 @@ Z void execute(S *argvP, I fWait) {
   else if(pid == 0) {
     if(execvp(*argvP,argvP) < 0) { O("*** ERROR: exec failed\n"); exit(1); } }
   else {
-    if(fWait) { while (wait(&status) != pid)  ; } } }
+    if(fWait) { while (wait((int*)&status) != pid)  ; } } }
 
 K _4d_(S srvr,S port,K y){
   struct addrinfo hints, *servinfo, *p; int rv,sockfd; S errstr; I r;
@@ -948,7 +950,7 @@ K _4d_(S srvr,S port,K y) {
   hints.ai_family = AF_UNSPEC;
   hints.ai_socktype = SOCK_STREAM;
   if((rv=getaddrinfo(srvr, port, &hints, &result))){O("getaddrinfo failed with error: %d\n", rv); R DOE; }
-  I sockfd;  
+  I sockfd;
   for(ptr=result; ptr != NULL ;ptr=ptr->ai_next)
     if(INVALID_SOCKET==(sockfd=socket(ptr->ai_family,ptr->ai_socktype,ptr->ai_protocol)))continue;
     else if(-1==connect(sockfd,ptr->ai_addr,ptr->ai_addrlen)){neterrno=WSAGetLastError(); r=closesocket(sockfd); if(r)R FE; continue;}
@@ -1042,7 +1044,7 @@ K _5d_(K x,K y,I dosync) {
 
   #ifdef WIN32
   size_t pread(int __fd,void* __buf,size_t __nbyte,off_t __off);
-  #endif  
+  #endif
   I g;
   g=pread(f,&ft,sizeof(ft),2*sizeof(I)); if(!g)show(kerr("pread"));
   g=pread(f,&fn,sizeof(ft),2*sizeof(I)+sizeof(ft)); if(!g)show(kerr("pread"));
