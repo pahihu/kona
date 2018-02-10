@@ -65,7 +65,7 @@ Z void dum7(K*_v,I a){
 //Parser
 
 Z I formed_group(C c){S s="\n \\/\"";R charpos(s,c);} //could be table-lookup instead
-S formed_dfa = 
+S formed_dfa =
 // n_\/"*  newline,quote,space,\,/,else (formed_group)
   "023451" //0 OK-NEWLINE
   "021151" //1 OK
@@ -88,7 +88,7 @@ Z C flop(C c){ R c=='('?')':c=='['?']':c=='{'?'}':c;}
 I parsedepth(PDA p) {R p?p->n+(STATE_QUOTE(p)?1:0):0;}
 I complete(S a, I n, PDA *q, I *marks) //well-formed or incomplete codeblock? all "{[(\"" closed
 {
-  if(!*q)*q=newPDA(); 
+  if(!*q)*q=newPDA();
   PDA p=*q;
   P(!p,-1)
   C t;
@@ -101,7 +101,7 @@ I complete(S a, I n, PDA *q, I *marks) //well-formed or incomplete codeblock? al
     t=a[p->i];
     if(STATE_OK(p) && t){   //manage }])([{  (&&t b/c !t breaks strchr)
       if     (strchr( left,t)){P(push(p,flop(t)),-1) P(p->n > 99,3) } //nest error if stack too tall (not entirely necessary...?)
-      else if(strchr(right,t)){ 
+      else if(strchr(right,t)){
         if(peek(p)!=t) R 2; //unmatched error
         else pop(p);}}
     p->s = formed_dfa[r*p->s + formed_group(a[p->i])] - '0'; //state transition
@@ -148,8 +148,8 @@ Z I mark_symbol(S s,I n,I i,I*m) //this is probably pretty close to the conventi
   R j+1;
 }
 
-Z I isalnum_(C c){R isalnum(c) || '_'==c;} 
-Z I isalnumdot_(C c){R isalnum_(c) || '.'==c;} 
+Z I isalnum_(C c){R isalnum(c) || '_'==c;}
+Z I isalnumdot_(C c){R isalnum_(c) || '.'==c;}
 
 Z I mark_name(S s,I n,I i,I*m)
 {
@@ -166,8 +166,9 @@ Z I mark_name(S s,I n,I i,I*m)
     else if(isalpha(s[i+c]))c++;
     else break;
     if(i+c>=n)break;
-    while(i+c<n&&isalnum_(s[i+c]))c++;if(i+c>=n)break;
-    if('.'==s[i+c])c++;               
+    while(i+c<n&&isalnum_(s[i+c]))c++;
+    if(i+c>=n)break;
+    if('.'==s[i+c])c++;
   }
   if(1<i&&'.'==s[i-1]&&(0==m[i-2]&&'.'!=s[i-2]))c=0;
   R c;
@@ -180,7 +181,7 @@ Z I mark_number(S s,I n,I i,I*m)
 {
   I c=0;
   if(m[i])R 0;
-  
+
   if(i && '-'==s[i] && !isspace(s[i-1]))switch(ABS(m[i-1])){case MARK_BRACKET:case MARK_PAREN:case MARK_SYMBOL:case MARK_NAME:case MARK_NUMBER:R 0;}
 
   if('-'==s[i]){
@@ -250,11 +251,11 @@ Z I mark_ignore(S s,I n,I i,I*m){C c=s[i]; R m[i]?0:isspace(c)?1:0;}
 //// 9 uses of colon: /////////////////
 //amend/assignment  a[]+:9
 //pathological verb/inert assigner for amend/error trap (:)[0;2]-> 2 or .(a;();:;9) or .[=;0;:]
-//global assignment {b::x} 
+//global assignment {b::x}
 //conditional statement :[1;2;3] -> 2, even :[0;1] (brackets don't allow spaces)
 //function return  {if[x;:10]; :20}
-//piece of adverb ': /: \: 
-//piece of number-verb 0: 
+//piece of adverb ': /: \:
+//piece of number-verb 0:
 //indicate monadic "(+:;-)" "1+*:'a" (not if noun to left or right; ok to have space "+ :")
 //resume (debug)
 ///////////////////////////////////////
@@ -265,7 +266,7 @@ Z I mark_ignore(S s,I n,I i,I*m){C c=s[i]; R m[i]?0:isspace(c)?1:0;}
 enum mark_members{MARK_UNMARKED,MARK_IGNORE,MARK_BRACKET,MARK_END,MARK_PAREN,MARK_BRACE,MARK_QUOTE,MARK_SYMBOL,
                   MARK_NAME,MARK_NUMBER,MARK_VERB,MARK_ADVERB,MARK_CONDITIONAL,MARK_COUNT};
 #endif
-#define WORD_PART(x)      (ABS(x) > MARK_IGNORE) 
+#define WORD_PART(x)      (ABS(x) > MARK_IGNORE)
 #define WORD_START(x)     ((x) <= -MARK_END)
 #define NOUN_START(x)     ((x) <= -MARK_PAREN  && (x) >  -MARK_VERB)
 #define CAPTURE_START(x)  ((x) <  -MARK_IGNORE)
@@ -275,24 +276,56 @@ enum mark_members{MARK_UNMARKED,MARK_IGNORE,MARK_BRACKET,MARK_END,MARK_PAREN,MAR
 //Corrected soon after. No sense in duplicating logic here: let the word-converter decide the true count
 Z I overcount(I*m,I n) {I c=0,p=0;DO(n, if( WORD_START(m[i]) && !(m[i]==p && GREEDY_START(p))){p=m[i];c++;}) R c; }
 
+Z I syntaxChk(S s) {
+  if(s[0]=='\t') R 1;
+  I n=strlen(s);
+  if(n==1) {
+    if(s[0]=='\'') R 1;
+    else R 0; }
+  I i,j,k=0;
+  for(i=0;i<n;++i) if(s[i]!=' ')break;    //1st non-blank (if it exists)
+  if(i>=n-1)R 0;
+  for(j=i+1;j<n;++j) if(s[j]!=' ')break;  //2nd non-blank (if it exists)
+  if(s[i]=='\\' && s[j]=='\\') R 0;
+  if((s[i]=='\'' && s[j]!='\"') || j==n) R 1;
+  for(i=0;i<n;++i) {
+    if(s[i]=='\"')break;
+    if(s[i]=='\013' || s[i]=='\014' || (s[i]=='\'' && s[i-1]==';') || (i>1 && s[i]=='\'' && s[i-2]=='\\'))R 1;}
+  if(n>1 && s[n-1]=='\'' && s[n-2]==':') R 1;
+  if(n>1){for(i=1;i<n;++i){
+    if(s[i]==',' && s[i-1]=='\\') R 1;
+    if(s[i]=='?' && (s[i-1]=='-' || s[i-1]=='\\')) R 1;}}
+  if(n>2){for(i=2;i<n;++i){
+    if(s[i]=='\\' && s[i-1]==':' && (s[i-2]!='/' && s[i-2]!='\\')) R 1;
+    if(s[i]=='/' && (s[i-1]=='+' || s[i-1]=='\'' || s[i-1]=='>' || s[i-1]=='%' || s[i-1]=='*' || s[i-1]=='?' || s[i-1]=='&' || s[i-1]=='\\') && s[i-2]=='/') R 1;
+    if(s[i]=='/' && s[i-1]=='/' && s[i-2]=='-') R 1;
+    if(s[i]=='_' && s[i-1]==',' && s[i-2]=='~') R 1;
+    if(s[i]=='/' && s[i-1]=='#' && s[i-2]=='0') R 1;
+    if(s[i]=='$' && s[i-1]==',' && s[i-2]=='$') R 1;}}
+  if(n>3){for(i=2;i<n;++i){if(s[i]=='/' && s[i-1]=='/' && s[i-2]=='/' && s[i-3]==',') R 1;}}
+  if(n>3){for(i=2;i<n-1;++i){if(s[i]=='/' && s[i-1]==':' && s[i-2]=='/' && s[i+1]!=':') R 1;}}
+  if(n>5 && s[n-1]==':' && s[n-2]!=':' && s[n-3]==':') R 1;
+  R k; }
+
 I mark(I*m,I k,I t){DO(k, m[i]=i?t:-t) R k;}
-#define marker(a,b) DO(n,i+=maX(0,-1+mark(m+i,a(s,n,i,m),b))) 
+#define marker(a,b) DO(n,i+=maX(0,-1+mark(m+i,a(s,n,i,m),b)))
 //Some parse error cases missing...but it seems OK/preferable to ignore them e.g.  _t.a or 'a.....' (floor t.a or a. ...)
 //K3.2: whitespace between ANY_TOKEN and adverb fails
 //K3.2: if brackets [] not flush with token to left, parse error "0 1 2[0]" ok but "0 1 2 [1]" not ok
 //      this rule doesn't apply to function argument lists, eg: f:{  [a] 1} is ok. however f: {\n\n  [a;b;d]  1+1} not ok
 //      so the check probably has to do with whether some useful symbol occurred on the line already
 //other errors: syntax error
-K wd(S s, I n){lineA=s; fdc=0;R wd_(s,n,denameD(&KTREE,d_,1),0);}
-K wd_(S s, I n, K*dict, K func) //parse: s input string, n length ; 
+K wd(S s, int n){lineA=s; fdc=0;R wd_(s,n,denameD(&KTREE,d_,1),0);}
+K wd_(S s, int n, K*dict, K func) //parse: s input string, n length ;
                                 //assumes: s does not contain a }])([{ mismatch, s is a "complete" expression
 {
   if(!s) R 0;
   if(strstr(s,":\\t")) { show(kerr("\\t  syntax")); R 0; }
-  if('\\'==s[0] && fbs){fbs=0; R backslash(s,n,dict);}  
+  if(syntaxChk(s)) R SYE;
+  if('\\'==s[0] && fbs){fbs=0; R backslash(s,n,dict);}
 
   PDA p=0;
-  K km=newK(-1,1+n); U(km) I *m = kI(km);//marks 
+  K km=newK(-1,1+n); U(km) I *m = kI(km);//marks
   I e=complete(s,n,&p,m);if(p){pdafree(p);p=0;} //Mark all ([{ and comments and quotes
   lineB=s; if(e){cd(km); R PE;}
 
@@ -302,7 +335,7 @@ K wd_(S s, I n, K*dict, K func) //parse: s input string, n length ;
   marker(mark_end,   MARK_END)   // ";\n" - mark_end first so mark_number's space-eater doesn't get any newlines
   //NOTE: `1 is the 'empty' symbol indexed @ 1, `a.1 is `a . 1,  and `., `.., `... are not symbols
 
-  marker(mark_symbol,MARK_SYMBOL)// `a`b `A `_a `_aB01283.aaaa__.AB1._ `A.B.C, re-mark sym-quotes `"h-g" 
+  marker(mark_symbol,MARK_SYMBOL)// `a`b `A `_a `_aB01283.aaaa__.AB1._ `A.B.C, re-mark sym-quotes `"h-g"
   marker(mark_name,  MARK_NAME)  // ( _A | (\.?S\.?)+ ) where A := [A-Za-z] and S := A(A|[0-9_])* e.g.  _t, f, .k.a.b, a.b_0..c
   marker(mark_number,MARK_NUMBER)// unified numeric type, determine +-1/2 at word-building time. mark spaces for strtol,strtod
   marker(mark_adverb,MARK_ADVERB)// / \ ' /: \: ': This is rude with the system/debug commands. those can be remarked later
@@ -312,7 +345,7 @@ K wd_(S s, I n, K*dict, K func) //parse: s input string, n length ;
 
   dumm(m,n);
 
-  DO(n,if(m[i]==MARK_UNMARKED){cd(v);cd(km); R PE;}) 
+  DO(n,if(m[i]==MARK_UNMARKED){cd(v);cd(km); R PE;})
   //DO(n,if(m[i]>0 && (!i || m[i]!=ABS(m[i-1]) )){cd(v);cd(km); R PE;})  //this is true but unnecessary. we handle "_db_bd 1"
 
   //TODO: check here to see if any _A+ listed that don't exist ("reserved error") free m etc. reserved error probably bubbles from "dename"
@@ -330,8 +363,8 @@ K wd_(S s, I n, K*dict, K func) //parse: s input string, n length ;
   K kw=newK(-4,1+oc); M(v,km,ks2,kw) V*w=(V*)kK(kw);//words. Assumes terminal extra NULL
 
   I c=0,j=0;  if(!fll)fll=strlen(s2); else fll=-1;
-  DO(y, i+=-1+(j=capture(s2,y,i,m,w,&c,(K*)kV(v)+LOCALS,dict,func)); if(!j){M(0,v,km,ks2,kw)} ) 
-  //O("sl:");DO(n  ,if(!s2[i])break;O("%4c" ,s2[i]))O("\n"); O("ml:");DO(n  ,O("%4ld",m[i]))O("\n"); O("##:");DO(n  ,O("%4ld",  i ))O("\n"); 
+  DO(y, i+=-1+(j=capture(s2,y,i,m,w,&c,(K*)kV(v)+LOCALS,dict,func)); if(!j){M(0,v,km,ks2,kw)} )
+  //O("sl:");DO(n  ,if(!s2[i])break;O("%4c" ,s2[i]))O("\n"); O("ml:");DO(n  ,O("%4ld",m[i]))O("\n"); O("##:");DO(n  ,O("%4ld",  i ))O("\n");
   cd(km);cd(ks2);
 
   //wrong: Suppressed this for now (wastes at most n/2 space) -- may need to reenable if padded oc bad (eg imagine 1+1 is not 0=t,4=n VVV0 but 0=t,6=n VVV000)
@@ -347,7 +380,7 @@ K wd_(S s, I n, K*dict, K func) //parse: s input string, n length ;
   kV(v)[CODE]=kw; // return what we just built
   kW(v)[c]=0;
   dum7(&v,0);
-  R v; 
+  R v;
 }
 
 Z I isodigit(C c){R isdigit(c) && c<'8';} // is octal digit
@@ -366,12 +399,12 @@ Z C unescape(S s, I*k) //*k - return is composed of how many [escaped] chars
 }
 //assumes s[0:n-1] could be the inside, [exclusive] of any complete MARK_QUOTE token ; checks !isodigit(s[n])
 Z I unescaped_size(S s,I n){I k=0;DO(n,k++;if('\\'==s[i])i+=maX(1,odigitlen3(s+i+1)))R k;}
-Z I unescaped_fill(S d, S s, I n){I k=0,q;DO(n,d[k++]=unescape(s+i,&q);i+=q-1) R k;} 
+Z I unescaped_fill(S d, S s, I n){I k=0,q;DO(n,d[k++]=unescape(s+i,&q);i+=q-1) R k;}
 
-S param_dfa = 
+S param_dfa =
 // a!;w]*  alpha,digit/underscore,semicolon,whitespace,right-bracket,else
   "155045" //Nothing really read yet
-  "113245" //Name in process 
+  "113245" //Name in process
   "553245" //Name over
   "155355" //Requires name
 //"444444" //Accept
@@ -404,9 +437,9 @@ Z K* inKtreeR(K*p,S t,I create) {
   //and LOC should have the potential to return 0 (indicating other errors as well, e.g. out of memory)
   P(!(6==a || 5==a),(K*)TE)
   K e=0;
-  if(create) { e=(K)lookupEntryOrCreate(p,k); P(!e,(K*)ME) }
+  if(create) { e=lookupEntryOrCreate(p,k); P(!e,(K*)ME) }
   else { K a=*p; if(5==a->t)e=DE(a,k); P(!e,(K*)0) }
-  if('.'==*t && (!t[1] || '.'==t[1])) { t++; p=(K*)EAP(e); }    //attribute dict
+  if('.'==*t && (!t[1] || '.'==t[1])) { t++; p=EAP(e); }    //attribute dict
   else p=EVP(e); //value
   R inKtreeR(p,t,create);
 }
@@ -417,8 +450,8 @@ K* inKtree(K*d, S t, I create) {
 }
 
 //TODO: capture - oom all
-I capture(S s,I n,I k,I*m,V*w,I*d,K*locals,K*dict,K func) 
-  //IN string, string length, pos in string, markings; 
+I capture(S s,I n,I k,I*m,V*w,I*d,K*locals,K*dict,K func)
+  //IN string, string length, pos in string, markings;
   //OUT words, current #words; IN locals-storage, names-storage, charfunc/NULL
 {
   if(fll && fll!=n)fll=-1;
@@ -436,9 +469,9 @@ I capture(S s,I n,I k,I*m,V*w,I*d,K*locals,K*dict,K func)
   switch(-M)
   {
     CS(MARK_CONDITIONAL, z=offsetColon)//dummy value
-    CS(MARK_PAREN  ,  z=wd_(s+k+1,r-2,dict,func); if(!z)R (L)PE;) //oom. currently z->t==7 z->n==0.  
+    CS(MARK_PAREN  ,  z=wd_(s+k+1,r-2,dict,func); if(!z)R (L)PE;) //oom. currently z->t==7 z->n==0.
                      //Execution will know this is paren (for rev order) because of its depth
-    CS(MARK_BRACKET,  
+    CS(MARK_BRACKET,
 
                       if(!*d || bk(p[-1])){
                         if(func && !k) R r; //Ignore function params. k because no {[a;b][c;d]}
@@ -482,20 +515,20 @@ I capture(S s,I n,I k,I*m,V*w,I*d,K*locals,K*dict,K func)
                         {
                           //do nothing for '[] and ':[]  (and sort of / /: \ \: ... but they don't reach here)
                         }
-                        else if(MARK_NAME != ABS(m[k-1-a])) 
-                          // Has form na*[] and not va*[] so move n from the parent to the LOCAL on this BRACKET. 
+                        else if(MARK_NAME != ABS(m[k-1-a]))
+                          // Has form na*[] and not va*[] so move n from the parent to the LOCAL on this BRACKET.
                           // NAME special storage case
                         {
                           K q=newE(LS,ci(*f)); //oom
                           kap((K*) kV(g)+LOCALS,&q);//oom
                           cd(q); //kap does ci
 
-                          //cd(DI(*locals,--(*locals)->n));  // You can't do this. 
+                          //cd(DI(*locals,--(*locals)->n));  // You can't do this.
                              // (the reason is the same as why you can't (currently) realloc-shrink the anonymous mmapped Ks)
-                             // the line can be left out without ill effects assuming 
+                             // the line can be left out without ill effects assuming
                              // it's OK to let the parent free the objects (it may not be)
                              //  probably best to simply implement realloc-shrink for anonymous mmap
-                           K temp=DI(*locals,(*locals)->n-1); //This is a replacement for above. 
+                           K temp=DI(*locals,(*locals)->n-1); //This is a replacement for above.
                              // It can be optimized(?) since it leaves an empty dict entry on *locals
                             if(temp)
                             {
@@ -514,8 +547,9 @@ I capture(S s,I n,I k,I*m,V*w,I*d,K*locals,K*dict,K func)
                       (*d) -= 1+a;
                       p=w+*d;
 
-      ) 
+      )
     CS(MARK_BRACE  ,  //Functions & subfunctions validated at parse time
+                      fbr=1;
                       z=Kv(); g=newK(-3,r-2);
                       M(z,g) //M(z,g,kV(z)[PARAMS]=Kd(),kV(z)[LOCALS]=Kd())
                       kV(z)[CODE]=g;
@@ -527,7 +561,7 @@ I capture(S s,I n,I k,I*m,V*w,I*d,K*locals,K*dict,K func)
                       K* zdict = (K*)kV(z)+PARAMS;
                       K* ydict = (K*)kV(z)+LOCALS;
                       K j;
-                      
+
                       //Validate brackets in {[..]...} : 0-Absent, 1-OK, 2-Fail
                       I state = param_validate(s+k+1,r-2);
                       P(state>1,(L)kerr("parameter"))
@@ -557,7 +591,7 @@ I capture(S s,I n,I k,I*m,V*w,I*d,K*locals,K*dict,K func)
 
                       //For subfunctions: (subfunction arg list overrides)
                       //if(func) *zdict = merge self, parent (in what way?)
- 
+
       )
     CS(MARK_NUMBER ,  r=v; // 0 1 -2.3e-4 6. .7 -8 9E0
                       a=1; DO(r,if(stringHasChar(".Eein",s[k+i])){a=2;break;})
@@ -572,7 +606,7 @@ I capture(S s,I n,I k,I*m,V*w,I*d,K*locals,K*dict,K func)
                             if(1==a) kI(z)[b++]=*kI(g);
                             else     kF(z)[b++]=*kF(g);
                             cd(g);
-                        ) 
+                        )
       )
     CS(MARK_QUOTE  ,    // "\b\n\r\t\"\o\oo\ooo\\"  ;  we may rely on completeness here (bounds checking)
                       a=unescaped_size(s+k+1,r-2);
@@ -580,7 +614,7 @@ I capture(S s,I n,I k,I*m,V*w,I*d,K*locals,K*dict,K func)
                       unescaped_fill(kC(z),s+k+1,r-2);
       )
     CS(MARK_SYMBOL ,  //handle `a`"b-\777\n\0"`c ```d.ef
-                      r=v;  
+                      r=v;
                       z=newK(1==y?4:-4,y); //oom
                       DO(r, if(m[k+i]>=0)continue;
                             for(a=0;m[k+i+1+a]>0;a++);
@@ -603,13 +637,13 @@ I capture(S s,I n,I k,I*m,V*w,I*d,K*locals,K*dict,K func)
                       //      it uses the non-path-creating form of dename
 
                       if(2==r && '_'==*u && stringHasChar(n_s,u[1]))
-                        if('f'==u[1]){z=func?ci(func):_n(); } //TODO: stack error --- but be careful to generalize. 
+                        if('f'==u[1]){z=func?ci(func):_n(); } //TODO: stack error --- but be careful to generalize.
                           // proper soln will handle cycle f:{ g 0} g:{f 0}
                           // see "getrusage" or http://stackoverflow.com/questions/53827/checking-available-stack-size-in-c
-                        else z=((K(*)())vn_[charpos(n_s,u[1])])(); 
+                        else z=((K(*)())vn_[charpos(n_s,u[1])])();
                       else if(func)
                       {
-                        if(dict==(K*)kV(func)+PARAMS) 
+                        if(dict==(K*)kV(func)+PARAMS)
                         {
                           V q=newEntry(u);
                           U(q)
@@ -619,16 +653,18 @@ I capture(S s,I n,I k,I*m,V*w,I*d,K*locals,K*dict,K func)
                         }
                         else if((q=DE(*dict,u))) z=EVP(q); //If func has its local, use it
                         //else if(':'==s[k+r] && ':'==s[k+r+1] && -MARK_VERB==m[k+r+1])
-                        //  {m[k+r]=MARK_NAME; r++; z=denameS(kV(func)[CONTeXT],u);} //m[]=  probably superfluous 
+                        //  {m[k+r]=MARK_NAME; r++; z=denameS(kV(func)[CONTeXT],u);} //m[]=  probably superfluous
                         else if(-MARK_VERB==m[k+r] && ':'==s[k+r+1] && -MARK_VERB==m[k+r+1])
                           {if(':'==s[k+r])r++; z=denameS(kV(func)[CONTeXT],u,1);}
-                        else if(dict==(K*)kV(func)+LOCALS && ':'==s[k+r] && -MARK_VERB==m[k+r]) z=denameD(dict,u,1); 
+                        else if(dict==(K*)kV(func)+LOCALS && ':'==s[k+r] && -MARK_VERB==m[k+r]) z=denameD(dict,u,1);
                           //K3.2:  a+:1 format applies to context-globals not locals
-                        else z=denameS(kV(func)[CONTeXT],u,0);//Otherwise check the context (refactor with above?) 
+                        else z=denameS(kV(func)[CONTeXT],u,0);//Otherwise check the context (refactor with above?)
                       }
                       else {
                         if(fll>0)fdc=0;
-                        I i;for(i=k;i<strlen(s);i++)if(s[i]==':'||s[i]=='x'){fdc=1;break;}
+                        I i;for(i=k;i<strlen(s);i++){
+                               if(!fbr && s[i]==';')break;
+                               else if(s[i]==':'|| (fbr && (s[i]=='x'||s[i]=='y'||s[i]=='z'))){fdc=1;break;}}
                         z=inKtree(dict,u,0);
                         if((!fdc)&&!z){L err=(L)VLE;
                            #ifndef DEBUG
@@ -636,7 +672,7 @@ I capture(S s,I n,I k,I*m,V*w,I*d,K*locals,K*dict,K func)
                            #endif
                            R err;}
                         z=denameD(dict,u,fll&&fdc); }
-      ) 
+      )
     CS(MARK_VERB   ,  // "+" "4:" "_bin"  ;  grab "+:", "4::"
                       if(s[k]=='\\'){z=(V)0x7c; break;}   //trace or scan
                       if(s[k]==':' && s[strlen(s)-1]!=':' && lineB && lineB[strlen(lineB)-1]!=']' && lineB[0]!=')'){
@@ -652,7 +688,7 @@ I capture(S s,I n,I k,I*m,V*w,I*d,K*locals,K*dict,K func)
                         while(i < DT_SIZE && (!DT[i].text || SC(u, DT[i].text)))i++;
                         if(i < DT_SIZE){z=(V)i;} //faster is sp()/hash-table (compared to SC())
                         free(u);
-                        P(!z,(L)kerr("reserved"))// _invalidsystemverbname 
+                        P(!z,(L)kerr("reserved"))// _invalidsystemverbname
                         break; // _verb does not grab monadic ':' following
                       }
 
@@ -664,8 +700,8 @@ I capture(S s,I n,I k,I*m,V*w,I*d,K*locals,K*dict,K func)
                       I name_bracket_assign=0;
                       I modifier_colon = k+r<n && ':'==s[k+r] && -MARK_VERB==m[k+r];
 
-                      if(k-i > 0) if(is_colon && MARK_VERB == ABS(m[k-i-1])) i++; 
-                      if(k-i > 0) if(MARK_BRACKET ==  ABS(m[k-i-1])) while(m[k-i] != -MARK_BRACKET) i++; 
+                      if(k-i > 0) if(is_colon && MARK_VERB == ABS(m[k-i-1])) i++;
+                      if(k-i > 0) if(MARK_BRACKET ==  ABS(m[k-i-1])) while(m[k-i] != -MARK_BRACKET) i++;
                       if(k-i > 0) if(MARK_NAME == ABS(m[k-i-1])) name_bracket_assign = 1; //(no adverb, assigning to non-names, etc)
                       if(!is_colon && !(k+1<n && ':'==s[k+1] && -MARK_VERB==m[k+1] ))name_bracket_assign=0;
 
@@ -675,13 +711,13 @@ I capture(S s,I n,I k,I*m,V*w,I*d,K*locals,K*dict,K func)
                       I y_present= k+r+1<n && !(s[k+r+1] == ':' && -MARK_VERB==m[k+r+1]) && MARK_END != ABS(m[k+r+1]);
 
                       //MARK_END may end up being redundant here?
-                      a = (!*d || MARK_END==ABS(m[k-1]) || MARK_ADVERB==ABS(m[k-1]) || MARK_VERB==ABS(m[k-1])) 
+                      a = (!*d || MARK_END==ABS(m[k-1]) || MARK_ADVERB==ABS(m[k-1]) || MARK_VERB==ABS(m[k-1]))
                           && !( k+r >= n || -MARK_END==m[k+r] || -MARK_ADVERB==m[k+r] || -MARK_BRACKET==m[k+r] )?1:2;  //indicate arity
 
                       if(is_colon && !modifier_colon)
-                      { 
+                      {
                         a=2;
-                        if(k> 0 && -MARK_END!=m[k-1] && !s[k+1] && !name_bracket_assign) R (L)PE; 
+                        if(k> 0 && -MARK_END!=m[k-1] && !s[k+1] && !name_bracket_assign) R (L)PE;
                           // +:: or 4:: :  or a _abs:  (trailing dyadic :)
                       }
                       else if(name_bracket_assign) a=y_present?2:1;
@@ -700,11 +736,11 @@ I capture(S s,I n,I k,I*m,V*w,I*d,K*locals,K*dict,K func)
                       }
 
                       //Assignment is not supported for nested bracket: a[][][] +: 1  <--- parse error
-                      //save ':' if       a    []?        :    y    ;?        ---> colon   
+                      //save ':' if       a    []?        :    y    ;?        ---> colon
                       //                         verb (should be covered except for   0   :  `file  -> 0:`file )
                       //save ':' if       a    []?    +   :         ;?        ---> monadic verb
                       //save ':' if       a    []?    +   :    y    ;?        ---> dyadic  verb
-                      //what passes for y?  <--- anything that isn't an end/\0, except colon  
+                      //what passes for y?  <--- anything that isn't an end/\0, except colon
                       //                         verb will go on to ex1 to the right and assign _n
       )
     CS(MARK_ADVERB ,  z=(V)(DT_ADVERB_OFFSET+charsAdverb(s[k])+(r>1?3:0)))
@@ -716,7 +752,7 @@ I capture(S s,I n,I k,I*m,V*w,I*d,K*locals,K*dict,K func)
   switch(-M) //Things that need to be stored locally
   {
     CSR(MARK_NAME   , if('_'!=*u)break;)   //Fall-through
-    CSR(MARK_PAREN  ,) 
+    CSR(MARK_PAREN  ,)
     CSR(MARK_BRACKET,)
     CSR(MARK_BRACE  ,)
     CSR(MARK_NUMBER ,)
@@ -729,7 +765,3 @@ I capture(S s,I n,I k,I*m,V*w,I*d,K*locals,K*dict,K func)
 
   R r;
 }
-
-
-
-

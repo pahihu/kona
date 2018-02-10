@@ -46,8 +46,7 @@ I getdelim_(S *s,I *n,I d,FILE *f)
   R *n=m;
 }
 
-#if defined(__OpenBSD__) || defined(__NetBSD__) ||  \
-   (defined(__MACH__) && __ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__ < 1070)
+#if defined(__MACH__) && __ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__ < 1070
 I getline(S *s,size_t*n, FILE *f){ R getdelim(s,n,'\n',f);}
 I getdelim(S *s,size_t*n, I d, FILE *f)//target, current capacity, delimiter, file
 {
@@ -59,7 +58,7 @@ I getdelim(S *s,size_t*n, I d, FILE *f)//target, current capacity, delimiter, fi
 
   if (!s) {errno = EINVAL; goto error;}
 
-  if (f->_r <= 0 && __srefill(f)) 
+  if (f->_r <= 0 && __srefill(f))
   {
     /* If f is at EOF already, we just need space for the NUL. */
     if (__sferror(f) || expander(s, 1)) goto error;
@@ -71,7 +70,7 @@ I getdelim(S *s,size_t*n, I d, FILE *f)//target, current capacity, delimiter, fi
   while ((q = memchr(f->_p, d, f->_r)) == NULL)
   {
     if (appender(s, &w, (S) f->_p, f->_r)) goto error;
-    if (__srefill(f)) 
+    if (__srefill(f))
     {
       if (__sferror(f)) goto error;
       goto done;  /* hit EOF */
