@@ -75,26 +75,19 @@ K enlist(K x)
 
 Z K charRange(K a)
 {
-  I n=a->n,c[1+UCHAR_MAX],j=0;
-  memset(c,0,(1+UCHAR_MAX)*sizeof(I));
-  K z=newK(-3,n);M(z);
-  DO(n,UC x=(UC)kC(a)[i];if(!c[x]){c[x]=-1;kC(z)[j++]=kC(a)[i];})
-  if(n==j)R z;
-  K y=newK(-3,j);M(z,y);
-  memcpy(kC(y),kC(z),j*sizeof(C));cd(z);
-  R y;
+  I n=a->n,j=0;UC c[UCHAR_MAX];
+  memset(c,0,UCHAR_MAX*sizeof(C));
+  K z=newK(-3,0);M(z);
+  DO(n,UC x=(UC)kC(a)[i];if(!c[x]){c[x]=1;z=kap(&z,&kC(a)[i]);})
+  R z;
 }
 
 Z K symRange(K x)
 {
   I j=0;
-  K z=newK(-4,xn);M(z);
-  setS(2,0);DO(xn,S s=kS(x)[i];if(!SV(s,2)){SV(s,2)=-1;kS(z)[j++]=s;})
-  //O("u:%lld xn:%lld\n",u,xn);
-  if(xn==j)R z;
-  K y=newK(-4,j);M(z,y);
-  memcpy(kS(y),kS(z),j*sizeof(S));cd(z);
-  R y;
+  K z=newK(-4,0);M(z);
+  setS(2,0);DO(xn,S s=kS(x)[i];if(!SV(s,2)){SV(s,2)=-1;z=kap(&z,&s);})
+  R z;
 }
 
 #define HFR 1
@@ -121,18 +114,19 @@ Z K intRange(K x)
 {
   hcinit();
   I j=0,h0=0,sa=0;uI m=0;
-  K h=newH(xn);M(h);
-  K z=newK(xt,xn);M(h,z);
+  K h, z=newK(xt,0);M(z);
   DO(xn,m|=kU(x)[i]);if(m)while(!(m&1)){m>>=1;sa++;}
+  h=newH(m<xn?m:xn);M(z,h);
+  if(m<sizeof(I)*h->n){
+  DO(xn,uI v=kU(x)[i];uI u=v>>sa;
+         if(!kC(h)[u]){kC(h)[u]=1;z=kap(&z,&v);})
+  }else
+  {
   DO(xn,uI v=kU(x)[i];
-      if(!v){if(!h0){h0=1;kI(z)[j++]=0;}}
-      else{uI vsa=v>>sa;uI u=m<h->n?vsa:hc(vsa);uI p;
-        if(!hg(h,u,vsa,&p)){hs(h,p,vsa);kI(z)[j++]=v;}})
-  //O("u:%lld xn:%lld\n",u,xn);
-  if(xn==j)GC;
-  K y=newK(xt,j);if(!y)GC;
-  memcpy(kI(y),kI(z),j*sizeof(I));
-  cd(z);z=y;
+      if(!v){if(!h0){h0=1;z=kap(&z,&v);}}
+      else{uI vsa=v>>sa;uI u=hc(vsa);uI p;
+        if(!hg(h,u,vsa,&p)){hs(h,p,vsa);z=kap(&z,&v);}})
+  }
 cleanup:
   cd(h);
   R z;
