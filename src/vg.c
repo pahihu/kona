@@ -116,7 +116,7 @@ Z K intRange(K x)
   I j=0,h0=0,sa=0;uI m=0;
   K h, z=newK(xt,0);M(z);
   DO(xn,m|=kU(x)[i]);if(m)while(!(m&1)){m>>=1;sa++;}
-  h=newH(m<xn?m:xn);M(z,h);
+  h=newH(m<xn?m:xn);M(h,z);
   if(m<sizeof(I)*h->n){
   DO(xn,uI v=kU(x)[i];uI u=v>>sa;
          if(!kC(h)[u]){kC(h)[u]=1;z=kap(&z,&v);})
@@ -284,16 +284,25 @@ Z K intGroup(K x)
 {
   hcinit();
   I j=0,h0=0,sa=0;uI m=0;
-  K h=newH(xn);M(h);K ok=newK(-1,h->n);M(ok,h);I*o=kI(ok);
-  K xok=newK(-1,xn);M(xok,ok,h);I*xo=kI(xok);
-  K ck=newK(-1,xn);M(ck,xok,ok,h);I*c=kI(ck);
+  K h,ok,xok,ck;I *o,*xo,*c;
   DO(xn,m|=kU(x)[i]);if(m)while(!(m&1)){m>>=1;sa++;}
-  DO(xn,uI v=kU(x)[i];
-      if(!v){if(!h0)h0=++j;xo[i]=h0-1;c[h0-1]++;}
-      else{v>>=sa;uI u=m<h->n?v:hc(v);
-      uI p;if(!hg(h,u,v,&p)){hs(h,p,v);o[p]=j++;}
-      I w=o[p];xo[i]=w;c[w]++;})
-  cd(ok);cd(h);
+  xok=newK(-1,xn);M(xok);xo=kI(xok);
+  ck=newK(-1,m<xn?m:xn);M(ck,xok);c=kI(ck);
+  h=newH(m<xn?m:xn);M(h,ck,xok);
+  if(m<h->n){
+    DO(xn,uI v=kU(x)[i]>>sa;
+        if(!kI(h)[v]){kI(h)[v]=++j;}
+        I w=kI(h)[v]-1;xo[i]=w;c[w]++)
+  }else{
+    ok=newK(-1,h->n);M(ok,h,ck,xok);o=kI(ok);
+    DO(xn,uI v=kU(x)[i];
+        if(!v){if(!h0)h0=++j;xo[i]=h0-1;c[h0-1]++;}
+        else{v>>=sa;uI u=hc(v);
+        uI p;if(!hg(h,u,v,&p)){hs(h,p,v);o[p]=j++;}
+        I w=o[p];xo[i]=w;c[w]++;})
+    cd(ok);
+  }
+  cd(h);
   K z=groupI(xok,ck,j);
   R z;
 }
