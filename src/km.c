@@ -31,6 +31,7 @@ I PG; //pagesize:  size_t page_size = (size_t) sysconf (_SC_PAGESIZE);
 F mUsed=0.0, mAlloc=0.0, mMap=0.0, mMax=0.0;
 #ifdef DEBUG
 V mMinMem=(V)-1;
+#define TRAPP *(volatile I*)0=1
 #endif
 
 #if UINTPTR_MAX >= 0xffffffffffffffff //64 bit
@@ -49,10 +50,10 @@ V alloc(size_t sz) {
   R r; }
 
 #ifdef DEBUG
-Z V CKP(){
-  if(PG!=4096)*(I*)0=1;
-  DO(6,if(KP[i])*(I*)0=1)
-  DO(KP_MAX+1,if(KP[i]&&KP[i]<mMinMem)*(I*)0=1)
+Z void CKP(){
+  if(PG!=4096)TRAPP;
+  DO(6,if(KP[i])TRAPP)
+  DO(KP_MAX+1,if(KP[i]&&KP[i]<mMinMem)TRAPP)
 }
 #else
 #define CKP(x)
@@ -235,11 +236,11 @@ I repool(V v,I r)//assert r < KP_MAX
   I k=((I)1)<<r;
   CKP();
 #ifdef DEBUG
-  if(v&&v<mMinMem)*(I*)0=1;
+  if(v&&v<mMinMem)TRAPP;
 #endif
   memset(v,0,k);
 #ifdef DEBUG
-  if(KP[r]&&KP[r]<mMinMem)*(I*)0=1;
+  if(KP[r]&&KP[r]<mMinMem)TRAPP;
 #endif
   *(V*)v=KP[r];
   KP[r]=v;
