@@ -1,6 +1,7 @@
 #include "incs.h"
 #include "k.h"
 #include "km.h"
+#include "ks.h"
 #include "vf.h"
 
 /* format */
@@ -13,11 +14,19 @@ S CSK(K x){ R !x?0:4==xt?*kS(x):3==ABS(xt)?kC(x):0;}//non-allocating CSTRING fro
 Z K formKsCS(S s)
 {
   //Could remove this function. It's equivalent to Ks(sp(s))
+  /*I n;while(isspace(*s))s++;
+  if((n=strlen(s))){
+    while(n&&isspace(s[n-1]))n--;
+  }
+  S t=spn(s,n);*/
   S t=sp(s);
   if(!t)R 0; //oom
-  K z=Ks(t); //oom
+  K z;
+  //fprintf(stderr,"SV(%lld,%lld,%lld)\n",SV(t,1),SV(t,2),SV(t,3));
+  if(!SV(t,3))SV(t,3)=(I)Ks(t);
+  z=(K)SV(t,3);
   if(!z)R 0;
-  R z;
+  R ci(z);
 }
 
 K formKiCS(S s) //  0 $ "123\000456\000" is 123 ('\0' char)
