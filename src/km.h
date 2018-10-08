@@ -28,7 +28,7 @@ I repool(V v,I r);
 I lsz(I k);
 I sz(I t,I n);
 #if defined(DEBUG)
-extern V krec[1000000];
+extern V krec[NKREC];
 extern I kreci;
 #endif
 K show(K a);

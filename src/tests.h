@@ -29,6 +29,6 @@ I tp(I x);
 S ts(I x);
 
 #if defined(DEBUG)
-extern V krec[1000000];
+extern V krec[NKREC];
 extern I kreci;
 #endif

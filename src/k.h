@@ -10,7 +10,7 @@ extern I fnci;
 extern S recur(S x);
 
 #if defined(DEBUG)
-extern V krec[1000000];
+extern V krec[NKREC];
 extern I kreci;
 void tf(N n);
 #endif
