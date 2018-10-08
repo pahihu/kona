@@ -122,7 +122,7 @@ Z K qrand(K a,K b)
 
   if(2==bt){F f=*kF(b);DO(n,kF(y)[i]=RF()*f) R y;}
   I d=*kI(b);
-       if(!d)  DO(n,kI(y)[i]=LLONG_MAX*RF()+LLONG_MIN)
+       if(!d)  DO(n,kI(y)[i]=LLONG_MIN+LLONG_MAX*2.0*RF())
   else if(c>=0)DO(n,kI(y)[i]=d*RF())    //this could be better (small numerical error)
   else //deal
   {
