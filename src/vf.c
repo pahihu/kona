@@ -72,7 +72,7 @@ Z K formatFn(K a){ V *v=kW(a),p; I i,k,n,r=0; K z=0; C t[256]=""; S s=(C*)t;
 Z K formatS(S x)
 { I n=strlen(x);
   K z=newK(-3,n);
-  if(z)sprintf(kC(z),"%s",x); //OK since 3/-3 is null-terminated
+  if(z)memcpy(kC(z),x,n); //OK since 3/-3 is null-terminated
   R z;
 }
 Z K formatF(F x, I y, I c)
@@ -80,15 +80,73 @@ Z K formatF(F x, I y, I c)
   Z C buf[32];
   int k=y;
   S b= 0==c?"%.*g":1==c?"%.*f":"%.*e";// %#.*g ??
-  sprintf(buf,b,k,x);I n=strlen(buf);
+  I n=sprintf(buf,b,k,x);
   K z=newK(-3,n);
   if(z)memcpy(kC(z),buf,n);
   R z;
 }
+I ltoa(S buf, I n)
+{
+    int   sign = 0;
+    int   len;
+    int   docpy = 0;
+    char  *ptr;
+    Z C   tmp[32];
+
+    if (n < 0)
+    { sign = 1;
+      n = -n;
+    }
+    
+         if (n <         10L) ptr = &buf[len = 2 + sign];
+    else if (n <        100L) ptr = &buf[len = 3 + sign];
+    else if (n <       1000L) ptr = &buf[len = 4 + sign];
+    else if (n <      10000L) ptr = &buf[len = 5 + sign];
+    else if (n <     100000L) ptr = &buf[len = 6 + sign];
+    else if (n <    1000000L) ptr = &buf[len = 7 + sign];
+    else if (n <   10000000L) ptr = &buf[len = 8 + sign];
+    else if (n <  100000000L) ptr = &buf[len = 9 + sign];
+    else if (n < 1000000000L) ptr = &buf[len =10 + sign];
+    else if (8 == sizeof(long))
+    {
+           if (n <         10000000000L) ptr = &buf[len =11 + sign];
+      else if (n <        100000000000L) ptr = &buf[len =12 + sign];
+      else if (n <       1000000000000L) ptr = &buf[len =13 + sign];
+      else if (n <      10000000000000L) ptr = &buf[len =14 + sign];
+      else if (n <     100000000000000L) ptr = &buf[len =15 + sign];
+      else if (n <    1000000000000000L) ptr = &buf[len =16 + sign];
+      else if (n <   10000000000000000L) ptr = &buf[len =17 + sign];
+      else if (n <  100000000000000000L) ptr = &buf[len =18 + sign];
+      else if (n < 1000000000000000000L) ptr = &buf[len =19 + sign];
+      else
+      { ptr = &tmp[32];
+        docpy = 1;
+      }
+    }
+    else
+    { ptr = &tmp[32];
+      docpy = 1;
+    }
+
+    *--ptr = '\0';
+    do
+    { *--ptr = '0' + (n % 10);
+      n /= 10;
+    } while (n);
+    
+    if (sign)
+      *--ptr = '-';
+
+    if (docpy)
+      memmove(buf, ptr, len = &tmp[31] - ptr + 1);
+
+    return --len;
+}
 Z K formatI(I x)
 {
   Z C buf[72];
-  sprintf(buf,"%lld",x);I n=strlen(buf);
+
+  I n=ltoa(buf,x);
   K z=newK(-3,n);
   if(z)memcpy(kC(z),buf,n);
   R z;

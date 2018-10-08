@@ -86,7 +86,7 @@ K demote(K a)//Attempt to force unnaturally occurring lists into vectors
   I t=a->t, n=a->n;
   if(0!=t || 1>n) R a;
   I p=kK(a)[0]->t;
-  DO(n, if(p!=kK(a)[i]->t)p=0)
+  DO(n, if(p!=kK(a)[i]->t){p=0;break;})
   if(!(1<=p && p <= 4))R a;
   K z=newK(-p,n); M(a,z)
   if     (4==p)DO(n,kS(z)[i]=*kS(kK(a)[i])) //use memcpy instead
