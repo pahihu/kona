@@ -164,7 +164,17 @@ K format(K a)
   else if(1==at)R formatI(*kI(a));
   z=newK(0,an);
   if     ( 0==at)DO(an, kK(z)[i]=format (kK(a)[i]))
-  else if(-1==at)DO(an, kK(z)[i]=formatI(kI(a)[i]))
+  else if(-1==at){
+    K str[65536]; I minI=*kI(a);
+    DO(an, I u=kI(a)[i];if(u<minI)minI=u)
+    memset(str,0,65536*sizeof(K));
+    DO(an,
+        I u=kI(a)[i];if(minI<=u&&u<minI+65536){
+          I x=u-minI;
+          if(!str[x])kK(z)[i]=(str[x]=formatI(u));
+	  else kK(z)[i]=ci(str[x]);
+        } else kK(z)[i]=formatI(u))
+  }
   else if(-2==at)DO(an, kK(z)[i]=formatF(kF(a)[i],PP,0))
   else if(-4==at)DO(an, kK(z)[i]=formatS(kS(a)[i]))
   R z;

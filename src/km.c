@@ -26,9 +26,12 @@
 //Simple tests on Kona confirmed 6 is an improvement over 5
 #define KP_MIN 6  //2^x, must be at least ceil(lg(sizeof(V)))
 #define KP_MAX 26 //2^x, 26->64MB  //TODO: base on available memory at startup (fixed percent? is 64M/2G a good percent?)
-V KP[KP_MAX+1]; //KPOOL
+Z V KP[KP_MAX+1]; //KPOOL
 I PG; //pagesize:  size_t page_size = (size_t) sysconf (_SC_PAGESIZE);
 F mUsed=0.0, mAlloc=0.0, mMap=0.0, mMax=0.0;
+#ifdef DEBUG
+V mMinMem=(V)-1;
+#endif
 
 #if UINTPTR_MAX >= 0xffffffffffffffff //64 bit
 #define MAX_OBJECT_LENGTH (((unsigned long long)1) << 45) //for catching obviously incorrect allocations
@@ -44,6 +47,16 @@ Z V unpool(I r);
 V alloc(size_t sz) {
   V r=malloc(sz);if(!r){fputs("out of memory\n",stderr);exit(1);}
   R r; }
+
+#ifdef DEBUG
+Z V CKP(){
+  if(PG!=4096)*(I*)0=1;
+  DO(6,if(KP[i])*(I*)0=1)
+  DO(KP_MAX+1,if(KP[i]&&KP[i]<mMinMem)*(I*)0=1)
+}
+#else
+#define CKP(x)
+#endif
 
 I OOM_CD(I g, ...) //out-of-memory count-decrement 
 { va_list a; V v,o=(V)-1;
@@ -64,6 +77,7 @@ K mrc(K x,I c){I k=sz(xt,xn);I r=lsz(k);x->_c=(c<<8)|r;R x;}
 //This source would be improved by getting ridding of remaing malloc/calloc/realloc
 K cd(K x)
 {
+  CKP();
   #ifdef DEBUG
   if(x && rc(x) <=0 ) { er(Tried to cd() already freed item) dd(tests) dd((L)x) dd(rc(x)) dd(x->t) dd(x->n) show(x); }
   #endif 
@@ -103,6 +117,7 @@ K cd(K x)
     if(o==8)mMap-=s;
     else if(r>KP_MAX)mAlloc-=s;
     mUsed-=s;
+    CKP();
   }
   else repool(x,r);
   R 0;
@@ -136,14 +151,18 @@ Z I nearPG(I i){ I k=((size_t)i)&(PG-1);R k?i+PG-k:i;}//up 0,8,...,8,16,16,...
 K newK(I t, I n)
 { 
   K z;
+  CKP();
   if(n>0 && n>MAX_OBJECT_LENGTH)R ME;//coarse (ignores bytes per type). but sz can overflow
   I k=sz(t,n),r;
   U(z=kalloc(k,&r))
+  CKP();
   //^^ relies on MAP_ANON being zero-filled for 0==t || 5==t (cd() the half-complete), 3==ABS(t) kC(z)[n]=0 (+-3 types emulate c-string)
   ic(slsz(z,r)); z->t=t; z->n=n;
+  CKP();
   #ifdef DEBUG
-  krec[kreci++]=z;
+  if(kreci<1000000)krec[kreci++]=z;
   #endif
+  CKP();
   R z;
 }
 
@@ -169,11 +188,16 @@ Z V amem(I k,I r) {
 Z V unpool(I r)
 {
   V*z;
+  CKP();
   V*L=((V*)KP)+r;
   I k= ((I)1)<<r;
   if(!*L)
   {
     U(z=amem(k,r))
+#ifdef DEBUG
+    if((V)z<mMinMem)
+      mMinMem=z;
+#endif
     if(k<PG)
     { 
       V y=z;
@@ -183,6 +207,7 @@ Z V unpool(I r)
   }
   z=*L;*L=*z;*z=0;
   mUsed+=k; if(mUsed>mMax)mMax=mUsed;
+  CKP();
   R z;
 }
 
@@ -208,10 +233,18 @@ I lsz(I k){R k<=((I)1)<<KP_MIN?KP_MIN:cl2(k);} //pool lane from size. Ignore eve
 I repool(V v,I r)//assert r < KP_MAX 
 {
   I k=((I)1)<<r;
+  CKP();
+#ifdef DEBUG
+  if(v&&v<mMinMem)*(I*)0=1;
+#endif
   memset(v,0,k);
+#ifdef DEBUG
+  if(KP[r]&&KP[r]<mMinMem)*(I*)0=1;
+#endif
   *(V*)v=KP[r];
   KP[r]=v;
   mUsed -= k;
+  CKP();
   R 0;
 }
 Z I kexpander(K*p,I n) //expand only. 
