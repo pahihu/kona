@@ -22,7 +22,7 @@
 #define DGT (1<<26)
 #define MSB ((uI)IN)
 Z I FtoI(F a){union{F f;I i;}u;if(isnan(a))R LLONG_MIN;u.f=a;R 0>u.i?LLONG_MIN-u.i:u.i;}
-Z uI ItoU(I a){R 0x8000000000000000ULL^(uI)a;}
+Z uI ItoU(I a){R (uI)LLONG_MIN^(uI)a;}
 
 K grade_updown(K a, I r)
 {
