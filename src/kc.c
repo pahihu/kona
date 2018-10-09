@@ -5,6 +5,7 @@
 #include <signal.h>
 #include "k.h"
 #include "kc.h"
+#include "km.h"
 
 #if defined(__OpenBSD__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__ANDROID__)
 #include <sys/socket.h>
@@ -122,6 +123,7 @@ I kinit() {       //oom (return bad)
   #endif
 
   if(PG&(PG-1)){er(Pagesize not power of 2); exit(1);}
+  lszNode=lsz(sizeof(Node));lszPDA=lsz(sizeof(PDA));
 
   ninit();
 

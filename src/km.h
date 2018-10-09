@@ -36,8 +36,10 @@ extern I tests;
 K cd(K a);
 I OOM_CD(I g, ...);
 I cl2(I v);
-I rc(K x);
+#define rc(x)	((x)->_c>>8)
 K mrc(K x,I c);
 K mstat(void);
 void trst();
 void elapsed(S m);
+extern I lszNode,lszPDA;
+V kalloc(I k,I*r);

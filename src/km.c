@@ -42,7 +42,7 @@ V mMinMem=(V)-1;
 Z I kexpander(K *p,I n);
 Z K kapn_(K *a,V v,I n);
 Z V amem(I k,I r);
-Z V kalloc(I k,I*r);
+V kalloc(I k,I*r);
 Z V unpool(I r);
 
 V alloc(size_t sz) {
@@ -66,7 +66,6 @@ I OOM_CD(I g, ...) //out-of-memory count-decrement
   va_start(a,g);while(o!=(v=va_arg(a,V)))cd(v); va_end(a);
   R 0;
 }
-I rc(K x){R (x->_c)>>8;}
 Z K ic(K x){x->_c+=256;R x;}
 Z K dc(K x){x->_c-=256;R x;}
 Z I glsz(K x){R 255&(x->_c);}
@@ -173,7 +172,7 @@ Z V kallocI(I k,I r)
   R unpool(r);
 }
 
-Z V kalloc(I k,I*r) //bytes. assumes k>0
+V kalloc(I k,I*r) //bytes. assumes k>0
 {
   *r=lsz(k);R kallocI(k,*r);
 }
@@ -348,13 +347,14 @@ extern K kapn(K *a,V v,I n){R kapn_(a,v,n);}
 extern K kap(K*a,V v){ if(!a)R 0; R (0<(*a)->t)?kapn_(a,v,1):kap1_(a,v); }
 //extern K kap(K*a,V v){R kapn_(a,v,1);}
 
-N newN(){R unpool(lsz(sizeof(Node)));}
-PDA newPDA(){PDA p=unpool(lsz(sizeof(Pda)));U(p) p->c=alloc(1); if(!p->c){ME;R 0;} R p;}
+I lszPDA,lszNode;
+N newN(){R unpool(lszNode);}
+PDA newPDA(){PDA p=unpool(lszPDA);U(p) p->c=alloc(1); if(!p->c){ME;R 0;} R p;}
 I push(PDA p, C c){R appender(&p->c,&p->n,&c,1);} 
 C    peek(PDA p){I n=p->n; R n?p->c[n-1]:0;}
 C     pop(PDA p){R p->n>0?p->c[--(p->n)]:0;}
 C  bottom(PDA p){R p->n>0?p->c[0]:0;}
-void pdafree(PDA p){free(p->c); repool(p,lsz(sizeof(PDA)));}
+void pdafree(PDA p){free(p->c); repool(p,lszPDA);}
 
 K Ki(I x){K z=newK(1,1);*kI(z)=x;R z;}
 K Kf(F x){K z=newK(2,1);*kF(z)=x;R z;}

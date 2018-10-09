@@ -91,8 +91,8 @@ Z K symRange(K x)
 }
 
 #define HFR 1
-Z K newH(I n){ I m=1<<(HFR+cl2(n));K h=newK(-1,m);M(h);R h; }
-Z I hg(K h,uI hk,I k,uI*p)
+K newH(I n){ I m=1<<(HFR+cl2(n));K h=newK(-1,m);M(h);R h; }
+I hgI(K h,uI hk,I k,uI*p)
 {
   I n=h->n,*d=kI(h);uI u=hk&(n-1);
   while(d[u]){
@@ -125,7 +125,7 @@ Z K intRange(K x)
   DO(xn,uI v=kU(x)[i];
       if(!v){if(!h0){h0=1;z=kap(&z,&v);}}
       else{uI vsa=v>>sa;uI u=hc(vsa);uI p;
-        if(!hg(h,u,vsa,&p)){hs(h,p,vsa);z=kap(&z,&v);}})
+        if(!hgI(h,u,vsa,&p)){hs(h,p,vsa);z=kap(&z,&v);}})
   }
 cleanup:
   cd(h);
@@ -151,15 +151,15 @@ Z I KEQ(K a, K b)//List Equal (K Equal)
   R 1;
 }
 
-Z K shg(K sh,uI hk,K k,uI*p)
+Z K hgK(K sh,uI hk,K k,uI*p)
 {
   I n=sh->n;K*d=kK(sh);uI u=hk&(n-1);
   while(d[u]){
-    if(KEQ(k,d[u])){*p=u;R k;}
+    if(KEQ(k,d[u])){*p=u;R d[u];}
     if(++u==n)u=0;
   }*p=u;R 0;
 }
-#define shs(sh,p,k) kK(sh)[p]=(k)
+#define hsK(sh,p,k) kK(sh)[p]=(k)
 
 uint32_t fnv1a(UC *x,I n)//Fowler-Noll-Vo FNV-1a hash
 {
@@ -174,7 +174,7 @@ Z UI hcode(K x)
   CSR(7,R t)//nyi
   CSR(6,R (UI)&NIL)
   CSR(5,R t)//nyi
-  CSR(4,DO(xn,S v=kS(x)[i];if(!SV(v,1))SV(v,1)=fnv1a((UC*)v,strlen(v));u+=SV(v,1))R xt+u)
+  CSR(4,DO(xn,S v=kS(x)[i];u+=SV(v,SLOT_H))R xt+u)
   CSR(3,R xt+fnv1a((UC*)kC(x),xn))
   CSR(2,)
   CSR(1,DO(xn,uI v=kI(x)[i];u+=hc(v))R xt+u)
@@ -187,12 +187,11 @@ Z K listRange(K x)
 {
   hcinit();
   I j=0;
-  setS(1,0);
   K sh=newH(xn);M(sh);
   K z=newK(xt,xn);M(sh,z);
   DO(xn,uI p;K kv=kK(x)[i];
      uI u=hcode(kv);
-     if(!shg(sh,u,kv,&p)){shs(sh,p,kv);kK(z)[j++]=ci(kv);})
+     if(!hgK(sh,u,kv,&p)){hsK(sh,p,kv);kK(z)[j++]=ci(kv);})
   if(xn==j)GC;
   K y=newK(xt,j);if(!y)GC;
   DO(j,kK(y)[i]=ci(kK(z)[i]));cd(z);z=y;
@@ -298,7 +297,7 @@ Z K intGroup(K x)
     DO(xn,uI v=kU(x)[i];
         if(!v){if(!h0)h0=++j;xo[i]=h0-1;c[h0-1]++;}
         else{v>>=sa;uI u=hc(v);
-        uI p;if(!hg(h,u,v,&p)){hs(h,p,v);o[p]=j++;}
+        uI p;if(!hgI(h,u,v,&p)){hs(h,p,v);o[p]=j++;}
         I w=o[p];xo[i]=w;c[w]++;})
     cd(ok);
   }
@@ -315,7 +314,7 @@ Z K listGroup(K x)
   K xok=newK(-1,xn);M(xok,ok,h);I*xo=kI(xok);
   K ck=newK(-1,xn);M(ck,xok,ok,h);I*c=kI(ck);
   DO(xn,K v=kK(x)[i];uI u=hcode(v);
-      uI p;if(!shg(h,u,v,&p)){shs(h,p,v);o[p]=j++;}
+      uI p;if(!hgK(h,u,v,&p)){hsK(h,p,v);o[p]=j++;}
       I w=o[p];xo[i]=w;c[w]++)
   cd(ok);cd(h);
   K z=groupI(xok,ck,j);
@@ -668,7 +667,7 @@ K _hash(K x)
   CS(0,DO(xn,K v=kK(x)[i];if(xn==_hgk(y,hcode(v),v,x,&p))hs(y,p,i)))
   CSR(1,)CS(2,DO(xn,uI v=kU(x)[i];if(xn==_hg(y,hc(v),(I)v,x,&p))hs(y,p,i)))
   CS(3,DO(xn,uI k=(UC)kC(x)[i];if(xn==kI(y)[k])kI(y)[k]=i))
-  CS(4,setS(1,0);DO(xn,S v=kS(x)[i];if(!SV(v,1))SV(v,1)=fnv1a((UC*)v,strlen(v));if(xn==_hgv(y,SV(v,1),v,x,&p))hs(y,p,i)))}
+  CS(4,DO(xn,S v=kS(x)[i];if(xn==_hgv(y,SV(v,SLOT_H),v,x,&p))hs(y,p,i)))}
   y->t=-5; R y;
 }
 
@@ -682,6 +681,6 @@ K hash_find(K a,K b)
   CS(0,i=_hgk(y,hcode(b),b,x,&p))
   CSR(1,)CS(2,{uI v=*kU(b);i=_hg(y,hc(v),(I)v,x,&p);})
   CS(3,k=(UC)*kC(b);i=kI(y)[k];if(i<0)i=xn)
-  CS(4,{S v=*kS(b);k=fnv1a((UC*)v,strlen(v));i=_hgv(y,k,v,x,&p);}) }
+  CS(4,{S v=*kS(b);k=SV(v,SLOT_H);i=_hgv(y,k,v,x,&p);}) }
   R Ki(i);
 }

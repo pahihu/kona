@@ -1,6 +1,7 @@
 #include "incs.h"
 #include "tests.h"
 #include "k.h"
+#include "km.h"
 
 //  Note:
 //

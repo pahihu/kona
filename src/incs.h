@@ -45,7 +45,9 @@
 
 #define NKREC 1000000
 extern I kreci;
+#ifdef DEBUG
 extern V krec[NKREC];
+#endif
 extern K _ssr(K a,K b,K c);
 
 #endif

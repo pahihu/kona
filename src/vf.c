@@ -3,6 +3,7 @@
 #include "km.h"
 #include "ks.h"
 #include "vf.h"
+#include "vg.h"
 
 /* format */
 
@@ -23,10 +24,10 @@ Z K formKsCS(S s)
   if(!t)R 0; //oom
   K z;
   //fprintf(stderr,"SV(%lld,%lld,%lld)\n",SV(t,1),SV(t,2),SV(t,3));
-  if(!SV(t,3))SV(t,3)=(I)Ks(t);
-  z=(K)SV(t,3);
+  if(!SV(t,SLOT_Ks))SV(t,SLOT_Ks)=(I)Ks(t);
+  z=ci((K)SV(t,SLOT_Ks));
   if(!z)R 0;
-  R ci(z);
+  R z;
 }
 
 K formKiCS(S s) //  0 $ "123\000456\000" is 123 ('\0' char)
@@ -223,7 +224,22 @@ K dollar(K a, K b) //form/format_dyadic
     a=x?promote(a):ci(a); //-3
     b=y?promote(b):ci(b); //-3
     z=a&&b?newK(0,x?a->n:b->n):0;
-    if(z)DO(z->n, K q=dollar(x?kK(a)[i]:a,y?kK(b)[i]:b); M(q,z,a,b) kK(z)[i]=q)
+    if(z){
+      K q,a1,b1,ht=0,dat;uI p=0,ndat=0;int chk=1;
+      DO(z->n,
+        q=0;a1=x?kK(a)[i]:a;b1=y?kK(b)[i]:b;
+        if(rc(b1)>1){
+          if(!ht){ht=newH(32768);dat=newH(32768);}
+          if(chk&&!hgI(ht,(uI)b1>>6,(I)b1,&p)){
+	    if(2*ndat<ht->n){
+              ndat++;kK(ht)[p]=b1;q=(kK(dat)[p]=dollar(a1,b1));
+            }else chk=0;
+          }else q=ci(kK(dat)[p]);
+        }
+        if(!q)q=dollar(a1,b1);
+        M(q,z,a,b) kK(z)[i]=q);
+      if(ht){cd(dat);cd(ht);}
+    }
     cd(a);cd(b);
     R demote(z);
   }
