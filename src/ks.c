@@ -57,46 +57,48 @@ Z I SEQ(S a,I na,S b,I nb){
 Z K ht=0;
 Z I ns=0,sd=0;
 Z uI maxS=0;
-Z S hg(K h,uI hk,S k,I nk,uI*p)
+Z N hg(K h,uI hk,S k,I nk,uI*p)
 {
   uI s=0;
-  I n=h->n;S *d=kS(h);uI u=hk&(n-1);
+  I n=h->n;N *d=kV(h);uI u=hk&(n-1);
   while(d[u]){
-    if(!SEQ(k,nk,d[u],strlen(d[u]))){*p=u;if(s>maxS)maxS=s;R d[u];}
+    if(!SEQ(k,nk,d[u]->k,d[u]->nk)){*p=u;if(s>maxS)maxS=s;R d[u];}
     if(++u==n)u=0;
     s++;
   }*p=u;if(s>maxS)maxS=s;R 0;
 }
 
-Z void hins(S d,I nd){
+Z I hLoad;
+
+Z void hins(N d){
   uI p=0;
   // fprintf(stderr,"DBG: hins\n");
-  if(!ht)ht=newH(8192);
-  if(ns*2>=ht->n){
-    clock_t start,finish;
-    start=clock();
-    K ho=ht;ht=newH(ho->n);
-    // fprintf(stderr,"DBG: maxS=%llu ns=%lld ht->n=%lld\n",maxS,ns,ht->n);
-    maxS=0;
-    DO(ho->n,S s=kS(ho)[i];if(s){if(!hg(ht,SV(s,SLOT_H),s,strlen(s),&p))kS(ht)[p]=s;});
-    cd(ho);
-    finish=clock();
-    // fprintf(stderr,"DBG: elapsed=%lld\n",(I)(1000.0*((F)finish-start)/CLOCKS_PER_SEC));
+  if(!ht){ht=newH(8191);hLoad=2*ht->n/3;}
+  if(ns>hLoad){
+    I m=1<<(1+cl2(ns));
+    if(m!=ht->n){
+      K ho=ht;ht=newH(ns);
+      // fprintf(stderr,"DBG: maxS=%llu ns=%lld ht->n=%lld\n",maxS,ns,ht->n);
+      maxS=0;
+      DO(ho->n,N s=kV(ho)[i];if(s){if(!hg(ht,SV(s->k,SLOT_H),s->k,s->nk,&p))kV(ht)[p]=s;});
+      cd(ho);
+      hLoad=2*ht->n/3;
+    }
   }
-  if(!hg(ht,SV(d,SLOT_H),d,nd,&p))kS(ht)[p]=d;
+  if(!hg(ht,SV(d->k,SLOT_H),d->k,d->nk,&p))kV(ht)[p]=d;
 }
 
-Z S hget(S s,I ns,uI *hc){
+Z N hget(S s,I ns,uI *hc){
   uI p=0;
   // fprintf(stderr,"DBG: hget\n");
   if(!ht)R 0;
   *hc=fnv1a((UC*)s,ns);
   if(!hg(ht,*hc,s,ns,&p))R 0;
-  R kS(ht)[p];
+  R kV(ht)[p];
 }
 
 // Z S sdup(S s){R strdupn(s,strlen(s));} //using this because "strdup" uses [used] dynamically linked malloc which fails with our static free
-Z S sdupI(S s,I k,uI hc){UC *d;I r,nb=(k+1+sizeof(I)-1)/sizeof(I);d=kalloc((NSLOTS+nb)*sizeof(I),&r);if(!d)R 0;ns++;sd=1;memset(d,0,(NSLOTS+nb)*sizeof(I));d+=NSLOTS*sizeof(I);d[k]=0;memcpy(d,s,k);SV(d,SLOT_H)=hc;hins((S)d,k);R (S)d;}
+Z S sdupI(S s,I k,uI hc){UC *d;I r,nb=(k+1+sizeof(I)-1)/sizeof(I);d=kalloc((NSLOTS+nb)*sizeof(I),&r);if(!d)R 0;ns++;sd=1;d+=NSLOTS*sizeof(I);((I*)d)[nb-1]=0;d[k]=0;memcpy(d,s,k);SV(d,SLOT_H)=hc;R (S)d;}
 S strdupn (S s,I k) {S d=alloc(k+1);if(!d)R 0;d[k]=0;R memcpy(d,s,k);} // mm/o  (note: this can overallocate)
 //I SC0N(S a,S b,I n) {I x=memcmp(a,b,n); R x<0?-1:x>0?1:a[n]?1:0; }// non-standard way to compare aaa\0 vs aaa
 I strlenn(S s,I k){S t=memchr(s,'\0',k); R t?t-s:k;}
@@ -109,13 +111,13 @@ S spI(S k,I nk)//symbol from phrase: string interning, Ks(sp("aaa")). This shoul
   //See Knuth Algorithm 6.2.2T
   #define LINK(n,x) (n)->c[((x)+1)/2] // -1 => 0 , 1 => 1
   if(!k)R 0;//used in glue. used in _2m_4. used in parse. Probably a good argument to keep since it's exposed for libraries via 2: dyadic
-  uI hk;S z=hget(k,nk,&hk);if(z)R z;
-  // R sdupI(k,nk,hk);
+  uI hk;N z=hget(k,nk,&hk);if(z)R z->k;
+  //R sdupI(k,nk,hk);
   N t=SYMBOLS, s=t->c[1],p=s,q=p,r; I a,x;
-  if(!s){s=t->c[1]=newN();P(!s,(S)ME);s->k=sdupI(k,nk,hk); if(!s->k){free(s);t->c[1]=0;ME;} s->nk=nk;R s->k;} // <-- strdup here and below
+  if(!s){s=t->c[1]=newN();P(!s,(S)ME);s->k=sdupI(k,nk,hk); if(!s->k){free(s);t->c[1]=0;ME;} s->nk=nk;hins(s);R s->k;} // <-- strdup here and below
   while(q)
   { if(!(a=SCN(k,nk,p->k,p->nk))){R p->k;}//In the usual tree put: p->k=k,p->v=v before returning
-    if(!(q=LINK(p,a))){q=newN();P(!q,(S)ME);q->k=sdupI(k,nk,hk);if(!q->k){free(q);ME; R 0;} q->nk=nk;LINK(p,a)=q;break;}//Usual tree would q->v=v. mmo
+    if(!(q=LINK(p,a))){q=newN();P(!q,(S)ME);q->k=sdupI(k,nk,hk);if(!q->k){free(q);ME; R 0;} q->nk=nk;hins(q);LINK(p,a)=q;break;}//Usual tree would q->v=v. mmo
     else if(q->b){t=p;s=q;}
     p=q;
   }

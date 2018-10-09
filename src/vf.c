@@ -22,10 +22,10 @@ Z K formKsCS(S s)
   S t=spn(s,n);*/
   S t=sp(s);
   if(!t)R 0; //oom
-  K z;
-  //fprintf(stderr,"SV(%lld,%lld,%lld)\n",SV(t,1),SV(t,2),SV(t,3));
+  /*K z;
   if(!SV(t,SLOT_Ks))SV(t,SLOT_Ks)=(I)Ks(t);
-  z=ci((K)SV(t,SLOT_Ks));
+  z=ci((K)SV(t,SLOT_Ks));*/
+  K z=Ks(t);
   if(!z)R 0;
   R z;
 }
@@ -225,10 +225,11 @@ K dollar(K a, K b) //form/format_dyadic
     b=y?promote(b):ci(b); //-3
     z=a&&b?newK(0,x?a->n:b->n):0;
     if(z){
-      K q,a1,b1,ht=0,dat;uI p=0,ndat=0;int chk=1;
+      K q,a1,b1,ht=0,dat;uI p=0,ndat=0;int chk=1,pr=1;
       DO(z->n,
         q=0;a1=x?kK(a)[i]:a;b1=y?kK(b)[i]:b;
-        if(rc(b1)>1){
+        if(rc(b1)>rc(b)){
+          // if(pr){fprintf(stderr,"DBG: rc(b1)>rc(b)\n");pr=0;}
           if(!ht){ht=newH(32768);dat=newH(32768);}
           if(chk&&!hgI(ht,(uI)b1>>6,(I)b1,&p)){
 	    if(2*ndat<ht->n){
