@@ -14,6 +14,7 @@ extern volatile sig_atomic_t interrupted;
 
 Z K bv_ex(V *p,K k);
 K dv_ex(K a,V *p,K b);
+Z K _ex0(V *v,K k,I r,int _f);
 Z K ex0(V *v,K k,I r);
 Z K ex2(V *v,K k);
 Z V ex_(V a,I r);
@@ -665,12 +666,17 @@ Z V ex_(V a, I r)//Expand wd()->7-0 types, expand and evaluate brackets
   {
     if((tmp=*(K*)(kV(x)+CONJ))) if(offsetColon==*kW(tmp) && (UI)*(kW(tmp)+1)>DT_SIZE)fer=1;
     y=ex_(kV(x)+CONJ,2); //Use 0-type with NULLS if passing to function
+    // XXX access last elt
+#define LEN(x)	(x?x->n:-1)
+    // if(!yt&&yn>1)O("DBG: %lld",LEN(kK(y)[yn-1]));
     U(y);
     if(y->t == 0 && y->n==0){cd(y); y=_n();}
     if(fer>0 && !fCheck) R y;
   }
-  z=ex0(kW(x),y,r);  //eval wd()
-  cd(y);
+  // O("DBG: ex_ y=%p\n",y);
+  z=_ex0(kW(x),y,r,1);  //eval wd()
+  // O("DBG: ex_ y=%p\n",y);
+  // cd(y);
 
   R z;
 }
@@ -685,7 +691,14 @@ K ex(K a) {   //Input is (usually, but not always) 7-0 type from wd()
   R z;
 }
 
-Z K ex0(V*v,K k,I r) //r: {0,1,2} -> {code, (code), [code]}
+Z K ex0(V*v,K k,I r)
+{
+  R _ex0(v,k,r,0);
+}
+
+
+#define CDk(x)	{if(_f)cd(k);x;}
+Z K _ex0(V*v,K k,I r,int _f) //r: {0,1,2} -> {code, (code), [code]}
                      //Reverse execution/return multiple (paren not function or script) "list notation"  {4,5,6,7} -> {:,if,while,do}
 {
   I n=0, e=1, i,a,b;
@@ -702,40 +715,47 @@ Z K ex0(V*v,K k,I r) //r: {0,1,2} -> {code, (code), [code]}
                 if(encf){cd(encf); encf=0;}
                 if(grnt){cd(grnt); grnt=0;}}
               U(x) z=bk(x)?_n():x;
-              if(fer>0 && !fCheck)R z;
+              if(fer>0 && !fCheck)CDk(R z);
               if(grnt && (!prnt || rc(prnt)==2)){if(prnt)cd(prnt); prnt=ci(grnt);}
             } )
     CS(4, for(i=-1;i<n;i++)
             if(-1==i||bk(v[i])){
               U(x=ex1(v+1+i,0,&i,n,1))
-              if(fer>0 && !fCheck)R x;
-              x=bk(x)?_n():x; while(++i<n&&!bk(v[i])); if(i==n) R x;
-              z=delist(x); if(ABS(z->t)!=1 || z->n!=1){cd(z); R TE;}
+              if(fer>0 && !fCheck)CDk(R x);
+              x=bk(x)?_n():x; while(++i<n&&!bk(v[i])); if(i==n)CDk(R x);
+              z=delist(x); if(ABS(z->t)!=1 || z->n!=1){cd(z);CDk(R TE);}
               a=*kI(z); cd(z);
-              if(a){x=ex1(v+i+1,0,&i,n,1); R x=bk(x)?_n():x;}
+              if(a){x=ex1(v+i+1,0,&i,n,1); CDk(R x=bk(x)?_n():x);}
               else while(i<n&&!bk(v[i]))i++; }
-            R _n() )
+            CDk(R _n()) )
     CSR(5,)
     CSR(6,)
     CS(7, do{I i=0; U(x=ex1(v,0,&i,0,1))
-            if(fer>0)R x; x=bk(x)?_n():x; z=delist(x);
-            if(ABS(z->t)!=1 || z->n!=1){cd(z);R TE;} a=*kI(z);cd(z); i=0;
+            if(fer>0)CDk(R x); x=bk(x)?_n():x; z=delist(x);
+            if(ABS(z->t)!=1 || z->n!=1){cd(z);CDk(R TE);} a=*kI(z);cd(z); i=0;
             if(b){while(++i<n&&!bk(v[i])); if(i>=n)break;}
             SW(r){CSR(5,)
-                  CS(6,if(a&&b){x=ex0(v+i+1,0,0); if(fer>0)R x; cd(x);})
-                  CS(7,DO2(a, x=ex0(v+i+1,0,0); if(fer>0)R x; cd(x);))}}
+                  CS(6,if(a&&b){x=ex0(v+i+1,0,0); if(fer>0)CDk(R x); cd(x);})
+                  CS(7,DO2(a, x=ex0(v+i+1,0,0); if(fer>0)CDk(R x); cd(x);))}}
           while(6==r && a);
-          R _n())
+          CDk(R _n()))
     CD: z=newK(0,n?e:0);
         if(n)for(i=n-1;i>=-1;i--)if(-1==i||bk(v[i])){
+          // O("DBG: n=%lld\n",n);
           if(offsetColon==(v+1+i)[0] && (UI)(v+1+i)[1]>DT_SIZE)fer=1;
           x=ex1(v+1+i,0,&i,n,0);
-          if(fer1 || ((fer>0 && (v[0]==(V)offsetColon || v[2]==(V)1)) && !fCheck)){cd(z); fer1=1; R x;}
-          M(x,z) kK(z)[--e]=bk(x)?2==r?0:_n():x;}  // (c:9;a+b;c:1) oom
+          if(fer1 || ((fer>0 && (v[0]==(V)offsetColon || v[2]==(V)1)) && !fCheck)){cd(z); fer1=1; CDk(R x);}
+          M(x,z) 
+          K kk=bk(x)?2==r?0:_n():x;
+          // O("DBG: e=%lld kk=%p\n",e,kk);
+          kK(z)[--e]=kk;}  // (c:9;a+b;c:1) oom
+          // kK(z)[--e]=bk(x)?2==r?0:_n():x;}  // (c:9;a+b;c:1) oom
+        // if(!z->t&&z->n>1)O("DBG: n=%lld\n",LEN(kK(z)[z->n-1]));
   }
 
   //Note on brackets: [] is _n, not (). Expression [1;1] (0-type with two atoms) is different from [1 1] (integer vector)
 
+  // if(!z->t&&z->n>1)O("DBG: n=%lld\n",LEN(kK(z)[z->n-1]));
   if(1==r)z=collapse(z);
   if(k)
   {
@@ -747,7 +767,7 @@ Z K ex0(V*v,K k,I r) //r: {0,1,2} -> {code, (code), [code]}
       if(encf && DT_SIZE<(UI)&z)x=vf_ex(&encf,k);
       else x=vf_ex(&z,k);
       if(encp!=3)cd(z);
-      R z=x;
+      CDk(R z=x);
     }
     else // checking if looks like f'[] or f/[] or ...
     {
@@ -757,15 +777,27 @@ Z K ex0(V*v,K k,I r) //r: {0,1,2} -> {code, (code), [code]}
 
       K t=0; if(k->n==1) t=first(k);
       if((k->n>1 || (t && t->n==1)) && !sva(*q) && adverbClass(*q))
-      {
-        if(k->n==1 && !prj2)k->n=2;
+      { int ext2=0;
+        if(k->n==1 && !prj2){
+          // O("DBG: (1) k->t=%lld k->n=%lld prj2=%lld\n",k->t,k->n,prj2);
+	  //if(sizeof(size_t)==4)k->n=2;
+	  //else
+	  // === 181010AP resize, because of KP_MIN=5 ===
+          {
+            // O("DBG: (1) k->t=%lld k=%p(%lld)\n",k->t,k,rc(k));
+            I v=0;kap(&k,&v);ext2=1;
+            // O("DBG: (2) k->t=%lld k=%p(%lld)\n",k->t,k,rc(k));
+            if(6==k->t){cd(kK(k)[1]);kK(k)[1]=0;}
+	  }
+        }
         prj2=1;
-        DO(k->n, if(!kK(k)[i])prj=1)
+        DO(k->n,if(!kK(k)[i])prj=1)
+        // if(ext2)O("DBG: (2) prj=%lld\n",prj);
         if(!prj)    // could be the _n() <-> ;;; replacement above
         {
           x=bv_ex(q,k);
           cd(z);
-          R x;
+          CDk(R x);
         }
       }
       cd(t);
@@ -777,7 +809,7 @@ Z K ex0(V*v,K k,I r) //r: {0,1,2} -> {code, (code), [code]}
     }
   }
 
-  R z;
+  CDk(R z);
 }
 
 Z K bv_ex(V*p,K k) {
