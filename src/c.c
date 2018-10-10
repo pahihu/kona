@@ -3,6 +3,7 @@
 #include "k.h"
 #include "km.h"
 #include "c.h"
+#include "kbuild.h"
 
 I fLoad=0;
 
@@ -32,7 +33,10 @@ void boilerplate()
   #ifndef __MINGW32__
     if(!isatty(STDOUT) || !isatty(STDIN)) R;		//kluge:  isatty() fails using mingw-10.0 with msys2
   #endif
-  O("K Console - Enter \\ for help\n\n");
+  // O("K "#KBUILD_DATE#" "#KBUILD_OS#" "#KBUILD_ARCH#"\n");
+  O("K Console " 
+    KBUILD_DATE " " KBUILD_OS " " KBUILD_ARCH 
+    " - Enter \\ for help\n\n");
   prompt(0);
 }
 

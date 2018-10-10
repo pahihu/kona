@@ -119,8 +119,11 @@ k_dyn: CFLAGS += $(PRODFLAGS)
 k_dyn: src/kbuild.h $(OBJS)
 	$(CC) ${CFLAGS} $(OBJS) -rdynamic -o $@ $(LDFLAGS)
 
-src/kbuild.h:
+src/kbuild.h: Makefile
+	$(RM) @
 	echo "#define KBUILD_DATE \"`date +%Y-%m-%d`\"" >$@
+	echo "#define KBUILD_OS \"`uname`\"" >>$@
+	echo "#define KBUILD_ARCH \"`uname -m`\"" >>$@
 
 test: k_test
 
