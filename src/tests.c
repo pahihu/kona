@@ -1385,6 +1385,14 @@ Z I testsBook()
   TC(5, {b:4; b::5; b}0)
   TC(2, a:1; :b:2; c:3)
 
+  //lower
+  TC("alpha", _"ALPHA")
+  TC("alpha", _"alpha")
+  TC(`ibm,  _`IBM)
+  TC(`ibm,  _`ibm)
+  TC_("(,\"alpha\";,\"beta\")", "_(,\"ALPHA\";,\"BETA\")")
+  TC(`ibm`msft`csco, _`IBM`MSFT`CSCO)
+
   //overMonad
   TC("abcd" ,("abcd";"efgh")/0)
   TC("efgh" ,("abcd";"efgh")/1)

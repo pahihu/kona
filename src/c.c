@@ -239,7 +239,7 @@ K backslash(S s, I n, K*dict)
               "? dyadic   find. x?y yields index of y in list x (or #x)\n"
               "? dyadic   invert. {x^2} ? 2 yields sqrt(2) \n"
               "? triadic  invert-guess. secant method with clues ?[{2^x};17;4]\n"
-              "_ monadic  floor. tolerant floor function \n"
+              "_ monadic  floor/lower. tolerant floor function / lowercase \n"
               "_ dyadic   drop/cut. lose x elts from list y / separate into pieces \n"
               ", monadic  enlist. put x inside a 1-element list \n"
               ", dyadic   join. \"ab\",\"cd\" yields \"abcd\"\n"

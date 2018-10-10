@@ -3,6 +3,7 @@ N newN();
 extern N SYMBOLS;
 V alloc(size_t sz);
 S sp(S k);
+S spI(S k,I nk);
 I SC(S a,S b);
 I StoI(S s,I *n);
 I strlenn(S s,I k);

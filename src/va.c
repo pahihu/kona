@@ -1,6 +1,7 @@
 #include "incs.h"
 #include "scalar.h"
 #include "k.h"
+#include "ks.h"
 #include "r.h"
 #include "vc.h"
 
@@ -230,15 +231,40 @@ K max_or(K a, K b)
   R z;
 }
 
+Z int hasUpper(S s,I n)
+{
+  DO(n,if(isupper(s[i]))R 1);R 0;
+}
+Z S toLower(S d,S s,I n)
+{
+  DO(n,d[i]=tolower(s[i]));R d;
+}
+
 K floor_ceil(K a, F(*g)(F))
 {
   I at=a->t, an=a->n;
   F(*h)(F)=g==ceil?floor:ceil;
-  P(2 <ABS(at),TE)
+  P(4 <ABS(at),TE);
+  P(2 <ABS(at) && g!=floor,TE);
   if(1==ABS(at))R ci(a);
 
+  K z=0;
+  if(2<ABS(at)){
+    if(4==ABS(at)){
+      z=newK(at,an);
+      DO(an,S t;S s=kS(a)[i];I ns=strlen(s);
+        t=s;if(hasUpper(s,ns)){
+        S d=strdupn(s,ns);P(!d,ME);toLower(d,s,ns);
+        t=spI(d,ns);free(d);P(!t,ME);}
+        kS(z)[i]=t);
+    }else if(3==ABS(at)){
+      if(hasUpper(kC(a),an)){z=newK(at,an);toLower(kC(z),kC(a),an);}
+      else z=ci(a);
+    }
+    R z;
+  }
   //TODO: oom
-  K z=newK(at?SIGN(at):0,an);//Compress F {-2,2} into I {-1,1}
+  z=newK(at?SIGN(at):0,an);//Compress F {-2,2} into I {-1,1}
   F e,f;I r;
   if(2==ABS(at))DO(an, e=kF(a)[i]; if(isnan(e))r=IN;else if(isinf(e)||e<=-II||e>=II)r=e<0?-II:II;else {f=FF(e); r=(f>0&&!FC(f,1))||(f<0&&!FC(f,0))?h(e):g(e);} kI(z)[i]=r)
   else if(!at) DO(an, kK(z)[i]=floor_ceil(kK(a)[i],g))
