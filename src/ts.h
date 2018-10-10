@@ -35,10 +35,11 @@ typedef struct m0{M1 m1;I r;K k;I a;} M0; //r=read so far. a=remote client. inet
 enum TYPE_SEVEN_MEMBERS {CONTeXT,DEPTH,CODE,LOCALS,PARAMS,CONJ,CACHE_WD,CACHE_TREE,TYPE_SEVEN_SIZE};  //sp(), code in {-4, -4, -4[3], -3, -4,-4,-4,-4}, Kd(), Kd(), Kv()/0-List-w/-NULLs
 //Executable types: t-n is 7-n for n in {0,1,2,3,4,5,6,7}: 0: list of unexecuted types, 1: [derived] verb, 2: dynamically loaded function, 3: brace function{}, 4: ":[]", 5: if[], 6: while[], 7: do[]
 // slot 1/2 temp storage
+typedef int Slot;
 #define NSLOTS  3
 #define SLOT_H	3
 // #define SLOT_Ks 4
-typedef struct node{V k;I nk;I b;struct node *c[2];}Node;typedef Node*N;//Knuth's AVL tree
+typedef struct node{V k;unsigned nk;int b;struct node *c[2];}Node;typedef Node*N;//Knuth's AVL tree
 typedef struct pda{I i,s,n;S c;}Pda;typedef Pda*PDA; //holds parse state. pos in input, state, stacklength, stack
 typedef struct af{ V verb_over; V verb_scan; V verb_eachpair; } AF; //Alternative/Adverb Functions
 typedef struct tr{ I adverbClass; I arity; V func; S text; AF alt_funcs; } TR; //Table Row for Dispatch Table
@@ -49,7 +50,7 @@ typedef struct tr{ I adverbClass; I arity; V func; S text; AF alt_funcs; } TR; /
 #define kF(x) ((F*)ke(x))
 #define kC(x) ((C*)ke(x))//Chars/Char-strings (+3/-3) must have a terminal '\0' (uncounted), but may also contain them
 #define kS(x) ((S*)ke(x))//Symbol pointers to interned strings ending at the first '\0'
-#define SV(x,y) (((I*)(x))[-(y)])
+#define SV(x,y) (((Slot*)(x))[-((int)y)])
 #define kV(x) ((V*)ke(x))
 #define kVC(x) ((K)kV(x)[CODE])
 #define kW(x) ((V*)kS(kVC(x)))

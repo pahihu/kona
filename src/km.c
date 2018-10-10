@@ -24,7 +24,7 @@
 //Linux: cat /proc/cpuinfo | grep cache_alignment
 //OSX: sysctl -a | grep cache
 //Simple tests on Kona confirmed 6 is an improvement over 5
-#define KP_MIN 6  //2^x, must be at least ceil(lg(sizeof(V)))
+#define KP_MIN  6 //2^x, must be at least ceil(lg(sizeof(V)))
 #define KP_MAX 26 //2^x, 26->64MB  //TODO: base on available memory at startup (fixed percent? is 64M/2G a good percent?)
 Z V KP[KP_MAX+1]; //KPOOL
 I PG; //pagesize:  size_t page_size = (size_t) sysconf (_SC_PAGESIZE);
@@ -52,7 +52,7 @@ V alloc(size_t sz) {
 #ifdef DEBUG
 Z void CKP(){
   if(PG!=4096)TRAPP;
-  DO(6,if(KP[i])TRAPP)
+  DO(KP_MIN,if(KP[i])TRAPP)
   DO(KP_MAX+1,if(KP[i]&&KP[i]<mMinMem)TRAPP)
 }
 #else
@@ -68,7 +68,7 @@ I OOM_CD(I g, ...) //out-of-memory count-decrement
 }
 Z K ic(K x){x->_c+=256;R x;}
 Z K dc(K x){x->_c-=256;R x;}
-Z I glsz(K x){R 255&(x->_c);}
+I glsz(K x){R 255&(x->_c);}
 Z K slsz(K x,I r){x->_c&=~(uI)255;x->_c|=r;R x;}
 K mrc(K x,I c){I k=sz(xt,xn);I r=lsz(k);x->_c=(c<<8)|r;R x;}
 #define STAT(x)
@@ -125,6 +125,8 @@ K cd(K x)
 
 K ci(K x)
 {
+  CKP();
+
   P(!x,0)
   ic(x);
 
@@ -158,11 +160,9 @@ K newK(I t, I n)
   CKP();
   //^^ relies on MAP_ANON being zero-filled for 0==t || 5==t (cd() the half-complete), 3==ABS(t) kC(z)[n]=0 (+-3 types emulate c-string)
   ic(slsz(z,r)); z->t=t; z->n=n;
-  CKP();
   #ifdef DEBUG
-  if(kreci<1000000)krec[kreci++]=z;
+  if(kreci<NKREC)krec[kreci++]=z;
   #endif
-  CKP();
   R z;
 }
 
@@ -204,6 +204,7 @@ Z V unpool(I r)
       while(y<(V)z+PG+-k){*(V*)y=y+k;y+=k;}
     }//Low lanes subdivide pages. no divide op
     *L=z;
+    CKP();
   }
   z=*L;*L=*z;*z=0;
   mUsed+=k; if(mUsed>mMax)mMax=mUsed;
@@ -290,6 +291,7 @@ Z K kap1_(K *a,V v)//at<=0
   {
     #ifdef DEBUG
     DO(kreci, if(*a==krec[i]){krec[i]=0; break; })
+    if(kreci<NKREC)krec[kreci++]=k;
     #endif
     *a=k;
   }
@@ -325,6 +327,7 @@ Z K kapn_(K *a,V v,I n)
   {
     #ifdef DEBUG
     DO(kreci, if(*a==krec[i]){krec[i]=0; break; })
+    if(kreci<NKREC)krec[kreci++]=k;
     #endif
     *a=k;
   }

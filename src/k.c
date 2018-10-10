@@ -551,8 +551,7 @@ L DT_OFFSET(V v){I i=0; while(v!=DT[i].func)i++; R i;} //init only
 
 I kreci=0;  //should be inside DEBUG case but needed in r.c cached verbs, at least until caching method changes
 #ifdef DEBUG
-I sizeofSym(S s){I nb=(strlen(s)+1+sizeof(I)-1)/sizeof(I);R nb*sizeof(I);}
-void tf(N n){if(!n)R;DO(2,tf(n->c[i]));if(n->k)repool(n->k-NSLOTS*sizeof(I),lsz(sizeofSym(n->k)));repool(n,lszNode);} //tree free
+void tf(N n){if(!n)R;DO(2,tf(n->c[i]));if(n->k)repool(n->k-NSLOTS*sizeof(Slot),lsz(sizeofSym(strlen(n->k))));repool(n,lszNode);} //tree free
 V krec[1000000];
 /* Z I CV(K v) { V a[1000]; I n=0; while(v) { dd(v); a[n++]=v; DO(n, DO2(n-i-1, if(a[i]==a[i+j+1]) R 1;)) if(!(7==v->t && 0==v->n)) R 0; V q=kW(v)[0]; v=0; if(q) v= *(K*)q; } R 0; }//seven_type contains cycle? */
 #endif

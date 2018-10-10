@@ -89,5 +89,5 @@ extern M0 CP[FD_SETSIZE+1];
 K _h();
 K _host(K x);
 extern S HOST_IFACE;
-S spn(S s,I n);
+S spn(S s,unsigned n);
 K Ks(S x);

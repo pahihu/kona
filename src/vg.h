@@ -46,6 +46,6 @@ V alloc(size_t);
 K symGrade(K a,I r);
 I cl2(I v);
 K last(K a);
-K newH(I n);
+K newH(I t,I n);
 uint32_t fnv1a(UC *x,I n);
 I hgI(K h,uI hk,I k,uI *p);

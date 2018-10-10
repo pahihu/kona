@@ -91,7 +91,7 @@ Z K symRange(K x)
 }
 
 #define HFR 1
-K newH(I n){ I m=1<<(HFR+cl2(n));K h=newK(-1,m);M(h);R h; }
+K newH(I t,I n){ I m=1<<(HFR+cl2(n));K h=newK(t,m);M(h);R h; }
 I hgI(K h,uI hk,I k,uI*p)
 {
   I n=h->n,*d=kI(h);uI u=hk&(n-1);
@@ -116,7 +116,7 @@ Z K intRange(K x)
   I j=0,h0=0,sa=0;uI m=0;
   K h, z=newK(xt,0);M(z);
   DO(xn,m|=kU(x)[i]);if(m)while(!(m&1)){m>>=1;sa++;}
-  h=newH(m<xn?m:xn);M(h,z);
+  h=newH(-1,m<xn?m:xn);M(h,z);
   if(m<sizeof(I)*h->n){
   DO(xn,uI v=kU(x)[i];uI u=v>>sa;
          if(!kC(h)[u]){kC(h)[u]=1;z=kap(&z,&v);})
@@ -187,7 +187,7 @@ Z K listRange(K x)
 {
   hcinit();
   I j=0;
-  K sh=newH(xn);M(sh);
+  K sh=newH(-1,xn);M(sh);
   K z=newK(xt,xn);M(sh,z);
   DO(xn,uI p;K kv=kK(x)[i];
      uI u=hcode(kv);
@@ -287,7 +287,7 @@ Z K intGroup(K x)
   DO(xn,m|=kU(x)[i]);if(m)while(!(m&1)){m>>=1;sa++;}
   xok=newK(-1,xn);M(xok);xo=kI(xok);
   ck=newK(-1,m<xn?m:xn);M(ck,xok);c=kI(ck);
-  h=newH(m<xn?m:xn);M(h,ck,xok);
+  h=newH(-1,m<xn?m:xn);M(h,ck,xok);
   if(m<h->n){
     DO(xn,uI v=kU(x)[i]>>sa;
         if(!kI(h)[v]){kI(h)[v]=++j;}
@@ -310,7 +310,7 @@ Z K listGroup(K x)
 {
   hcinit();
   I j=0;
-  K h=newH(xn);M(h);K ok=newK(-1,h->n);M(ok,h);I*o=kI(ok);
+  K h=newH(-1,xn);M(h);K ok=newK(-1,h->n);M(ok,h);I*o=kI(ok);
   K xok=newK(-1,xn);M(xok,ok,h);I*xo=kI(xok);
   K ck=newK(-1,xn);M(ck,xok,ok,h);I*c=kI(ck);
   DO(xn,K v=kK(x)[i];uI u=hcode(v);
@@ -660,7 +660,7 @@ Z I _hgv(K h,uI k,V v,K x,uI*p)
 K _hash(K x)
 {
   P(xt>0,RE)
-  uI p;K y=(-3==xt)?newK(-1,1+UCHAR_MAX):newH(xn);M(y);
+  uI p;K y=(-3==xt)?newK(-1,1+UCHAR_MAX):newH(-1,xn);M(y);
   hcinit();
   DO(yn,kI(y)[i]=-1);
   SW(-xt){

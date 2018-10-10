@@ -26,6 +26,7 @@ I bp(I t);
 K ci(K a);
 I repool(V v,I r);
 I lsz(I k);
+I glsz(K x);
 I sz(I t,I n);
 #if defined(DEBUG)
 extern V krec[NKREC];

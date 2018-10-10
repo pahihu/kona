@@ -108,26 +108,26 @@ I ltoa(S buf, I n)
       n = -n;
     }
     
-         if (n <         10L) ptr = &buf[len = 2 + sign];
-    else if (n <        100L) ptr = &buf[len = 3 + sign];
-    else if (n <       1000L) ptr = &buf[len = 4 + sign];
-    else if (n <      10000L) ptr = &buf[len = 5 + sign];
-    else if (n <     100000L) ptr = &buf[len = 6 + sign];
-    else if (n <    1000000L) ptr = &buf[len = 7 + sign];
-    else if (n <   10000000L) ptr = &buf[len = 8 + sign];
-    else if (n <  100000000L) ptr = &buf[len = 9 + sign];
-    else if (n < 1000000000L) ptr = &buf[len =10 + sign];
-    else if (8 == sizeof(long))
+         if (n <         10LL) ptr = &buf[len = 2 + sign];
+    else if (n <        100LL) ptr = &buf[len = 3 + sign];
+    else if (n <       1000LL) ptr = &buf[len = 4 + sign];
+    else if (n <      10000LL) ptr = &buf[len = 5 + sign];
+    else if (n <     100000LL) ptr = &buf[len = 6 + sign];
+    else if (n <    1000000LL) ptr = &buf[len = 7 + sign];
+    else if (n <   10000000LL) ptr = &buf[len = 8 + sign];
+    else if (n <  100000000LL) ptr = &buf[len = 9 + sign];
+    else if (n < 1000000000LL) ptr = &buf[len =10 + sign];
+    else if (8 == sizeof(I))
     {
-           if (n <         10000000000L) ptr = &buf[len =11 + sign];
-      else if (n <        100000000000L) ptr = &buf[len =12 + sign];
-      else if (n <       1000000000000L) ptr = &buf[len =13 + sign];
-      else if (n <      10000000000000L) ptr = &buf[len =14 + sign];
-      else if (n <     100000000000000L) ptr = &buf[len =15 + sign];
-      else if (n <    1000000000000000L) ptr = &buf[len =16 + sign];
-      else if (n <   10000000000000000L) ptr = &buf[len =17 + sign];
-      else if (n <  100000000000000000L) ptr = &buf[len =18 + sign];
-      else if (n < 1000000000000000000L) ptr = &buf[len =19 + sign];
+           if (n <         10000000000LL) ptr = &buf[len =11 + sign];
+      else if (n <        100000000000LL) ptr = &buf[len =12 + sign];
+      else if (n <       1000000000000LL) ptr = &buf[len =13 + sign];
+      else if (n <      10000000000000LL) ptr = &buf[len =14 + sign];
+      else if (n <     100000000000000LL) ptr = &buf[len =15 + sign];
+      else if (n <    1000000000000000LL) ptr = &buf[len =16 + sign];
+      else if (n <   10000000000000000LL) ptr = &buf[len =17 + sign];
+      else if (n <  100000000000000000LL) ptr = &buf[len =18 + sign];
+      else if (n < 1000000000000000000LL) ptr = &buf[len =19 + sign];
       else
       { ptr = &tmp[32];
         docpy = 1;
@@ -230,7 +230,7 @@ K dollar(K a, K b) //form/format_dyadic
         q=0;a1=x?kK(a)[i]:a;b1=y?kK(b)[i]:b;
         if(rc(b1)>rc(b)){
           // if(pr){fprintf(stderr,"DBG: rc(b1)>rc(b)\n");pr=0;}
-          if(!ht){ht=newH(32768);dat=newH(32768);}
+          if(!ht){ht=newH(-4,32768);dat=newH(-4,32768);}
           if(chk&&!hgI(ht,(uI)b1>>6,(I)b1,&p)){
 	    if(2*ndat<ht->n){
               ndat++;kK(ht)[p]=b1;q=(kK(dat)[p]=dollar(a1,b1));
