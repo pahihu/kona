@@ -28,15 +28,47 @@ S fBreak = "n";
 S fBreak = "t";
 #endif
 
+#ifdef __APPLE__
+#include <sys/types.h>
+#include <sys/sysctl.h>
+int sysctl32(const char*nm)
+{
+  int v;size_t n=sizeof(v);
+  sysctlbyname(nm,&v,&n,NULL,0);
+  return v;
+}
+
+I sysctl64(const char*nm)
+{
+  I v;size_t n=sizeof(v);
+  sysctlbyname(nm,&v,&n,NULL,0);
+  return v;
+}
+
+S sysctlS(const char*nm)
+{
+  S p;size_t len;
+  sysctlbyname(nm,NULL,&len,NULL,0);
+  p=malloc(len);
+  sysctlbyname(nm,p,&len,NULL,0);
+  return p;
+}
+#endif
+
 void boilerplate()
 {
   #ifndef __MINGW32__
     if(!isatty(STDOUT) || !isatty(STDIN)) R;		//kluge:  isatty() fails using mingw-10.0 with msys2
   #endif
-  // O("K "#KBUILD_DATE#" "#KBUILD_OS#" "#KBUILD_ARCH#"\n");
-  O("K Console " 
-    KBUILD_DATE " " KBUILD_OS " " KBUILD_ARCH 
-    " - Enter \\ for help\n\n");
+  O("K Console " KBUILD_DATE "\n");
+  #ifdef __APPLE__
+  int ncpu = sysctl32("hw.physicalcpu_max");
+  I mem=sysctl64("hw.memsize")/(1<<20);
+  S hostnm = sysctlS("kern.hostname");
+  O(KBUILD_OS " " KBUILD_ARCH " %lubit %dcore %lldMB %s\n",
+	8*sizeof(size_t),ncpu,mem,hostnm);
+  #endif
+  O("Enter \\ for help\n\n");
   prompt(0);
 }
 
