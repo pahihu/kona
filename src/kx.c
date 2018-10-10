@@ -783,7 +783,7 @@ Z K _ex0(V*v,K k,I r,int _f) //r: {0,1,2} -> {code, (code), [code]}
 	  //if(sizeof(size_t)==4)k->n=2;
 	  //else
 	  // === 181010AP resize, because of KP_MIN=5 ===
-          {
+          if(0){
             // O("DBG: (1) k->t=%lld k=%p(%lld)\n",k->t,k,rc(k));
             I v=0;kap(&k,&v);ext2=1;
             // O("DBG: (2) k->t=%lld k=%p(%lld)\n",k->t,k,rc(k));
