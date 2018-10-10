@@ -61,14 +61,14 @@ void boilerplate()
     if(!isatty(STDOUT) || !isatty(STDIN)) R;		//kluge:  isatty() fails using mingw-10.0 with msys2
   #endif
   O("K Console " KBUILD_DATE "\n");
+  O(KBUILD_OS " " KBUILD_ARCH);
   #ifdef __APPLE__
   int ncpu = sysctl32("hw.physicalcpu_max");
   I mem=sysctl64("hw.memsize")/(1<<20);
   S hostnm = sysctlS("kern.hostname");
-  O(KBUILD_OS " " KBUILD_ARCH " %lubit %dcore %lldMB %s\n",
-	8*sizeof(size_t),ncpu,mem,hostnm);
+  O(" %lubit %dcore %lldMB %s",8*sizeof(size_t),ncpu,mem,hostnm);
   #endif
-  O("Enter \\ for help\n\n");
+  O("\nEnter \\ for help\n\n");
   prompt(0);
 }
 
