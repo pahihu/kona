@@ -56,7 +56,7 @@ S sysctlS(const char*nm)
 
 int SysInfo(int *ncpu,int64_t *mem,S*hostnm)
 {
-  *ncpu=sysctl32("hw.physicalcpu_max");
+  *ncpu=sysctl32("hw.logicalcpu_max");
   *mem=sysctl64("hw.memsize")/(1<<20);
   *hostnm=sysctlS("kern.hostname");
   R 0;

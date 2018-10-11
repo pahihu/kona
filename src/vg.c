@@ -75,7 +75,7 @@ K enlist(K x)
 
 Z K charRange(K a)
 {
-  I n=a->n,j=0;UC c[UCHAR_MAX];
+  I n=a->n;UC c[UCHAR_MAX];
   memset(c,0,UCHAR_MAX*sizeof(C));
   K z=newK(-3,0);M(z);
   DO(n,UC x=(UC)kC(a)[i];if(!c[x]){c[x]=1;z=kap(&z,&kC(a)[i]);})
@@ -84,7 +84,6 @@ Z K charRange(K a)
 
 Z K symRange(K x)
 {
-  I j=0;
   K z=newK(-4,0);M(z);
   setS(2,0);DO(xn,S s=kS(x)[i];if(!SV(s,2)){SV(s,2)=-1;z=kap(&z,&s);})
   R z;
@@ -113,7 +112,7 @@ Z uint32_t hc(uI u)
 Z K intRange(K x)
 {
   hcinit();
-  I j=0,h0=0,sa=0;uI m=0;
+  I h0=0,sa=0;uI m=0;
   K h, z=newK(xt,0);M(z);
   DO(xn,m|=kU(x)[i]);if(m)while(!(m&1)){m>>=1;sa++;}
   h=newH(-1,m<xn?m:xn);M(h,z);
