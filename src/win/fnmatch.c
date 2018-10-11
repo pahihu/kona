@@ -46,6 +46,7 @@ Boston, MA 02111-1307, USA.  */
 #include <errno.h>
 #include "fnmatch.h"
 #include "safe-ctype.h"
+#define STDC_HEADERS
 
 /* Comment out all this code if we are using the GNU C Library, and are not
    actually compiling the library itself.  This code is part of the GNU C
