@@ -8,7 +8,8 @@
 #include "km.h"
 #include <time.h>
 
-#ifdef __LITTLE_ENDIAN__
+#if defined(__LITTLE_ENDIAN__) || defined(__ORDER_LITTLE_ENDIAN__)
+#warning Using bswap32()
 #include "bswap.h"
 #define BIG(x)	bswap32(x)
 #else
