@@ -676,7 +676,7 @@ Z V ex_(V a, I r)//Expand wd()->7-0 types, expand and evaluate brackets
   // O("DBG: ex_ y=%p\n",y);
   z=_ex0(kW(x),y,r,1);  //eval wd()
   // O("DBG: ex_ y=%p\n",y);
-  // cd(y);
+  cd(y);
 
   R z;
 }
@@ -697,7 +697,7 @@ Z K ex0(V*v,K k,I r)
 }
 
 
-#define CDk(x)	{if(_f)cd(k);x;}
+#define CDk(x)	{if(0)cd(k);x;}
 Z K _ex0(V*v,K k,I r,int _f) //r: {0,1,2} -> {code, (code), [code]}
                      //Reverse execution/return multiple (paren not function or script) "list notation"  {4,5,6,7} -> {:,if,while,do}
 {
@@ -788,7 +788,7 @@ Z K _ex0(V*v,K k,I r,int _f) //r: {0,1,2} -> {code, (code), [code]}
             I v=0;kap(&k,&v);ext2=1;
             // O("DBG: (2) k->t=%lld k=%p(%lld)\n",k->t,k,rc(k));
             if(6==k->t){cd(kK(k)[1]);kK(k)[1]=0;}
-	  }
+	        }else k->n=2;
         }
         prj2=1;
         DO(k->n,if(!kK(k)[i])prj=1)
