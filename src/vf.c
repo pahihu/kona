@@ -95,7 +95,7 @@ Z K formatF(F x, I y, I c)
   if(z)memcpy(kC(z),buf,n);
   R z;
 }
-I ltoa(S buf, I n)
+Z I ItoA(S buf, I n)
 {
     int   sign = 0;
     int   len;
@@ -156,7 +156,7 @@ Z K formatI(I x)
 {
   Z C buf[72];
 
-  I n=ltoa(buf,x);
+  I n=ItoA(buf,x);
   K z=newK(-3,n);
   if(z)memcpy(kC(z),buf,n);
   R z;
