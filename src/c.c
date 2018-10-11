@@ -28,7 +28,7 @@ S fBreak = "n";
 S fBreak = "t";
 #endif
 
-#ifdef __APPLE__
+#if defined(__APPLE__)
 #include <sys/types.h>
 #include <sys/sysctl.h>
 int sysctl32(const char*nm)
@@ -53,6 +53,26 @@ S sysctlS(const char*nm)
   sysctlbyname(nm,p,&len,NULL,0);
   return p;
 }
+
+int SysInfo(int *ncpu,int64_t *mem,S*hostnm)
+{
+  *ncpu=sysctl32("hw.physicalcpu_max");
+  *mem=sysctl64("hw.memsize")/(1<<20);
+  *hostnm=sysctlS("kern.hostname");
+  R 0;
+}
+#endif
+
+#if defined(WIN32)
+extern int SysInfo(int*ncpu,int64_t*mem,char**hostnm);
+#endif
+
+#if !defined(__APPLE__) && !defined(WIN32)
+#warning Using dummy SysInfo()
+int SysInfo(int*ncpu,int64_t*mem,char**hostnm)
+{
+  R -1;
+}
 #endif
 
 void boilerplate()
@@ -62,12 +82,11 @@ void boilerplate()
   #endif
   O("K Console " KBUILD_DATE "\n");
   O(KBUILD_OS " " KBUILD_ARCH);
-  #ifdef __APPLE__
-  int ncpu = sysctl32("hw.physicalcpu_max");
-  I mem=sysctl64("hw.memsize")/(1<<20);
-  S hostnm = sysctlS("kern.hostname");
-  O(" %lubit %dcore %lldMB %s",8*sizeof(size_t),ncpu,mem,hostnm);
-  #endif
+  int ncpu;I mem;S hostnm;
+  if(!SysInfo(&ncpu,&mem,&hostnm)){
+    O(" %lubit %dcore %lldMB %s",8*sizeof(size_t),ncpu,mem,hostnm);
+    free(hostnm);
+  }
   O("\nEnter \\ for help\n\n");
   prompt(0);
 }

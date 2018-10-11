@@ -12,7 +12,7 @@ CC=gcc -DWIN32=1
 PRODFLAGS += -D_FILE_OFFSET_BITS=64
 LDFLAGS = -lws2_32 -static -lpthread
 OBJS= src/win/mman.o src/win/dlfcn.o src/win/safe-ctype.o src/win/fnmatch.o \
-			src/win/pread.o src/win/usleep.o \
+			src/win/pread.o src/win/usleep.o src/win/sysinfo.o \
       src/0.o src/bswap.o src/c.o src/getline.o src/mt.o src/p.o \
       src/r.o src/k.o src/kc.o src/kx.o src/kg.o src/km.o src/kn.o src/ko.o \
       src/ks.o src/v.o src/va.o src/vc.o src/vd.o src/vf.o src/vg.o src/vq.o \
@@ -21,10 +21,10 @@ endif
 
 # Win-32
 ifeq (mingw32_nt-10.0,$(OS))
-CC=gcc -DWIN32=1
-LDFLAGS = -lws2_32 -static -lpthread
+CC=gcc -DWIN32=1 -D__Kona32__=1
+LDFLAGS = -lws2_32 -lpthread
 OBJS= src/win/mman.o src/win/dlfcn.o src/win/safe-ctype.o src/win/fnmatch.o \
-			src/win/pread.o src/win/usleep.o \
+			src/win/pread.o src/win/usleep.o src/win/sysinfo.o \
       src/0.o src/bswap.o src/c.o src/getline.o src/mt.o src/p.o \
       src/r.o src/k.o src/kc.o src/kx.o src/kg.o src/km.o src/kn.o src/ko.o \
       src/ks.o src/v.o src/va.o src/vc.o src/vd.o src/vf.o src/vg.o src/vq.o \
