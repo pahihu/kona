@@ -73,7 +73,7 @@ I test()
   K x; x=_(567);if(!tp(x && *kI(x)==567))fprintf(stderr,"\n\nK string execution broken\n\n"); cd(x);
 
 //done:
-  testtime=(clock()-testtime)/CLOCKS_PER_SEC;
+  testtime=(clock()-testtime)/(F)CLOCKS_PER_SEC;
   F rate=passed/((F)tests-skipped);
   O("Test pass rate: %.4f, Total: %lld, Passed: %lld, Skipped: %lld, Failed: %lld, Time: %fs\n", rate,tests,passed,skipped,failed,testtime);
   I r=1==rate;
