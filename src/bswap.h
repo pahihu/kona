@@ -10,7 +10,7 @@
 #define bswap64 __bswap_64
 #endif
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER)
 #include <stdlib.h>
 #define bswap32 _byteswap_ulong
 #define bswap64 _byteswap_uint64

@@ -5,6 +5,32 @@
 
 #include "bswap.h"
 
+#ifndef bswap32
+uint32_t bswap32(uint32_t n)
+{
+  union {
+    UC d[4];
+    uint32_t n;} u;
+
+  u.n=n;
+  R ((uint32_t)(u.d[0])<<24)+((uint32_t)(u.d[1])<<16)+
+    ((uint32_t)(u.d[2])<< 8)+ (uint32_t)(u.d[3]);
+}
+
+uint64_t bswap64(uint64_t n)
+{
+  union {
+    UC d[8];
+    uint64_t n;} u;
+
+  u.n=n;
+  R ((uint64_t)(u.d[0])<<56)+((uint64_t)(u.d[1])<<48)+
+    ((uint64_t)(u.d[2])<<40)+((uint64_t)(u.d[3])<<32)+
+    ((uint64_t)(u.d[4])<<24)+((uint64_t)(u.d[5])<<16)+
+    ((uint64_t)(u.d[6])<< 8)+ (uint64_t)(u.d[7]);
+}
+#endif
+
 V membswp32(V d,V s,I n)
 {
   uint32_t *q=d,*p=s;
