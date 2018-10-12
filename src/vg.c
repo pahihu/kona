@@ -75,7 +75,7 @@ K enlist(K x)
 
 Z K charRange(K a)
 {
-  I n=a->n,j=0;UC c[UCHAR_MAX];
+  I n=a->n;UC c[UCHAR_MAX];
   memset(c,0,UCHAR_MAX*sizeof(C));
   K z=newK(-3,0);M(z);
   DO(n,UC x=(UC)kC(a)[i];if(!c[x]){c[x]=1;z=kap(&z,&kC(a)[i]);})
@@ -84,7 +84,6 @@ Z K charRange(K a)
 
 Z K symRange(K x)
 {
-  I j=0;
   K z=newK(-4,0);M(z);
   setS(2,0);DO(xn,S s=kS(x)[i];if(!SV(s,2)){SV(s,2)=-1;z=kap(&z,&s);})
   R z;
@@ -94,26 +93,27 @@ Z K symRange(K x)
 K newH(I t,I n){ I m=1<<(HFR+cl2(n));K h=newK(t,m);M(h);R h; }
 I hgI(K h,uI hk,I k,uI*p)
 {
-  I n=h->n,*d=kI(h);uI u=hk&(n-1);
+  I n=h->n-1,*d=kI(h);uI u=hk&n;
   while(d[u]){
     if(k==d[u]){*p=u;R k;}
-    if(++u==n)u=0;
+    u=n&(u+1);
   }*p=u;R 0;
 }
 #define hs(h,p,k) kI(h)[p]=(k)
 
 Z uI hcc[8]={0,0,0,0,0,0,0,0};
 Z void hcinit(){if(!hcc[0])DO(8,hcc[i]=genrand64_int64());}
-Z uint32_t hc(uI u)
+Z uI hc(uI u)
 {
-    DO(8,u^=hcc[i];u+=u>>8;)
-    return (uint32_t)u^(u>>32);
+    // DO(8,u^=hcc[i];u+=u>>8;)
+    // return (uint32_t)u^(u>>32);
+    R (u * 11400714819323198485LLU);
 }
 
 Z K intRange(K x)
 {
   hcinit();
-  I j=0,h0=0,sa=0;uI m=0;
+  I h0=0,sa=0;uI m=0;
   K h, z=newK(xt,0);M(z);
   DO(xn,m|=kU(x)[i]);if(m)while(!(m&1)){m>>=1;sa++;}
   h=newH(-1,m<xn?m:xn);M(h,z);
@@ -134,29 +134,32 @@ cleanup:
 
 Z I KEQ(K a, K b)//List Equal (K Equal)
 {
+  P(a==b,1);
+
   I at=a->t, an=a->n, bt=b->t, bn=b->n;
   I A=ABS(at);
 
-  if(at!=bt)R 0;
-  if(an!=bn)R 0;
+  P(at!=bt,0);
+  P(an!=bn,0);
 
-  if     (7==A)R 0;//TODO: sort functions?
-  else if(6==A)R 1;
-  else if(5==A)R 0;//TODO: sort dictionaries?
-  else if(4==A)DO(an, if(kS(a)[i]!=kS(b)[i])R 0)
-  else if(3==A)DO(an, if(kC(a)[i]!=kC(b)[i])R 0)
-  else if(2==A)DO(an, if(FC(kF(a)[i],kF(b)[i]))R 0)
-  else if(1==A)DO(an, if(kI(a)[i]!=kI(b)[i])R 0)
-  else if(0==A)DO(an, if(!KEQ(kK(a)[i],kK(b)[i]))R 0)
+  SW(A){
+  CS(0,DO(an, U(KEQ(kK(a)[i],kK(b)[i]))))
+  CS(1,DO(an, U(kI(a)[i]==kI(b)[i])))
+  CS(2,DO(an, if(FC(kF(a)[i],kF(b)[i]))R 0))
+  CS(3,DO(an, U(kC(a)[i]==kC(b)[i])))
+  CS(4,DO(an, U(kS(a)[i]==kS(b)[i])))
+  CSR(5,R 0)//TODO: sort dictionaries?
+  CSR(6,R 1)
+  CSR(7,R 0)}//TODO: sort functions?
   R 1;
 }
 
 Z K hgK(K sh,uI hk,K k,uI*p)
 {
-  I n=sh->n;K*d=kK(sh);uI u=hk&(n-1);
+  I n=sh->n-1;K*d=kK(sh);uI u=hk&n;
   while(d[u]){
     if(KEQ(k,d[u])){*p=u;R d[u];}
-    if(++u==n)u=0;
+    u=n&(u+1);
   }*p=u;R 0;
 }
 #define hsK(sh,p,k) kK(sh)[p]=(k)
@@ -629,30 +632,30 @@ K join(K x, K y) {      //TODO: 5,6?
 
 Z I _hg(K h,uI k,I v,K x,uI*p)
 {
-  I n=h->n;I*d=kI(h),i;uI u=k&(n-1);
+  I n=h->n-1;I*d=kI(h),i;uI u=k&n;
   while(-1!=(i=d[u])){
     if(v==kI(x)[i]){*p=u;R i;}
-    if(++u==n)u=0;
+    u=n&(u+1);
   }
   *p=u;R xn;
 }
 
 Z I _hgk(K h,uI k,K v,K x,uI*p)
 {
-  I n=h->n;I*d=kI(h),i;uI u=k&(n-1);
+  I n=h->n-1;I*d=kI(h),i;uI u=k&n;
   while(-1!=(i=d[u])){
     if(KEQ(v,kK(x)[i])){*p=u;R i;}
-    if(++u==n)u=0;
+    u=n&(u+1);
   }
   *p=u;R xn;
 }
 
 Z I _hgv(K h,uI k,V v,K x,uI*p)
 {
-  I n=h->n;I*d=kI(h),i;uI u=k&(n-1);
+  I n=h->n-1;I*d=kI(h),i;uI u=k&n;
   while(-1!=(i=d[u])){
     if(v==kV(x)[i]){*p=u;R i;}
-    if(++u==n)u=0;
+    u=n&(u+1);
   }
   *p=u;R xn;
 }
@@ -678,9 +681,9 @@ K hash_find(K a,K b)
   if(xt&&(xt+b->t))R Ki(xn);
   hcinit();
   SW(-xt){
-  CS(0,i=_hgk(y,hcode(b),b,x,&p))
+  CS(0,i=_hgk(y,hcode(b),b,x,&p);)
   CSR(1,)CS(2,{uI v=*kU(b);i=_hg(y,hc(v),(I)v,x,&p);})
   CS(3,k=(UC)*kC(b);i=kI(y)[k];if(i<0)i=xn)
   CS(4,{S v=*kS(b);k=SV(v,SLOT_H);i=_hgv(y,k,v,x,&p);}) }
-  R Ki(i);
+  R Ki(-1==i?xn:i);
 }
