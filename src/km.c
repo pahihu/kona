@@ -178,9 +178,9 @@ V kalloc(I k,I*r) //bytes. assumes k>0
 }
 
 Z V amem(I k,I r) {
-  K z;
-  if(MAP_FAILED==(z=mmap(0,k,PROT_READ|PROT_WRITE,MAP_PRIVATE|MAP_ANON,-1,0)))R ME;
-  mAlloc+=k<PG?PG:k;
+  K z;I kk=1<<r;
+  if(MAP_FAILED==(z=mmap(0,kk,PROT_READ|PROT_WRITE,MAP_PRIVATE|MAP_ANON,-1,0)))R ME;
+  mAlloc+=kk<PG?PG:kk;
   if(r>KP_MAX){ mUsed+=k;if(mUsed>mMax)mMax=mUsed; }
   R z;
 }
@@ -253,6 +253,9 @@ Z I kexpander(K*p,I n) //expand only.
   K a=*p;I r = glsz(a);
   if(r>KP_MAX) //Large anonymous mmapped structure - (simulate mremap)
   {
+    I d=sz(a->t,n);
+    if(d<=(1<<r))R 1;
+#if 0
     V v;I c=sz(a->t,a->n),d=sz(a->t,n),e=nearPG(c),f=d-e;
     if(f<=0) R 1;
 #if defined(__linux__)
@@ -263,9 +266,12 @@ Z I kexpander(K*p,I n) //expand only.
     F m=f/(F)PG; I n=m, g=1; if(m>n) n++;
     DO(n, if(-1==msync((V)a+e+PG*i,1,MS_ASYNC)) {if(errno!=ENOMEM) {g=0; break;}}
           else {g=0; break;})
-    if(g) if(MAP_FAILED!=mmap((V)a+e,f,PROT_READ|PROT_WRITE,MAP_PRIVATE|MAP_ANON|MAP_FIXED,-1,0)) { mAlloc+=f;mUsed+=f;if(mUsed>mMax)mMax=mUsed; R 1; }  //Add pages to end
+    if(g) if(MAP_FAILED!=mmap((V)a+e,f,PROT_READ|PROT_WRITE,MAP_PRIVATE|MAP_ANON|MAP_FIXED,-1,0)){mAlloc+=f;mUsed+=f;if(mUsed>mMax)mMax=mUsed;R 1;}  //Add pages to end
 #endif
-    U(v=amem(d,r)) memcpy(v,a,c); *p=v;
+#endif
+    r=lsz(d); V v;U(v=amem(d,r))
+    I c=sz(a->t,a->n);
+    memcpy(v,a,c); *p=v; slsz(*p,r);
     I res=munmap(a,c); if(res) { show(kerr("munmap")); R 0; }
     mAlloc-=c;mUsed-=c;
     R 1; //Couldn't add pages, copy to new space
