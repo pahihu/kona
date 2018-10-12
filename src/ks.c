@@ -102,11 +102,19 @@ Z N hget(S s,I ns,uI *hc,uI *hint){
   R kV(ht)[*hint];
 }
 
+#define SCHUNK (16<<20)
+Z S SP;uI nSP=0;
+Z S salloc(I k){
+  if(nSP<k){SP=alloc(nSP=SCHUNK);U(SP);SP+=SCHUNK;}
+  nSP-=k;SP-=k;R SP;
+}
+
 size_t sizeofSym(size_t k){I nb=(k+1+sizeof(StrChunk)-1)/sizeof(StrChunk);R NSLOTS*sizeof(Slot)+nb*sizeof(StrChunk);}
 // Z S sdup(S s){R strdupn(s,strlen(s));} //using this because "strdup" uses [used] dynamically linked malloc which fails with our static free
 Z S sdupI(S s,I k,uI hc){
-  I r,nb=(k+1+sizeof(StrChunk)-1)/sizeof(StrChunk);
-  UC *d=kalloc(NSLOTS*sizeof(Slot)+nb*sizeof(StrChunk),&r);if(!d)R 0;
+  I nb=(k+1+sizeof(StrChunk)-1)/sizeof(StrChunk);
+  //I r;UC *d=kalloc(NSLOTS*sizeof(Slot)+nb*sizeof(StrChunk),&r);U(d);
+  S d=salloc(NSLOTS*sizeof(Slot)+nb*sizeof(StrChunk));U(d);
   ns++;sd=1;d+=NSLOTS*sizeof(Slot);((StrChunk*)d)[nb-1]=0;
   d[k]=0;memcpy(d,s,k);SV(d,SLOT_H)=hc;R (S)d;}
 S strdupn (S s,I k) {S d=alloc(k+1);if(!d)R 0;d[k]=0;R memcpy(d,s,k);} // mm/o  (note: this can overallocate)
