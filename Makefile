@@ -2,6 +2,7 @@ PREFIX = /usr/local
 CFLAGS=-g
 PRODFLAGS = -O3 #-pg -g3
 LIB=libkona.a
+SOLIB=libkona.$(SO)
 DEVFLAGS = -O0 -g3 -DDEBUG -Wall
 
 OS := $(shell uname -s | tr "[:upper:]" "[:lower:]")
@@ -52,6 +53,7 @@ OBJS= src/0.o src/bswap.o src/c.o src/getline.o src/mt.o src/p.o src/r.o \
       src/v.o src/va.o src/vc.o src/vd.o src/vf.o src/vg.o src/vq.o \
       src/md5.o
 LDFLAGS = -lm -ldl
+SO = so
 endif
 
 ifeq (freebsd,$(OS))
@@ -79,6 +81,7 @@ OBJS= src/0.o src/bswap.o src/c.o src/getline.o src/mt.o src/p.o src/r.o \
       src/v.o src/va.o src/vc.o src/vd.o src/vf.o src/vg.o src/vq.o \
       src/md5.o
 PRODFLAGS = -O3
+SO = dylib
 endif
 
 ifeq (cygwin_nt-6.3,$(OS))
@@ -101,8 +104,13 @@ all: k k_test
 
 lib: $(LIB)
 
+lib_dyn: $(SOLIB)
+
 $(LIB): $(OBJS) src/kapi.o
 	$(AR) crv $@ $(OBJS) src/kapi.o
+
+$(SOLIB): $(OBJS) src/kapi.o
+	$(CC) ${CFLAGS} $(OBJS) src/kapi.o -shared -o $@ $(LDFLAGS)
 
 kapi-test: src/kapi-test.o $(LIB)
 	$(CC) ${CFLAGS} $^ -o $@ -L. -lkona $(LDFLAGS)
@@ -116,8 +124,8 @@ k_test: src/kbuild.h $(OBJS_T) src/main.t.o src/tests.t.o
 	$(CC) ${CFLAGS} $(OBJS_T) src/main.t.o src/tests.t.o -o $@ $(LDFLAGS)
 
 k_dyn: CFLAGS += $(PRODFLAGS)
-k_dyn: src/kbuild.h $(OBJS)
-	$(CC) ${CFLAGS} $(OBJS) -rdynamic -o $@ $(LDFLAGS)
+k_dyn: src/kbuild.h $(SOLIB) src/main.o
+	$(CC) ${CFLAGS} $(SOLIB) src/main.o -rdynamic -o $@ $(LDFLAGS)
 
 src/kbuild.h: Makefile
 	$(RM) @
@@ -131,7 +139,11 @@ install:
 	install k $(PREFIX)/bin/k
 
 clean:
-	$(RM) -r k k_test *.exe k.dSYM k_test.dSYM src/*.o src/win/*.o src/kbuild.h
+	$(RM) k k_test *.exe src/kbuild.h
+	$(RM) src/*.o src/win/*.o
+	$(RM) -r k.dSYM k_test.dSYM 
+	$(RM) kapi-test k_dyn
+	$(RM) $(LIB) $(SOLIB)
 
 TAGS: *.c *.h
 	etags *.[ch]
