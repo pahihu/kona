@@ -43,7 +43,15 @@ typedef struct node{V k;unsigned nk;int b;struct node *c[2];}Node;typedef Node*N
 typedef struct pda{I i,s,n;S c;}Pda;typedef Pda*PDA; //holds parse state. pos in input, state, stacklength, stack
 typedef struct af{ V verb_over; V verb_scan; V verb_eachpair; } AF; //Alternative/Adverb Functions
 typedef struct tr{ I adverbClass; I arity; V func; S text; AF alt_funcs; } TR; //Table Row for Dispatch Table
-#define ke(x) (((K)x)->k)
+#ifdef MEMDEBUG
+extern K CheckK(K);
+#define CHK(x)	CheckK(x)
+#define VCHK(x)	(void)CheckK(x)
+#else
+#define CHK(x)	x
+#define VCHK(x)
+#endif
+#define ke(x) ((CHK((K)x))->k)
 #define kK(x) ke(x)
 #define kI(x) ((I*)ke(x))
 #define kU(x) ((uI*)ke(x))

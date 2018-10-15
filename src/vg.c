@@ -612,6 +612,11 @@ K join(K x, K y) {      //TODO: 5,6?
   if(!xk) zt=-ABS(yt);
   else if(!yk) zt=-ABS(xt);  //'else' is sic. In "K3.21 2006-02-01" right empty list takes precedence
   if(zt < -4) zt=0;
+  /*
+  if(1==rc(x)&&(zt==xt)&&(xt==yt)){
+    O("self join: x=(%lld,%lld,%lld) y=(%lld,%lld,%lld)\n",rc(x),xt,xk,rc(y),yt,yk);
+    K ox=x;kapn(&x,kK(y),yk);R x==ox?ci(x):x;
+  }*/
   I zn=xk+yk;
   K z=newK(zt,zn);U(z)
 

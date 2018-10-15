@@ -30,8 +30,20 @@ Z V KP[KP_MAX+1]; //KPOOL
 I PG; //pagesize:  size_t page_size = (size_t) sysconf (_SC_PAGESIZE);
 F mUsed=0.0, mAlloc=0.0, mMap=0.0, mMax=0.0;
 #ifdef DEBUG
-V mMinMem=(V)-1;
+V mMinM=(V)-1;
+V mMaxM=(V) 0;
+I mMaxL=0;
+#define DBG(x)	x
 #define TRAPP *(volatile I*)0=1
+#else
+#define DBG(x)
+#define TRAPP
+#endif
+
+#ifdef MEMDEBUG
+#define MEMDBG(x) x
+#else
+#define MEMDBG(x)
 #endif
 
 #if UINTPTR_MAX >= 0xffffffffffffffff //64 bit
@@ -49,14 +61,33 @@ V alloc(size_t sz) {
   V r=malloc(sz);if(!r){fputs("out of memory\n",stderr);exit(1);}
   R r; }
 
+size_t MagicP=((size_t)0xDEADBEEFCAFEBABE);
+
 #ifdef DEBUG
+#define CMR(p) if((p)&&((p)<mMinM||(p)>=mMaxM))TRAPP
 Z void CKP(){
   if(PG!=4096)TRAPP;
   DO(KP_MIN,if(KP[i])TRAPP)
-  DO(KP_MAX+1,if(KP[i]&&KP[i]<mMinMem)TRAPP)
+  DO(KP_MAX+1,CMR(KP[i]))
 }
+K CheckK(K x)
+{
+  // O("CheckK: %p\n",x);
+  U(x);
+  if(glsz(x)>mMaxL)TRAPP;
+  size_t m;I k=sz(xt,xn);memcpy(&m,(V)x+k,sizeof(size_t));
+  if(m!=MagicP)TRAPP;R x;
+}
+#ifdef MEMDEBUG
+Z void MarkK(K x)
+{
+  I k=sz(xt,xn);
+  memcpy((V)x+k,&MagicP,sizeof(size_t));
+}
+#endif
 #else
 #define CKP(x)
+#define CMR(p)
 #endif
 
 I OOM_CD(I g, ...) //out-of-memory count-decrement 
@@ -69,7 +100,7 @@ I OOM_CD(I g, ...) //out-of-memory count-decrement
 Z K ic(K x){x->_c+=256;R x;}
 Z K dc(K x){x->_c-=256;R x;}
 I glsz(K x){R 255&(x->_c);}
-Z K slsz(K x,I r){x->_c&=~(uI)255;x->_c|=r;R x;}
+Z K slsz(K x,I r){x->_c&=~(uI)255;x->_c|=r;MEMDBG(if(r>mMaxL)mMaxL=r;)R x;}
 K mrc(K x,I c){I k=sz(xt,xn);I r=lsz(k);x->_c=(c<<8)|r;R x;}
 #define STAT(x)
 //Arthur says he doesn't use malloc or free. Andrei Moutchkine claims smallest unit is vm page (his truss says no malloc + add pages one at a time).
@@ -79,10 +110,18 @@ K cd(K x)
 {
   CKP();
   #ifdef DEBUG
-  if(x && rc(x) <=0 ) { er(Tried to cd() already freed item) dd(tests) dd((L)x) dd(rc(x)) dd(x->t) dd(x->n) show(x); }
+  if(x && rc(x) <=0 ) { er(Tried to cd() already freed item) dd(tests) 
+    // dd((L)x) dd(rc(x)) dd(x->t) dd(x->n) show(x);
+    fprintf(stderr,"x=%p\n",x);
+    fprintf(stderr,"x->c=%lld\n",rc(x));
+    fprintf(stderr,"x->t=%lld\n",xt);
+    fprintf(stderr,"x->n=%lld\n",xn);
+    R x;
+  }
   #endif 
 
   P(!x,0)
+  MEMDBG(CheckK(x);)
   dc(x);
 
   SW(xt)
@@ -96,6 +135,8 @@ K cd(K x)
   #ifdef DEBUG
   DO(kreci, if(x==krec[i]){krec[i]=0; break; })
   #endif 
+
+  MEMDBG(CheckK(x);)
 
   SW(xt)
   {
@@ -128,6 +169,7 @@ K ci(K x)
   CKP();
 
   P(!x,0)
+  MEMDBG(CheckK(x);)
   ic(x);
 
   SW(xt)
@@ -156,32 +198,40 @@ K newK(I t, I n)
   CKP();
   if(n>0 && n>MAX_OBJECT_LENGTH)R ME;//coarse (ignores bytes per type). but sz can overflow
   I k=sz(t,n),r;
+  MEMDBG(k+=sizeof(size_t);)
   U(z=kalloc(k,&r))
-  CKP();
   //^^ relies on MAP_ANON being zero-filled for 0==t || 5==t (cd() the half-complete), 3==ABS(t) kC(z)[n]=0 (+-3 types emulate c-string)
   ic(slsz(z,r)); z->t=t; z->n=n;
   #ifdef DEBUG
   if(kreci<NKREC)krec[kreci++]=z;
   #endif
+  MEMDBG(MarkK(z);)
   R z;
 }
 
 Z V kallocI(I k,I r)
 {
+  CKP();
   if(r>KP_MAX)R amem(k,r);// allocate for objects of sz > 2^KP_MAX
   R unpool(r);
 }
 
 V kalloc(I k,I*r) //bytes. assumes k>0
 {
+  CKP();
   *r=lsz(k);R kallocI(k,*r);
 }
 
 Z V amem(I k,I r) {
-  K z;I kk=1<<r;
+  K z;I kk=1<<r;I kpg=kk<PG?PG:kk;
   if(MAP_FAILED==(z=mmap(0,kk,PROT_READ|PROT_WRITE,MAP_PRIVATE|MAP_ANON,-1,0)))R ME;
-  mAlloc+=kk<PG?PG:kk;
+  mAlloc+=kpg; //kk<PG?PG:kk;
+#ifdef DEBUG
+  if((V)z<mMinM)mMinM=z;
+  if((V)z+kpg>mMaxM)mMaxM=z+kpg;
+#endif
   if(r>KP_MAX){ mUsed+=k;if(mUsed>mMax)mMax=mUsed; }
+  CKP();
   R z;
 }
 
@@ -190,25 +240,27 @@ Z V unpool(I r)
   V*z;
   CKP();
   V*L=((V*)KP)+r;
+  CMR(*L);
   I k= ((I)1)<<r;
   if(!*L)
   {
     U(z=amem(k,r))
-#ifdef DEBUG
-    if((V)z<mMinMem)
-      mMinMem=z;
-#endif
     if(k<PG)
     { 
       V y=z;
-      while(y<(V)z+PG+-k){*(V*)y=y+k;y+=k;}
+      while(y<(V)z+PG+-k){
+        *(V*)y=y+k;
+        CMR(y+k);
+        y+=k;}
     }//Low lanes subdivide pages. no divide op
+    CKP();
     *L=z;
     CKP();
   }
-  z=*L;*L=*z;*z=0;
-  mUsed+=k; if(mUsed>mMax)mMax=mUsed;
   CKP();
+  z=*L;*L=*z;*z=0;
+  CKP();
+  mUsed+=k; if(mUsed>mMax)mMax=mUsed;
   R z;
 }
 
@@ -236,20 +288,24 @@ I repool(V v,I r)//assert r < KP_MAX
   I k=((I)1)<<r;
   CKP();
 #ifdef DEBUG
-  if(v&&v<mMinMem)TRAPP;
+  CMR(v);
+  CMR(v+k);
 #endif
   memset(v,0,k);
+  CKP();
 #ifdef DEBUG
-  if(KP[r]&&KP[r]<mMinMem)TRAPP;
+  CMR(KP[r]);
 #endif
   *(V*)v=KP[r];
-  KP[r]=v;
-  mUsed -= k;
   CKP();
+  KP[r]=v;
+  CKP();
+  mUsed -= k;
   R 0;
 }
 Z I kexpander(K*p,I n) //expand only. 
 {
+  CKP();
   K a=*p;I r = glsz(a);
   if(r>KP_MAX) //Large anonymous mmapped structure - (simulate mremap)
   {
@@ -272,7 +328,9 @@ Z I kexpander(K*p,I n) //expand only.
     r=lsz(d); V v;U(v=amem(d,r))
     I c=sz(a->t,a->n);
     memcpy(v,a,c); *p=v; slsz(*p,r);
+    CKP();
     I res=munmap(a,c); if(res) { show(kerr("munmap")); R 0; }
+    CKP();
     mAlloc-=c;mUsed-=c;
     R 1; //Couldn't add pages, copy to new space
   }
@@ -283,6 +341,7 @@ Z I kexpander(K*p,I n) //expand only.
   K x=kallocI(d,s); U(x)
   I c=sz(a->t,a->n);
   memcpy(x,a,c);
+  CKP();
   *p=x; slsz(*p,s);
   repool(a,r);
   R 1;
@@ -292,6 +351,7 @@ Z K kap1_(K *a,V v)//at<=0
 {
   K k=*a;
   I t=k->t,m=k->n,p=m+1;
+  MEMDBG(CheckK(k);)
   if(!kexpander(&k,p))R 0;
   if(k!=*a)
   {
@@ -302,6 +362,7 @@ Z K kap1_(K *a,V v)//at<=0
     *a=k;
   }
   k->n=p;
+  MEMDBG(MarkK(k);)
   SW(-t)
   {
     CS(0, kK(k)[m]=ci(((K*)v)[0]));
@@ -311,6 +372,7 @@ Z K kap1_(K *a,V v)//at<=0
     CS(4, kS(k)[m]=*(S*)v)
     CD:   R 0;
   }
+  CKP();
   R k;
 }
 
@@ -318,12 +380,14 @@ Z K kapn_(K *a,V v,I n)
 {
   if(!a||!n)R 0;
   K k=*a;
+  MEMDBG(CheckK(k);)
   I t=k->t,m=k->n,p=m+n;
   if(6==t)
   {
     K z=newK(0,p);U(z)
     K *zv=kK(z);
     *zv++=_n(); DO(n, zv[i]=_n());
+    CKP();
     cd(k);
     *a=z;
     R z;
@@ -338,6 +402,8 @@ Z K kapn_(K *a,V v,I n)
     *a=k;
   }
   k->n=p;
+  MEMDBG(MarkK(k);)
+  CKP();
   SW(ABS(t))
   {
     CSR(0,) CS(5, DO(n, kK(k)[i+m]=ci(((K*)v)[i])));
@@ -347,6 +413,7 @@ Z K kapn_(K *a,V v,I n)
     CS(4, memcpy(kS(k)+m,v,n*sizeof(S)))
     CD:   R 0;
   }
+  CKP();
   if(t>0&&t<5&&p>1)k->t*=-1;
   R *a;
 }

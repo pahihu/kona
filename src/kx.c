@@ -43,6 +43,7 @@ __thread I frg=0;    // Flag reset globals
          I fam=1;    // Flag amend: 1=OK to print response
 
 Z K cjoin(K x,K y) {
+  VCHK(x);VCHK(y);
   P(3!=ABS(xt),TE)
   P((-3==xt)&&xn,TE)
   if(3==ABS(yt))R ci(y);
@@ -58,6 +59,7 @@ Z K cjoin(K x,K y) {
 }
 
 Z K csplit(K x,K y) {//scan 2x
+  VCHK(x);VCHK(y);
   P(3!=xt,TE);
   P(3!=ABS(yt),TE);
   int delim=*kC(x);S s=kC(y);
@@ -88,6 +90,7 @@ Z K csplit(K x,K y) {//scan 2x
 
 //TODO: for derived verbs like +/ you can add the sub-pieces in parallel
 K overDyad(K a, V *p, K b) {
+  VCHK(a);VCHK(b);
   V *o=p-1; K(*f)(K,K);
 
   K k=0; I i=0;
@@ -126,6 +129,7 @@ cleanup:
 
 Z K scanDyad(K a, V *p, K b) //k4 has 1 +\ 2 3 yield 3 6 instead of 1 3 6
 {
+  VCHK(a);VCHK(b);
   V *o=p-1; K(*f)(K,K);
 
   K k=0;
@@ -155,6 +159,7 @@ Z K scanDyad(K a, V *p, K b) //k4 has 1 +\ 2 3 yield 3 6 instead of 1 3 6
 
 Z K overMonad(K a, V *p, K b)
 {
+  VCHK(a);VCHK(b);
   K u=b,c=0;I flag=0;
 
   I useN=0,n=0,useB=0;
@@ -205,6 +210,7 @@ Z K overMonad(K a, V *p, K b)
 
 Z K scanMonad(K a, V *p, K b)
 {
+  VCHK(a);VCHK(b);
   K u=enlist(b),v,w,c=0,d;I flag=0;//TODO: optimize/memory manage enlists,firsts,reverses here
   U(u);
 
@@ -248,6 +254,7 @@ Z K scanMonad(K a, V *p, K b)
 }
 
 Z K each2(K a, V *p, K b) {
+  VCHK(a);VCHK(b);
   I bt=b->t, bn=b->n; K prnt0=0,grnt0=0;
   if(bt > 0) R dv_ex(0,p-1,b);
   else {
@@ -275,6 +282,7 @@ Z K each2(K a, V *p, K b) {
 
 Z K eachright2(K a, V *p, K b)
 {
+  VCHK(a);VCHK(b);
   I bt=b->t, bn=b->n;
   if(bt > 0) R dv_ex(a,p-1,b);
   K z = newK(0,bn), d;
@@ -286,6 +294,7 @@ Z K eachright2(K a, V *p, K b)
 
 Z K eachleft2(K a, V *p, K b)
 {
+  VCHK(a);VCHK(b);
   if(!a) R VE;
   I at=a->t, an=a->n;
   if(at > 0) R dv_ex(a,p-1,b);
@@ -298,6 +307,7 @@ Z K eachleft2(K a, V *p, K b)
 
 Z K eachpair2(K a, V *p, K b)  //2==k necessary?
 {
+  VCHK(a);VCHK(b);
   V *o=p-1; K(*f)(K,K);
 
   K k=0;
@@ -340,6 +350,7 @@ Z K eachpair2(K a, V *p, K b)  //2==k necessary?
 K dv_ex(K a, V *p, K b)
 {
   if(!p || !*p) R 0; //TODO: ???
+  VCHK(a);VCHK(b);
   U(b)
   V *o = p-1;
 
@@ -437,6 +448,7 @@ K dv_ex(K a, V *p, K b)
 //K3.2 Bug - {b:1_,/";a",/:$a:!x; "{[",b,"]a3}[" ,(1_,/";",/:$a ),"]" } 67890  --> Sometimes works, sometimes stack error, sometimes crash
 K vf_ex(V q, K g)
 {
+  VCHK(g);
   if (interrupted) {interrupted=0; R BE;}
 
   //V w=(*(V*)q);
@@ -477,10 +489,10 @@ K vf_ex(V q, K g)
   I argc=0; DO(gn,if(kK(g)[i])argc++)
 
   K a=0,b=0,c=0,d=0;
-  if(gn >0) a=kK(g)[0];
-  if(gn >1) b=kK(g)[1];
-  if(gn >2) c=kK(g)[2];
-  if(gn >3) d=kK(g)[3];
+  if(gn >0){a=kK(g)[0];VCHK(a);}
+  if(gn >1){b=kK(g)[1];VCHK(b);}
+  if(gn >2){c=kK(g)[2];VCHK(c);}
+  if(gn >3){d=kK(g)[3];VCHK(d);}
 
   //valence overloaded verbs
   if(gn > 2 && (q==offsetWhat || q==offsetSSR)){ z=(q==offsetWhat?what_triadic:_ssr)(a,b,c); GC; }
@@ -682,6 +694,7 @@ Z V ex_(V a, I r)//Expand wd()->7-0 types, expand and evaluate brackets
 }
 
 K ex(K a) {   //Input is (usually, but not always) 7-0 type from wd()
+  VCHK(a);
   U(a); if(a->t==7 && kVC(a)>(K)DT_SIZE && 7==kVC(a)->t && 6==kVC(a)->n)fwh=1;
   if(a->t==7 && kV(kK(a)[CODE])[1]==offsetColon && kV(kK(a)[CODE])[2]!=offset3m) fam=0;
   K z=ex_(&a,0); cd(a); if(fer==1)fer=fer1=0;
@@ -701,6 +714,7 @@ Z K ex0(V*v,K k,I r)
 Z K _ex0(V*v,K k,I r,int _f) //r: {0,1,2} -> {code, (code), [code]}
                      //Reverse execution/return multiple (paren not function or script) "list notation"  {4,5,6,7} -> {:,if,while,do}
 {
+  VCHK(k);
   I n=0, e=1, i,a,b;
   while(v[n])if(bk(v[n++]))e++;
   b=e>1;
@@ -813,6 +827,7 @@ Z K _ex0(V*v,K k,I r,int _f) //r: {0,1,2} -> {code, (code), [code]}
 }
 
 Z K bv_ex(V*p,K k) {
+  VCHK(k);
   V q=*p; K x; I n=0;   //assert 0!=k->n    assert k==b->n (otherwise, projection/VE, which shouldn't reach here)
 
   //This may contribute to bv_ex subtriadic problems
@@ -855,6 +870,7 @@ Z K bv_ex(V*p,K k) {
 
 K ex1(V*w,K k,I*i,I n,I f)//convert verb pieces (eg 1+/) to seven-types, default to ex2 (full pieces in between semicolons/newlines)
 {
+  VCHK(k);
   if(offsetColon==w[0] && (UI)w[1]>DT_SIZE && (UI)w[2]>DT_SIZE && fwh==0)
     {fer=1; if(f)*i=n; else *i=-1; K tmp=*(K*)*(w+1); R ci(tmp); }
   //if(in(*w,adverbs)) R NYI;//Adverb at beginning of snippet eg '1 2 3 or ;':1 2 3; or 4;\1+1;4
@@ -900,6 +916,7 @@ K ex1(V*w,K k,I*i,I n,I f)//convert verb pieces (eg 1+/) to seven-types, default
 
 Z K ex2(V*v, K k)  //execute words --- all returns must be Ks. v: word list, k: conjunction?
 {
+  VCHK(k);
   K t0,t2,t3,e,u;
   I i=0;
 
@@ -994,7 +1011,9 @@ Z K ex2(V*v, K k)  //execute words --- all returns must be Ks. v: word list, k: 
     t2=ex2(v+2+i,k); if(fer>0 && strcmp(errmsg,"undescribed")) R t2;
        //these cannot be placed into single function call b/c order of eval is unspecified
     t3=ex_(v[1],1);
+    VCHK(t2);
     if(t3>(K)DT_SIZE && t3->t==7 && t3->n==3) {
+      VCHK(t3);
       if(prnt && kV(prnt)[CACHE_TREE] && kV(prnt)[CACHE_WD] && !kK(t3)[LOCALS]->n) {
         if(kK(prnt)[CACHE_TREE]->n) {
           K j0=dot_monadic(kV(t3)[PARAMS]); K j1=dot_monadic(kV(prnt)[CACHE_TREE]);
@@ -1011,6 +1030,7 @@ Z K ex2(V*v, K k)  //execute words --- all returns must be Ks. v: word list, k: 
     v[1]=VA(t3)?t3:(V)&t3;
     t0=ex_(*v,1); if(fer>0 && strcmp(errmsg,"undescribed")){cd(t2); R(t0);}
     if(t0>(K)DT_SIZE && t0->t==7 && t0->n==3) {
+      VCHK(t0);
       if(prnt && kV(prnt)[CACHE_TREE] && kV(prnt)[CACHE_WD] && !kK(t0)[LOCALS]->n) {
         if(kK(prnt)[CACHE_TREE]->n) {
           K j0=dot_monadic(kV(t0)[PARAMS]); K j1=dot_monadic(kV(prnt)[CACHE_TREE]);
@@ -1071,6 +1091,7 @@ Z K ex2(V*v, K k)  //execute words --- all returns must be Ks. v: word list, k: 
 }
 
 I cirRef(K x,K y){
+  VCHK(x);VCHK(y);
   if(x&&(x==y))R 1; // XXX
   I f=0;
   if(xt==6 || !y || (yt!=0 && yt!=5) || (UI)x<DT_SIZE) R 0;
@@ -1079,6 +1100,7 @@ I cirRef(K x,K y){
 }
 
 I cirRef_(K x,K y,I f){
+  VCHK(x);VCHK(y);
   if(x==y)f=1;
   DO(yn, if(!f && (yt==0 || yt==5)) f=cirRef_(x,kK(y)[yn-i-1],f))
   R f;
