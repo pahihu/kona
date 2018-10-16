@@ -39,7 +39,7 @@ Z I fastcmp(S p0,S p1,I n){
   R 0;
 }
 
-Z I SCN(S a,I na,S b,I nb){
+Z I scn(S a,I na,S b,I nb){
   I r;
   if(na<nb){
     r=fastcmp(a,b,na);
@@ -124,6 +124,7 @@ I strlenn(S s,I k){S t=memchr(s,'\0',k); R t?t-s:k;}
 I StoI(S s,I *n){S t; errno=0; *n=strtol(s,&t,10); R !(errno!=0||t==s||*t!=0);}
 
 I SC(S a,S b){I x=strcmp(a,b); R x<0?-1:x>0?1:0;}//String Compare: strcmp unfortunately does not draw from {-1,0,1}
+I SCN(S a,S b,I n){I x=strncasecmp(a,b,n); R x<0?-1:x>0?1:0;}
 S spI(S k,I nk)//symbol from phrase: string interning, Ks(sp("aaa")). This should be called before introducing any sym to the instance
 { //We are using this to ensure any two 'character-identical' symbols are in fact represented by the same pointer S
   //See Knuth Algorithm 6.2.2T
@@ -133,14 +134,14 @@ S spI(S k,I nk)//symbol from phrase: string interning, Ks(sp("aaa")). This shoul
   N t=SYMBOLS, s=t->c[1],p=s,q=p,r; I a,x;
   if(!s){s=t->c[1]=newN();P(!s,(S)ME);s->k=sdupI(k,nk,hk); if(!s->k){repool(s,lszNode);t->c[1]=0;ME;} s->nk=nk;hins(s,hint);R s->k;} // <-- strdup here and below
   while(q)
-  { if(!(a=SCN(k,nk,p->k,p->nk))){R p->k;}//In the usual tree put: p->k=k,p->v=v before returning
+  { if(!(a=scn(k,nk,p->k,p->nk))){R p->k;}//In the usual tree put: p->k=k,p->v=v before returning
     if(!(q=LINK(p,a))){q=newN();P(!q,(S)ME);q->k=sdupI(k,nk,hk);if(!q->k){repool(q,lszNode);ME; R 0;} q->nk=nk;hins(q,hint);LINK(p,a)=q;break;}//Usual tree would q->v=v. mmo
     else if(q->b){t=p;s=q;}
     p=q;
   }
-  a=0>SCN(k,nk,s->k,s->nk)?-1:1;
+  a=0>scn(k,nk,s->k,s->nk)?-1:1;
   r=p=LINK(s,a);
-  while(p!=q){x=SCN(k,nk,p->k,p->nk); p->b=x;p=LINK(p,x);}
+  while(p!=q){x=scn(k,nk,p->k,p->nk); p->b=x;p=LINK(p,x);}
   if(!s->b){s->b=a;R p->k;}
   else if(s->b==-a){s->b=0; R p->k;}
   if(r->b==a){p=r; LINK(s,a)=LINK(r,-a); LINK(r,-a)=s; s->b=r->b=0;}

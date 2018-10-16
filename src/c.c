@@ -4,6 +4,7 @@
 #include "km.h"
 #include "c.h"
 #include "kbuild.h"
+#include "ks.h"
 
 I fLoad=0;
 
@@ -108,12 +109,12 @@ recheck:
   strcat(b,".k");
   f=fopen(b,"r"); if(f){p=b;GC;}
   if(!n){
-    n=strlen(khome);if(n+strlen(s)+2>PATH_MAX)R 0;
+    n=SN(khome);if(n+SN(s)+2>PATH_MAX)R 0;
     strcpy(b,khome);strcpy(b+n,s); goto recheck; }
   R 0;
 cleanup:
   fclose(f);
-  K kp=newK(-3,strlen(p));M(kp);
+  K kp=newK(-3,SN(p));M(kp);
   strcpy(kC(kp),p);
   R kp; }
 
@@ -491,12 +492,12 @@ K backslash(S s, I n, K*dict)
   }
 
   // \kr \cd  ?
-
-  if(isspace(s[1]))s++; //Allow system commands to be executed without preceding space
-#ifdef WIN32
-  s++;
-#endif
-  R system(s)?DOE:_n();
+  s++;while(*s&&isspace(*s))s++;
+  if(SN(s)>3&&!SCN(s,"cd ",3)){
+    char p[PATH_MAX+1];
+    if(!realpath(s+3,p))R DOE;
+    R chdir(p)?DOE:_n();
+  }else R system(s)?DOE:_n();
 }
 
 Z K backslash_b(S s,I n) {
@@ -513,9 +514,9 @@ Z K backslash_d(S s,I n,K*dict) {
   if(n==2) {O("%s\n",d_); R _n();}  // yields contents of d_ without quotes (same as k3.2)
   if(n==4 && s[3]=='.') { d_=(S)sp(""); R _n();}
   if(n==4 && s[3]=='^') {
-    if(strlen(d_)==0) R _n();
-    if(strlen(d_)==2) {d_=(S)sp(""); R _n();}
-    if(strlen(d_)>3){ I c=0,i=0; for(i=0;i<strlen(d_);i++)if(d_[i]=='.')c=i; strcpy(z,d_); z[c]='\0'; d_=(S)sp(z); R _n(); } }
+    if(SN(d_)==0) R _n();
+    if(SN(d_)==2) {d_=(S)sp(""); R _n();}
+    if(strlen(d_)>3){ I c=0,i=0; for(i=0;i<SN(d_);i++)if(d_[i]=='.')c=i; strcpy(z,d_); z[c]='\0'; d_=(S)sp(z); R _n(); } }
   if(n==5 && s[3]=='.' && s[4]=='k') { d_=(S)sp(".k"); R _n();}
   if(n==5 && s[3]=='.' && s[4]!='k') {O("absolute backslash-d should begin with .k\n"); R _n();}
   if(isalpha(s[3])){ denameD(dict,s+3,1); strcpy(z,d_); strcat(z,"."); strcat(z,s+3); d_=(S)sp(z); R _n(); }
@@ -527,9 +528,9 @@ Z K backslash_v(S s,I n,K*dict) {
   C z[256]; z[0]='\0';
   if(2==n) strcpy(z,d_);
   if(4==n && s[3]==*"^") {
-    if(strlen(d_)>3) {
+    if(SN(d_)>3) {
       I c=0,i=0;
-      for(i=0;i<strlen(d_);i++) if(d_[i]==*".")c=i;
+      for(i=0;i<SN(d_);i++) if(d_[i]==*".")c=i;
       strcpy(z,d_); z[c]=*"\0"; }
     else R _n(); }
   if(isalpha(s[3])) {
