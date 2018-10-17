@@ -278,14 +278,16 @@ K dollar(K a, K b) //form/format_dyadic
 
   if(3==ABS(bt)) //"Form"
   {
+    K z=0;
     if(3==bt) b=enlist(b);//mm/o
 
-    if(4==at && !strlen(*kS(a))) R formKsCS(CSK(b));
-    if(3==ABS(at))               R ci(b);
-    if(2==at)                    R formKfCS(CSK(b)); //Had '&& 0.0 == *kF(a)' here but the manual is wrong
-    if(1==at && !*kI(a))         R formKiCS(CSK(b));
+         if(4==at && !strlen(*kS(a))) z=formKsCS(CSK(b));
+    else if(3==ABS(at))               z=ci(b);
+    else if(2==at)                    z=formKfCS(CSK(b)); //Had '&& 0.0 == *kF(a)' here but the manual is wrong
+    else if(1==at && !*kI(a))         z=formKiCS(CSK(b));
     //if(5<=at)
-    R 0;//TODO: Else parse-execute (6,7, looks like for 5, maybe 4 too???)
+    if(3==bt) cd(b);
+    R z;//TODO: Else parse-execute (6,7, looks like for 5, maybe 4 too???)
   }
 
   R TE;
