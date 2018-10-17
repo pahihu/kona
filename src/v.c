@@ -309,22 +309,28 @@ K not_attribute(K a)
   R z;
 }
 
-Z K excl_mkdict(K a, K b) //make dict, dyadic `foo`bar`baz!(1 2 3;`a`b`c;"abc") version
+Z void OO(S msg,K x){O("%s=(%p,%lld) ",msg,x,rc(x));show(x);
+ if(!xt){
+   C buf[32];DO(xn,sprintf(buf," E%lld",i);OO(buf,kK(x)[i]));
+ }}
+
+Z K excl_mkdict(K x, K y) //make dict, dyadic `foo`bar`baz!(1 2 3;`a`b`c;"abc") version
 {
-  I n=a->n;
-  K k, v, t, z;
-  U(z=newK(5,n))  // key, value, tuple, result
-  b=promote(b); M(b,z)
-  DO(n, M(z,k=Ks(kS(a)[i]),t=newK(0,3),v=ci(kK(b)[i])) kK(t)[0]=k; kK(t)[1]=v; kK(t)[2]=_n(); kK(z)[i]=t;);
-  cd(b); R z;
+  K k, v, t, z; U(z=newK(5,xn))  // key, value, tuple, result
+  M(z,y=promote(y))
+  if(4!=ABS(xt)){
+    M(z,y,x=-3==xt?promote(x):format(x));
+    K s0=Ks(LS);M(z,y,s0,v=dollar(s0,x));cd(s0);cd(x);x=v;}else ci(x);
+  DO(xn, M(z,y,k=Ks(kS(x)[i]),t=newK(0,3),v=ci(kK(y)[i])) kK(t)[0]=k; kK(t)[1]=v; kK(t)[2]=_n(); kK(z)[i]=t;);
+  cd(x);cd(y); R z;
 }
 
-K rotate_mod(K a, K b)
+K rotate_mod(K x, K y)
 {
-  P(b->t > 2,TE)
-  P(4==ABS(a->t) && a->n == b->n, excl_mkdict(a,b));
-  P(!(1==a->t || b->t > 0), IE)
-  R (b->t < 1)?rotate(a,b):mod(a,b);
+  P(yt>2,TE)
+  P((4==ABS(xt) || (xt<1 && yt<1)) && xn == yn, excl_mkdict(x,y));
+  P(!(1==xt || yt > 0), IE)
+  R (yt < 1)?rotate(x,y):mod(x,y);
 }
 
 static K enumerate_charvec(C *pth)
