@@ -11,7 +11,6 @@ K kerr(cS s);
 K vf_ex(V q,K g);
 K ci(K a);
 K cd(K a);
-K newK(I t,I n);
 K Kf(F x);
 I matchI(K a,K b);
 I FC(F a,F b);

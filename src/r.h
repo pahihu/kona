@@ -72,7 +72,6 @@ K X(S s);
 extern I kreci;
 #endif
 K vf_ex(V q,K g);
-K newK(I t,I n);
 K cd(K a);
 extern K KFIXED;
 extern K KONA_ARGS;

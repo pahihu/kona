@@ -31,7 +31,6 @@ K at(K x,K y);
 K of(K a,K b);
 K demote(K a);
 K lookup(K a,S b);
-K newK(I t,I n);
 K at_verb(K a,K b);
 extern S fnc;
 extern V fncp[128];

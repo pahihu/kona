@@ -59,7 +59,7 @@ I tc(S a, S b) //test comparison .  R 0,1,2
 
   fprintf(stderr,"Failed: Memory Leak - %s, %s \nAllocated K: %lld\nUnfreed K  : %lld\nLeak %%     : %f\n", a,b,kreci, c, c/(F)kreci);
   I j=-1;
-  DO(c, do j++; while(!krec[j] && j < kreci); if(j>=kreci) break; K k=krec[j]; if(k){O("c:%lld t:%lld n:%lld | k:%p\n",rc(k),k->t,k->n,k); show(k);} )
+  DO(c, do j++; while(!krec[j] && j < kreci); if(j>=kreci) break; K k=krec[j]; if(k){O("c:%lld t:%lld n:%lld | k:%p (%s:%lld)\n",rc(k),k->t,k->n,k,krecF[j],krecLN[j]); show(k);} )
   R 0;
 }
 
@@ -1316,6 +1316,14 @@ Z I testsBook()
 
   TC(1, a:`a`b`c!3 3#!9;b:.((`a;0 1 2);(`b;3 4 5);(`c;6 7 8));a~b )
   TC(1, a:`a`b`c!1 2 3;b:.((`a;1);(`b;2);(`c;3));a~b )
+  TC(1, a:`a!1;b:.,(`a;1);a~b )
+  TC(1, a:1 2!3 4;b:.((`"1";3);(`"2";4));a~b )
+  TC(1, a:1.1 2.2!3 4;b:.((`"1.1";3);(`"2.2";4));a~b )
+  TC(1, a:"ab"!3 4;b:.((`a;3);(`b;4));a~b )
+
+  TC_(",\"a\"", "$\"a\"") // leaks
+  TC_("`a", "`$\"a\"")
+  TC_(",\"a\"", "\"\"$\"a\"")
 
   TC((1;"type") , @[.:;"_sin _sin (;)";:])
   TC((1;"type") , @[.:;"_sin _sin (0;)";:])

@@ -39,7 +39,6 @@ I stringHasChar(S s,C c);
 K _n();
 K _0d(K a,K b);
 K cd(K a);
-K newK(I t,I n);
 I stat_sz(S u,I *n);
 S CSK(K x);
 K _0m(K a);

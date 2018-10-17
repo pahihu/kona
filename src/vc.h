@@ -7,7 +7,6 @@ K match(K a,K b);
 I VA(V p);
 I matchI(K a,K b);
 I FC(F a,F b);
-K newK(I t,I n);
 K at(K x,K y);
 K equals(K a,K b);
 K cd(K a);

@@ -12,7 +12,6 @@ K kcloneI(K a,const char*f,int n);
 #define kclone(a) kcloneI(a,__FILE__,__LINE__)
 K at(K x,K y);
 K format(K a);
-K newK(I t,I n);
 K Kf(F x);
 extern F ni[];
 K formKfCS(S s);

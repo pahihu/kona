@@ -31,7 +31,6 @@ I matchI(K a,K b);
 I FC(F a,F b);
 K range(K a);
 K ci(K a);
-K newK(I t,I n);
 K enlist(K x);
 K grade_down(K a);
 K grade_up(K a);

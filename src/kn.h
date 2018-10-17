@@ -5,7 +5,6 @@ S CSK(K x);
 K X(S s);
 I ksender(I sockfd,K y,I t);
 K _db(K x);
-K newK(I t,I n);
 extern fd_set master;
 K cd(K a);
 I wipe_tape(I i);

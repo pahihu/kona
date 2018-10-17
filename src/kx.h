@@ -40,7 +40,6 @@ I matchI(K a,K b);
 K vf_ex(V q,K g);
 K cd(K a);
 I bp(I t);
-K newK(I t,I n);
 K first(K a);
 K Ki(I x);
 K Kf(F x);

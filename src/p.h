@@ -37,7 +37,6 @@ I capture(S s,I n,I k,I *m,V *w,I *d,K *locals,K *dict,K func);
 K Kv();
 K cd(K a);
 void pdafree(PDA p);
-K newK(I t,I n);
 K backslash(S s,I n,K*dict);
 extern S d_;
 extern K KTREE;

@@ -15,7 +15,6 @@ K cd(K a);
 K mod(K a,K b);
 K times(K a,K b);
 K plus(K a,K b);
-K newK(I t,I n);
 K at(K x,K y);
 K power(K a,K b);
 K overDyad(K a,V*p,K b);

@@ -66,7 +66,6 @@ I lines(FILE *f);
 K kap(K *a,V v);
 K cd(K a);
 void pdafree(PDA p);
-K newK(I t,I n);
 K kerr(cS s);
 K show(K a);
 I parsedepth(PDA p);

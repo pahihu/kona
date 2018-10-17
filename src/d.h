@@ -17,4 +17,3 @@ typedef struct k0{I c,t,n;struct k0*k[1];}*K;
 #define R return
 extern K Ki(I);
 extern K Kf(F);
-extern K newK(I t, I n);

@@ -11,7 +11,6 @@ I StoI(S s,I *n);
 I strlenn(S s,I k);
 S strdupn(S s,I k);
 I gradeS();
-K newK(I t,I n);
 K mergeGrade(K a,I r);
 void setS(unsigned y,Slot z);
 Slot wleft(N x,unsigned y,Slot z);

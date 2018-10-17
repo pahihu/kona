@@ -192,7 +192,11 @@ Z I nearPG(I i){ I k=((size_t)i)&(PG-1);R k?i+PG-k:i;}//up 0,8,...,8,16,16,...
 
 //Keyword "backingstore" in old k mailing list archives - extra KSWAP beyond regular swap space
 
+#ifdef DEBUG
+K _newK(I t, I n,S f,I ln)
+#else
 K newK(I t, I n)
+#endif
 { 
   K z;
   CKP();
@@ -203,7 +207,7 @@ K newK(I t, I n)
   //^^ relies on MAP_ANON being zero-filled for 0==t || 5==t (cd() the half-complete), 3==ABS(t) kC(z)[n]=0 (+-3 types emulate c-string)
   ic(slsz(z,r)); z->t=t; z->n=n;
   #ifdef DEBUG
-  if(kreci<NKREC)krec[kreci++]=z;
+  if(kreci<NKREC){krec[kreci]=z;krecLN[kreci]=ln;krecF[kreci++]=f;};
   #endif
   MEMDBG(MarkK(z);)
   R z;
@@ -357,7 +361,7 @@ Z K kap1_(K *a,V v)//at<=0
   {
     #ifdef DEBUG
     DO(kreci, if(*a==krec[i]){krec[i]=0; break; })
-    if(kreci<NKREC)krec[kreci++]=k;
+    if(kreci<NKREC){krec[kreci]=k;krecLN[kreci]=__LINE__;krecF[kreci++]=__FILE__;}
     #endif
     *a=k;
   }
@@ -397,7 +401,7 @@ Z K kapn_(K *a,V v,I n)
   {
     #ifdef DEBUG
     DO(kreci, if(*a==krec[i]){krec[i]=0; break; })
-    if(kreci<NKREC)krec[kreci++]=k;
+    if(kreci<NKREC){krec[kreci]=k;krecLN[kreci]=__LINE__;krecF[kreci++]=__FILE__;}
     #endif
     *a=k;
   }

@@ -30,5 +30,7 @@ S ts(I x);
 
 #if defined(DEBUG)
 extern V krec[NKREC];
+extern I krecLN[NKREC];
+extern S krecF[NKREC];
 extern I kreci;
 #endif

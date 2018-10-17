@@ -21,7 +21,12 @@ K kap(K *a,V v);
 K kapn(K *a,V v,I n);
 K _n();
 extern F testtime;
+#ifdef DEBUG
+K _newK(I t,I n,S f,I ln);
+#define newK(t,n) _newK(t,n,__FILE__,__LINE__)
+#else
 K newK(I t,I n);
+#endif
 I bp(I t);
 K ci(K a);
 I repool(V v,I r);
@@ -30,6 +35,8 @@ I glsz(K x);
 I sz(I t,I n);
 #if defined(DEBUG)
 extern V krec[NKREC];
+extern I krecLN[NKREC];
+extern S krecF[NKREC];
 extern I kreci;
 #endif
 K show(K a);
