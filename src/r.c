@@ -194,7 +194,7 @@ K _ci(K a)
   P(ABS(t) > 1,TE)
   K z=newK(t*3,n);
   if(!t) DO(n,kK(z)[i]=_ci(kK(a)[i]))
-  else   DO(n, kC(z)[i]=  (C) (UC) (kI(a)[i] % 256l) ); //TODO: more complete testing
+  else   DO(n, kC(z)[i]=  (C) (UC) (kI(a)[i] & 255) ); //TODO: more complete testing
   R z;
 }
 

@@ -41,6 +41,7 @@ __thread I frg=0;    // Flag reset globals
          I fnci=0;   // indicator of next function pointer position
          I fom=0;    // Flag overMonad (curried)
          I fam=1;    // Flag amend: 1=OK to print response
+	 I nfam=0;   // Flag: nest fam
 
 Z K cjoin(K x,K y) {
   VCHK(x);VCHK(y);
@@ -256,8 +257,16 @@ Z K scanMonad(K a, V *p, K b)
 Z K each2(K a, V *p, K b) {
   VCHK(a);VCHK(b);
   I bt=b->t, bn=b->n; K prnt0=0,grnt0=0;
-  if(bt > 0) R dv_ex(0,p-1,b);
+  if(5 != bt && bt > 0) R dv_ex(0,p-1,b);
   else {
+    if(5==bt){
+      K d=newK(0,bn);U(d) DO(bn,kK(d)[i]=ci(kK(kK(b)[i])[1]));
+      K r=each2(a,p,d); M(r,d) r=promote(r); M(r,d)
+      K z=newK(5,bn); M(z,r,d)
+      DO(bn,S s=*kS(kK(kK(b)[i])[0]);kK(z)[i]=newE(s,ci(kK(r)[i])));
+      cd(r); cd(d);
+      R z;
+    }
     K z = newK(0,bn),d=0; U(z)
     K g; I f=*p==(V)offsetEach && (*(p-1)==(V)offsetOver || *(p-1)==(V)offsetScan) && *(p-2)<(V)DT_SIZE;
     if(0 >bt) DO(bn, g=newK(ABS(bt),1); M(g,z) memcpy(g->k,((V)b->k)+i*bp(bt),bp(bt));
@@ -694,6 +703,7 @@ Z V ex_(V a, I r)//Expand wd()->7-0 types, expand and evaluate brackets
 }
 
 K ex(K a) {   //Input is (usually, but not always) 7-0 type from wd()
+  I ofam=fam;nfam++;
   VCHK(a);
   U(a); if(a->t==7 && kVC(a)>(K)DT_SIZE && 7==kVC(a)->t && 6==kVC(a)->n)fwh=1;
   if(a->t==7 && kV(kK(a)[CODE])[1]==offsetColon && kV(kK(a)[CODE])[2]!=offset3m) fam=0;
@@ -701,6 +711,7 @@ K ex(K a) {   //Input is (usually, but not always) 7-0 type from wd()
   fwh=stk=stk1=prj=prj2=fsf=0;
   if(prnt)cd(prnt);
   prnt=0;
+  if(--nfam)fam=ofam;
   R z;
 }
 
