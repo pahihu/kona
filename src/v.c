@@ -314,14 +314,15 @@ Z K excl_mkdict(K a, K b) //make dict, dyadic `foo`bar`baz!(1 2 3;`a`b`c;"abc") 
   I n=a->n;
   K k, v, t, z;
   U(z=newK(5,n))  // key, value, tuple, result
+  b=promote(b); M(b,z)
   DO(n, M(z,k=Ks(kS(a)[i]),t=newK(0,3),v=ci(kK(b)[i])) kK(t)[0]=k; kK(t)[1]=v; kK(t)[2]=_n(); kK(z)[i]=t;);
-  R z;
+  cd(b); R z;
 }
 
 K rotate_mod(K a, K b)
 {
   P(b->t > 2,TE)
-  P(4==ABS(a->t) && 0==b->t && a->n == b->n, excl_mkdict(a,b));
+  P(4==ABS(a->t) && a->n == b->n, excl_mkdict(a,b));
   P(!(1==a->t || b->t > 0), IE)
   R (b->t < 1)?rotate(a,b):mod(a,b);
 }
