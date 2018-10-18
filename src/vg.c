@@ -367,7 +367,7 @@ I VAT(I i){R 1<=i && i<=4?i:0;} //vector atom type
 K flip(K a)
 {
   K x;I i,p=a->n,q=-1;
-  if(5!=a->t && a->t || !p)R ci(a);//Identity on atoms/vectors && empty 0-list && 0-list of atoms
+  if((5!=a->t && a->t) || !p)R ci(a);//Identity on atoms/vectors && empty 0-list && 0-list of atoms
   DO(p, x=kK(a)[i]; if(x->t<1)q=x->n);
   if(-1==q)R ci(a);//Identity on 0-list of atoms
   DO(p, x=kK(a)[i]; if(x->t<1 && x->n!=q)R LE;)
