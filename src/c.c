@@ -66,6 +66,7 @@ int SysInfo(int *ncpu,int64_t *mem,S*hostnm)
 
 #if defined(WIN32)
 extern int SysInfo(int*ncpu,int64_t*mem,char**hostnm);
+#define realpath(N,R) _fullpath((R),(N),PATH_MAX)
 #endif
 
 #if !defined(__APPLE__) && !defined(WIN32)
