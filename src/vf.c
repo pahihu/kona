@@ -15,16 +15,13 @@ S CSK(K x){ R !x?0:4==xt?*kS(x):3==ABS(xt)?kC(x):0;}//non-allocating CSTRING fro
 Z K formKsCS(S s)
 {
   //Could remove this function. It's equivalent to Ks(sp(s))
-  /*I n;while(isspace(*s))s++;
+  I n;while(isspace(*s))s++;
   if((n=strlen(s))){
     while(n&&isspace(s[n-1]))n--;
   }
-  S t=spn(s,n);*/
-  S t=sp(s);
+  // S t=spn(s,n);
+  S t=spI(s,n);
   if(!t)R 0; //oom
-  /*K z;
-  if(!SV(t,SLOT_Ks))SV(t,SLOT_Ks)=(I)Ks(t);
-  z=ci((K)SV(t,SLOT_Ks));*/
   K z=Ks(t);
   if(!z)R 0;
   R z;

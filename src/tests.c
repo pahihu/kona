@@ -1344,6 +1344,14 @@ Z I testsBook()
   TC(1 0, (`$("ab?c";"abcc"))_like"ab[?]c")
   TC(1 0, (`$("ab^c";"abcc"))_like"ab[*^]c")
 
+  TC(1, s:`$"a"; s~`a) // pahihu trim on symbol cast
+  TC(1, s:`$" a"; s~`a)
+  TC(1, s:`$"a "; s~`a)
+  TC(1, s:`$" a "; s~`a)
+  TC(1, s:`$" "; s~`)
+  TC(1, s:`$"  "; s~`)
+  TC(1, s:`$""; s~`)
+
   TC((1;"type") , @[.:;"_sin _sin (;)";:])
   TC((1;"type") , @[.:;"_sin _sin (0;)";:])
 
