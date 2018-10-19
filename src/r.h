@@ -112,3 +112,5 @@ K _vs(K x,K y);
 K _vsx(K x,K y);
 K mstat(void);
 K _md5(K a);
+K _like(K x,K y);
+K _rematch(K x,K y);

@@ -1314,17 +1314,35 @@ Z I testsBook()
   TC(640640 320320 160160 80080 40040 20020 10010 5005,f:{:[x!2;x;_ x*0.5]}; (10000<) f\\640640)
   TC(640640 320320 160160 80080 40040 20020 10010 5005,f:{:[x!2;x;_ x*0.5]}; {x>10000} f\\640640)
 
-  TC(1, a:`a`b`c!3 3#!9;b:.((`a;0 1 2);(`b;3 4 5);(`c;6 7 8));a~b )
-  TC(1, a:`a`b`c!1 2 3;b:.((`a;1);(`b;2);(`c;3));a~b )
+  TC(1, a:`a`b`c!3 3#!9;b:.((`a;0 1 2);(`b;3 4 5);(`c;6 7 8));a~b ) // pahihu
+  TC(1, a:`a`b`c!1 2 3;b:.((`a;1);(`b;2);(`c;3));a~b ) // bang mkdict
   TC(1, a:`a!1;b:.,(`a;1);a~b )
   TC(1, a:1 2!3 4;b:.((`"1";3);(`"2";4));a~b )
   TC(1, a:1.1 2.2!3 4;b:.((`"1.1";3);(`"2.2";4));a~b )
   TC(1, a:"ab"!3 4;b:.((`a;3);(`b;4));a~b )
   TC(1, a:(`a`b`c;(1 2;10 20;100 200);(;;));b:+`a`b`c!(1 2;10 20;100 200);a~b )
 
-  TC_(",\"a\"", "$\"a\"") // leaks
+  TC_(",\"a\"", "$\"a\"") // pahihu memory leaks
   TC_("`a", "`$\"a\"")
   TC_(",\"a\"", "\"\"$\"a\"")
+
+  TC(0 1, a:("roam";"rome");a _rematch "r.me") // pahihu _rematch
+  TC(1 1, a:("roam";"rome");a _rematch "ro.*")
+  TC(1 0, a:("roam";"rome");a _rematch "ro[ab].")
+  TC(0 1, a:("roam";"rome");a _rematch "ro[^ab].")
+  TC(1, "a[c"_rematch"a[[]c")
+  TC(1 0, (`$("ab*c";"abcc"))_rematch"ab[*]c")
+  TC(1 0, (`$("ab?c";"abcc"))_rematch"ab[?]c")
+  TC(1 0, (`$("ab^c";"abcc"))_rematch"ab[*^]c")
+
+  TC(0 1, a:("roam";"rome");a _like "r?me") // pahihu _like
+  TC(1 1, a:("roam";"rome");a _like "ro*")
+  TC(1 0, a:("roam";"rome");a _like "ro[ab]?")
+  TC(0 1, a:("roam";"rome");a _like "ro[^ab]?")
+  TC(1, "a[c"_like"a[[]c")
+  TC(1 0, (`$("ab*c";"abcc"))_like"ab[*]c")
+  TC(1 0, (`$("ab?c";"abcc"))_like"ab[?]c")
+  TC(1 0, (`$("ab^c";"abcc"))_like"ab[*^]c")
 
   TC((1;"type") , @[.:;"_sin _sin (;)";:])
   TC((1;"type") , @[.:;"_sin _sin (0;)";:])
