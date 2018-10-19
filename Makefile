@@ -101,7 +101,7 @@ k_dyn: src/kbuild.h $(SOLIB) src/main.o
 	$(CC) ${CFLAGS} $(SOLIB) src/main.o -rdynamic -o $@ $(LDFLAGS)
 
 src/kbuild.h: Makefile
-	$(RM) @
+	$(RM) $@
 	echo "#define KBUILD_DATE \"`date +%Y-%m-%d`\"" >$@
 	echo "#define KBUILD_OS \"`uname`\"" >>$@
 	echo "#define KBUILD_ARCH \"`uname -m`\"" >>$@
