@@ -11,7 +11,7 @@
 #if defined(__LITTLE_ENDIAN__) || defined(__ORDER_LITTLE_ENDIAN__)
 #warning Using bswap32()
 #include "bswap.h"
-#define BIG(x)	bswap32(x)
+#define BIG(x)	((StrChunk)bswap32(x))
 #else
 #define BIG(x)	(x)
 #endif
@@ -27,8 +27,10 @@ Z I fastcmp(S p0,S p1,I n){
   StrChunk *lp1=(StrChunk*)p1,v1;
   while(cb<nb){
     v0=lp0[cb];v1=lp1[cb];
-    if(v0^v1)
+    if(v0^v1){
+      // fprintf(stderr,"DBG: v0:%x(%x) v1:%x(%x)\n",v0,BIG(v0),v1,BIG(v1));
       R BIG(v0)-BIG(v1);
+    }
     cb++;
   }
   if(o){

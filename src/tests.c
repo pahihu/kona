@@ -1361,6 +1361,8 @@ Z I testsBook()
   TC_("1", "7=&/#:'$10?`\"7\"")
   TC_("1", "8=&/#:'$10?`\"8\"")
 
+  TC(3 2 1 0, <`d`cc`bbb`aaaa) // pahihu scn() fix
+
   TC((1;"type") , @[.:;"_sin _sin (;)";:])
   TC((1;"type") , @[.:;"_sin _sin (0;)";:])
 
