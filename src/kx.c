@@ -478,7 +478,9 @@ K vf_ex(V q, K g)
 
   n=valence(q); I ee=0;
   if(q>(V)DT_SIZE){
+    // O("DBG: q>(V)DT_SIZE valence=%lld\n",n);
     K e=*(K*)q;
+    // O("DBG: e={%lld,%lld}\n",e->t,e->n);
     if(e->t==7 && e->n==1 && (V)kS(kK(e)[CODE])[0]>(V)DT_SIZE && (*(K*)kS(kK(e)[CODE])[0])->t==7){n=2; ee=1;}}
 
   if(ee && !kV(g)[0] && kV(g)[1])fom=1;
@@ -502,11 +504,14 @@ K vf_ex(V q, K g)
   if(gn >1){b=kK(g)[1];VCHK(b);}
   if(gn >2){c=kK(g)[2];VCHK(c);}
   if(gn >3){d=kK(g)[3];VCHK(d);}
+  // O("DBG: gn=%lld\n",gn);
 
   //valence overloaded verbs
   if(gn > 2 && (q==offsetWhat || q==offsetSSR)){ z=(q==offsetWhat?what_triadic:_ssr)(a,b,c); GC; }
   if(gn > 2 && (q==offsetAt   || q==offsetDot )){ z= (q==offsetAt?at_tetradic:dot_tetradic)(a,b,c,d); GC;}
   //common verbs
+
+  // O("DBG: k=%lld a=%p b=%p\n",k,a,b);
 
   if(2==k && a && b){ fnc=DT[(L)q].text;
     if(fnci<127){fncp[fnci]=q; fnci++;}
@@ -925,6 +930,9 @@ K ex1(V*w,K k,I*i,I n,I f)//convert verb pieces (eg 1+/) to seven-types, default
   R a;
 }
 
+
+I cva(V p){P(!KONA_APL_DYAD,sva(p)); U(p);UI q=(UI)p;R q<DT_SIZE?DT[q].arity:valence(p);}
+
 Z K ex2(V*v, K k)  //execute words --- all returns must be Ks. v: word list, k: conjunction?
 {
   VCHK(k);
@@ -1018,10 +1026,13 @@ Z K ex2(V*v, K k)  //execute words --- all returns must be Ks. v: word list, k: 
 
   while(v[1] && adverbClass(v[2+i])) i++;
   //TODO: Catch 0-returned-errors here and below
-  if(!sva(v[0]) && (i || 2==sva(v[1]))) {  //na+. or nv. case  (n noun, a adverb, + means regex one+ and . means regex anything )
+  // O("DBG: v[0]=%p v[1]=%p sva(v[0])=%lld cva(v[1])==%lld\n",v[0],v[1],sva(v[0]),cva(v[1]));
+  if(!sva(v[0]) && (i || 2==cva(v[1]))) {  //na+. or nv. case  (n noun, a adverb, + means regex one+ and . means regex anything )
     t2=ex2(v+2+i,k); if(fer>0 && strcmp(errmsg,"undescribed")) R t2;
        //these cannot be placed into single function call b/c order of eval is unspecified
+    // O("DBG: t2=%p\n",t2);
     t3=ex_(v[1],1);
+    // O("DBG: t3=%p\n",t3);
     VCHK(t2);
     if(t3>(K)DT_SIZE && t3->t==7 && t3->n==3) {
       VCHK(t3);

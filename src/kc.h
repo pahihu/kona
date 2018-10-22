@@ -11,6 +11,7 @@ extern K KONA_PORT;
 extern K KONA_GSET;
 extern K KONA_IDX;
 extern K KONA_CLIENT;
+extern I KONA_APL_DYAD;
 K _n();
 extern F mUsed;
 extern F mMax;
