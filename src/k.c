@@ -526,11 +526,9 @@ TR DT[] =  //Dispatch table is append-only. Reorder/delete/insert breaks backwar
   {0, 2, _dvl,"_dvl",{0}},
   {0, 2, _hat,"_hat",{0}},
   {0, 2, _in,"_in",{0}},
-  {0, 2, _like,"_like",{0}},
   {0, 2, _lin,"_lin",{0}},
   {0, 2, _lsq,"_lsq",{0}},
   {0, 2, _mul,"_mul",{0}},
-  {0, 2, _rematch,"_rematch",{0}},
   {0, 2, _setenv,"_setenv",{0}},
   {0, 2, _sm,"_sm",{0}},
   {0, 2, _ss,"_ss",{0}},
@@ -542,6 +540,8 @@ TR DT[] =  //Dispatch table is append-only. Reorder/delete/insert breaks backwar
   {0, 2, _vs,"_vs",{0}},    //k3 version
   {0, 1, _hash,"_hash",{0}},
   {0, 1, _md5,"_md5",{0}},
+  {0, 2, _like,"_like",{0}},
+  {0, 2, _rematch,"_rematch",{0}},
   //^^Add new rows here^^
   {-1,-1,TABLE_END,0,{0}}   //sentinel
 };
