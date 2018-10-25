@@ -31,6 +31,7 @@ Z void showx(K x){ O("[%lld,%lld,%lld] ",xt,xn,rc(x));show(x);if(6==xt)O("\n");}
 Z void A(I n){DO(n,O(" "));}
 Z void dum7(K*_v,I a){
   K v=*_v;
+  if(v<(K)0x100000000)R; // XXX garbage
   int n=0;I vt=v->t,vn=v->n,f=1;
   S typ7[]={"wd","wordfn","cfn","charfn",":[]","if[]","while[]","do[]"};
   V e=0;V*kw=kW(v);
@@ -40,7 +41,7 @@ Z void dum7(K*_v,I a){
     SW(vn){
     CS(2, A(a);O(" val: %p %p %p\n",kw[0],kw[1],kw[2]))
     CD: {
-      K par=(K)kV(v)[PARAMS],loc=(K)kV(v)[PARAMS],conj=(K)kV(v)[CONJ];
+      K par=(K)kV(v)[PARAMS],loc=(K)kV(v)[LOCALS],conj=(K)kV(v)[CONJ];
       if(par->n){A(a);O("params: ");dum7(&par,a+2);}
       if(loc->n){A(a);O("locals: ");dum7(&loc,a+2);}
       if(conj){A(a);O("  conj: ");dum7(&conj,a+2);}
