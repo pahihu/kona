@@ -9,7 +9,6 @@ K _f();
 K _n();
 V alloc(size_t sz);
 I test();
-K cd(K a);
 K show(K a);
 I matchI(K a,K b);
 K X(S s);

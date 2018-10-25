@@ -65,7 +65,6 @@ K wd(S s,int n);
 K ex(K a);
 I lines(FILE *f);
 K kap(K *a,V v);
-K cd(K a);
 void pdafree(PDA p);
 K kerr(cS s);
 K show(K a);

@@ -690,5 +690,6 @@ K hash_find(K a,K b)
   CSR(1,)CS(2,{uI v=*kU(b);i=_hg(y,hc(v),(I)v,x,&p);})
   CS(3,k=(UC)*kC(b);i=kI(y)[k];if(i<0)i=xn)
   CS(4,{S v=*kS(b);k=SV(v,SLOT_H);i=_hgv(y,k,v,x,&p);}) }
+  // O("hash_find: rc(a,%p)=%lld rc(b,%p)=%lld\n",a,rc(a),b,rc(b));
   R Ki(-1==i?xn:i);
 }

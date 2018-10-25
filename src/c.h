@@ -18,7 +18,6 @@ I wds_(K *a,FILE *f,I l);
 I lines(FILE *f);
 K _n();
 K load(S s);
-K cd(K a);
 K filename(S s);
 I prompt(I n);
 I oerr();

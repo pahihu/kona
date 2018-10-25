@@ -1,6 +1,5 @@
 ;
 extern K KFIXED;
-K cd(K a);
 void finally();
 extern I PG;
 extern I fError;

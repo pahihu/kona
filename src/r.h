@@ -64,7 +64,6 @@ extern V vn_[];
 extern S n_s;
 K at(K x,K y);
 K math(F(*f)(F),K a);
-K ci(K a);
 F sqr(F x);
 K dot(K a,K b);
 K X(S s);
@@ -72,7 +71,6 @@ K X(S s);
 extern I kreci;
 #endif
 K vf_ex(V q,K g);
-K cd(K a);
 extern K KFIXED;
 extern K KONA_ARGS;
 extern K KONA_WHO;

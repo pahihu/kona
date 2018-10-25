@@ -106,7 +106,11 @@ K mrc(K x,I c){I k=sz(xt,xn);I r=lsz(k);x->_c=(c<<8)|r;R x;}
 //Arthur says he doesn't use malloc or free. Andrei Moutchkine claims smallest unit is vm page (his truss says no malloc + add pages one at a time).
 //Arthur not using malloc is probably true. No strdup & related functions in binary's strings. Note: Skelton references "different allocator" not in \w report
 //This source would be improved by getting ridding of remaing malloc/calloc/realloc
+#ifdef DEBUG
+K _cdg(K x,S f,I ln)
+#else
 K cd(K x)
+#endif
 {
   CKP();
   #ifdef DEBUG
@@ -121,6 +125,8 @@ K cd(K x)
   #endif 
 
   P(!x,0)
+  P(6==xt,0)
+  // DBG(if(7!=xt)O("\n%s:%lld cd(%lld,%p)",f,ln,xt,x);)
   MEMDBG(CheckK(x);)
   dc(x);
 
@@ -164,11 +170,17 @@ K cd(K x)
   R 0;
 }
 
+#ifdef DEBUG
+K _cig(K x,S f,I ln)
+#else
 K ci(K x)
+#endif
 {
   CKP();
 
   P(!x,0)
+  P(6==xt,x)
+  // DBG(if(7!=xt)O("\n%s:%lld ci(%lld,%p)",f,ln,xt,x);)
   MEMDBG(CheckK(x);)
   ic(x);
 

@@ -28,7 +28,12 @@ K _newK(I t,I n,S f,I ln);
 K newK(I t,I n);
 #endif
 I bp(I t);
+#ifdef DEBUG
+K _cig(K a,S f,I ln);
+#define ci(x)	_cig(x,__FILE__,__LINE__)
+#else
 K ci(K a);
+#endif
 I repool(V v,I r);
 I lsz(I k);
 I glsz(K x);
@@ -41,7 +46,12 @@ extern I kreci;
 #endif
 K show(K a);
 extern I tests;
+#ifdef DEBUG
+K _cdg(K a,S f,I ln);
+#define cd(x)	_cdg(x,__FILE__,__LINE__)
+#else
 K cd(K a);
+#endif
 I OOM_CD(I g, ...);
 I cl2(I v);
 #define rc(x)	((x)->_c>>8)

@@ -9,5 +9,4 @@ I matchI(K a,K b);
 I FC(F a,F b);
 K at(K x,K y);
 K equals(K a,K b);
-K cd(K a);
 K promote(K a);

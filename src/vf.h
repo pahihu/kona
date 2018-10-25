@@ -1,7 +1,5 @@
 K enlist(K x);
 K demote(K a);
-K cd(K a);
-K ci(K a);
 K promote(K a);
 K dollar(K a,K b);
 I FC(F a,F b);

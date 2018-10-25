@@ -1,4 +1,3 @@
-K ci(K a);
 K* denameS(S dir_string, S t, I create);
 K vf_ex(V q,K g);
 S CSK(K x);
@@ -6,7 +5,6 @@ K X(S s);
 I ksender(I sockfd,K y,I t);
 K _db(K x);
 extern fd_set master;
-K cd(K a);
 I wipe_tape(I i);
 void *get_in_addr(struct sockaddr *sa);
 extern pthread_mutex_t execute_mutex;

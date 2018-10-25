@@ -1,6 +1,5 @@
 K mergeGrade(K a,I r);
 K charGrade(K a,I r);
-K cd(K a);
 K _i();
 K distributionGrade(K a,I r,uI u,uI v);
 I SC(S a,S b);
