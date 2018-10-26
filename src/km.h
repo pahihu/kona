@@ -1,7 +1,30 @@
 I rp2(I v);
+#ifdef DEBUG
+K _newE(S s,K k,S f,I ln);
+K _newEntry(S s,S f,I ln);
+#define newE(s,k)   _newE(s,k,__FILE__,__LINE__)
+#define newEntry(s) _newEntry(s,__FILE__,__LINE__)
+#else
 K newE(S s,K k);
 K newEntry(S s);
+#endif
 extern S d_;
+#ifdef DEBUG
+K _Kv(S f,I ln);
+K _Kn(S f,I ln);
+K _Kd(S f,I ln);
+K _Ks(S x,S f,I ln);
+K _Kc(C x,S f,I ln);
+K _Kf(F x,S f,I ln);
+K _Ki(I x,S f,I ln);
+#define Kv()	_Kv(__FILE__,__LINE__)
+#define Kn()	_Kn(__FILE__,__LINE__)
+#define Kd()	_Kd(__FILE__,__LINE__)
+#define Ks(x)	_Ks(x,__FILE__,__LINE__)
+#define Kc(x)	_Kc(x,__FILE__,__LINE__)
+#define Kf(x)	_Kf(x,__FILE__,__LINE__)
+#define Ki(x)	_Ki(x,__FILE__,__LINE__)
+#else
 K Kv();
 K Kn();
 K Kd();
@@ -9,6 +32,7 @@ K Ks(S x);
 K Kc(C x);
 K Kf(F x);
 K Ki(I x);
+#endif
 void pdafree(PDA p);
 C bottom(PDA p);
 C pop(PDA p);

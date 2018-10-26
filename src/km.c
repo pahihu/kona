@@ -450,6 +450,15 @@ C     pop(PDA p){R p->n>0?p->c[--(p->n)]:0;}
 C  bottom(PDA p){R p->n>0?p->c[0]:0;}
 void pdafree(PDA p){free(p->c); repool(p,lszPDA);}
 
+#ifdef DEBUG
+K _Ki(I x,S f,I ln){K z=_newK(1,1,f,ln);*kI(z)=x;R z;}
+K _Kf(F x,S f,I ln){K z=_newK(2,1,f,ln);*kF(z)=x;R z;}
+K _Kc(C x,S f,I ln){K z=_newK(3,1,f,ln);*kC(z)=x;R z;}
+K _Ks(S x,S f,I ln){U(x) K z=_newK(4,1,f,ln);*kS(z)=x;R z;}//KDB+ >= 2.4 tries interning [sp()]  by default when generating sym atoms 
+K _Kd(    S f,I ln){R   _newK(5,0,f,ln);}
+K _Kn(    S f,I ln){R   _newK(6,1,f,ln);}//Should n instead be 0? (Won't affect #:) in k3.2 yes  //In K3.2 _n->n is overridden for error messages. 
+K _Kv(    S f,I ln){K z=_newK(7,TYPE_SEVEN_SIZE,f,ln);U(z) z->n=1;kV(z)[CONTeXT]=d_; M(z,kV(z)[PARAMS]=Kd(),kV(z)[LOCALS]=Kd()) R z;} //z->n == 0-wd 1-wordfunc 2-cfunc 3-charfunc 4-:[] 5-if[] 6-while[] 7-do[]
+#else
 K Ki(I x){K z=newK(1,1);*kI(z)=x;R z;}
 K Kf(F x){K z=newK(2,1);*kF(z)=x;R z;}
 K Kc(C x){K z=newK(3,1);*kC(z)=x;R z;}
@@ -457,8 +466,22 @@ K Ks(S x){U(x) K z=newK(4,1);*kS(z)=x;R z;}//KDB+ >= 2.4 tries interning [sp()] 
 K Kd(   ){R   newK(5,0);}
 K Kn(   ){R   newK(6,1);}//Should n instead be 0? (Won't affect #:) in k3.2 yes  //In K3.2 _n->n is overridden for error messages. 
 K Kv(   ){K z=newK(7,TYPE_SEVEN_SIZE);U(z) z->n=1;kV(z)[CONTeXT]=d_; M(z,kV(z)[PARAMS]=Kd(),kV(z)[LOCALS]=Kd()) R z;} //z->n == 0-wd 1-wordfunc 2-cfunc 3-charfunc 4-:[] 5-if[] 6-while[] 7-do[]
+#endif
+
 //Optimization: It's better if Kv() doesn't set PARAMS and LOCALS. Only charfuncs should set params
 
+#ifdef DEBUG
+K _newEntry(S s,S f,I ln){R _newE(s,_n(),f,ln);}//assumes s came from sp()
+K _newE(S s, K k,S f,I ln) //oom
+{
+  K z=_newK(0,3,f,ln); U(z)
+  kK(z)[0]=_Ks(s,f,ln); // be careful -- s must have come from sp()
+  kK(z)[1]=k;
+  kK(z)[2]=_n();
+  M(z,kK(z)[0],kK(z)[2]) //May want to redesign this function (& newEntry) to ci(k==kK(z)[1])
+  R z;
+}
+#else
 K newEntry(S s){R newE(s,_n());}//assumes s came from sp()
 K newE(S s, K k) //oom
 {
@@ -469,6 +492,7 @@ K newE(S s, K k) //oom
   M(z,kK(z)[0],kK(z)[2]) //May want to redesign this function (& newEntry) to ci(k==kK(z)[1])
   R z;
 }
+#endif
 I rp2(I v){v--;v|=v>>1;v|=v>>2;v|=v>>4;v|=v>>8;v|=v>>16;if(sizeof(V)>=8)v|=v>>32;v++;R MAX(1,v);}//round up to integer power of 2 (fails on upper 1/4 signed)
 
 K mstat(){K ks=newK(-1,4);M(ks);I*s=kI(ks);s[0]=mUsed;s[1]=mAlloc;s[2]=mMap;s[3]=mMax;R ks;}

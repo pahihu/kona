@@ -2,7 +2,6 @@ K dp(K*z,K(*f)(K,K),K x,K y);
 K more(K a,K b);
 K less(K a,K b);
 I SC(S a,S b);
-K Ki(I x);
 K match(K a,K b);
 I VA(V p);
 I matchI(K a,K b);

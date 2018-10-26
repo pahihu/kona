@@ -162,7 +162,8 @@ K format(K a)
 {
   I at=a->t, an=a->n;
   K z;
-  if(3==ABS(at)){z=kclone(a); z->t=-3; R z;}
+  if(-3==at)R ci(a);
+  else if(3==at){z=kclone(a); z->t=-3; R z;} // KLONE: OK
   else if(7==at)R formatFn(a);
   else if(6==at)R newK(-3,0);
   else if(5==at)R formatS(sp(".(..)"));//Beats me -- this has a similar signature to a _hash

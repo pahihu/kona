@@ -2,6 +2,7 @@
 
 #include "k.h"
 #include "km.h"
+#include "ko.h"
 #include "p.h"
 #include "r.h"
 #include "v.h"
@@ -147,12 +148,15 @@ K dot_ref(K *p, K *x, K *z, I s, K c, K y)
     // XXX: it seems silly to me to make a klone() of a value
     // which has been computed just above, but it crashes Kona
     // at several places if I remove this...
+    // KLONE: ???
+    #if 0
     if (5==r->t || 0==r->t)
     {
       *p=kclone(r);
       cd(r);
     }
     else
+    #endif
     *p=r;
     R NULL;
   }
@@ -281,9 +285,9 @@ K dot_tetradic(K a, K b, K c, K y)//Handles triadic and tetradic case
 
     p = denameS(d_,*kS(a),1);
     U(p) //oom
-    // if(1<rc(*p)){K x=*p;*p=kclone(x);cd(x);} // XXX
+    if(1<rc(*p)){K x=*p;*p=kclone(x);cd(x);} // KLONE: should be OK
   }
-  else q = kclone(a);
+  else q = kclone(a); // KLONE: OK
 
   K *g = q?&q:p;
 
@@ -309,7 +313,10 @@ K make(K a)
   DO(n, x=kK(z)[i]; y=kK(a)[i]; DO2(y->n,kK(x)[j]=y->t?Ks(kS(y)[j]):ci(kK(y)[j])) if(y->n<3)kK(x)[2]=_n())  //oom
   R z;
 }
-Z K unmake(K a){K z=kclone(a); z->t=0; R z;}//TODO: deep clone inefficient
+Z K unmake(K a){
+  // K z=kclone(a); z->t=0; R z; // KLONE: deep clone unnecessary
+  K z=kcopy(a); z->t=0; R z;
+}//TODO: deep clone inefficient
 Z K makeable(K a) //TODO: this has to be reworked. can't hang out raw in dot_monadic as it is currently
 {
   I t=a->t, n=a->n;

@@ -6,6 +6,7 @@
 #include "k.h"
 #include "kc.h"
 #include "km.h"
+#include "ks.h"
 
 #if defined(__OpenBSD__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__ANDROID__)
 #include <sys/socket.h>
@@ -29,6 +30,7 @@ extern void win_usleep(unsigned int); //buggy TDMGCC64 usleep()
 
 K KONA_GSET=0,KONA_IDX=0;
 I KONA_APL_DYAD=0;
+I KONA_DEBUG=0;
 
 Z I randomBits();
 I oerr(){R O("%s %s\n",errmsg,"error");}
@@ -83,8 +85,9 @@ I args(int n,S*v) {
         if(!(a=newK(-3, len))){cd(KONA_ARGS);R 0;}
         strncpy(kC(a),v[i],len);
         kK(KONA_ARGS)[i]=a )
-  while(-1!=(c=getopt(n,v,":2h:i:e:x:")))SW(c) {
+  while(-1!=(c=getopt(n,v,":2gh:i:e:x:")))SW(c) {
     CS('2',  KONA_APL_DYAD=1;)
+    CS('g',  KONA_DEBUG=1;)
     CS('h',  if(IPC_PORT)O("-i accepted, cannot also have -h\n"); else HTTP_PORT=optarg;)
     CS('i',  if(HTTP_PORT)O("-h accepted, cannot also have -i\n"); else {IPC_PORT=optarg;*kI(KONA_PORT)=atol(IPC_PORT);})
     CS('e',  cd(X(optarg)); exit(0) )

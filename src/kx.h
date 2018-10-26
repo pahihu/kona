@@ -1,7 +1,6 @@
 K of(K a,K b);
 K dot_tetradic_2(K *g,K b,K c,K y);
 extern S LS;
-K newE(S s,K k);
 extern V offsetSSR,offsetWhat,offsetAt,offsetDot,offsetColon,offset3m;
 extern I adverb_ct;
 extern V adverbs[];
@@ -18,7 +17,6 @@ K ex(K a);
 K DI(K d,I i);
 K kcloneI(K a,const char*f,int n);
 #define kclone(a) kcloneI(a,__FILE__,__LINE__)
-K Kv();
 K dot_tetradic(K a,K b,K c,K y);
 K at_tetradic(K a,K b,K c,K y);
 K dot(K a,K b);
@@ -40,8 +38,6 @@ I matchI(K a,K b);
 K vf_ex(V q,K g);
 I bp(I t);
 K first(K a);
-K Ki(I x);
-K Kf(F x);
 I VA(V p);
 K enlist(K x);
 K join(K a,K b);

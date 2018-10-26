@@ -11,7 +11,6 @@ extern pthread_mutex_t execute_mutex;
 extern S HTTP_PORT;
 K _n();
 extern C errmsg[256];
-K Ki(I);
 I bswapI(I n);
 void dm1(S msg,M1*m);
 I oerr();

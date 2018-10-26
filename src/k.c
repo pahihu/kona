@@ -182,15 +182,17 @@ I VA(V p){R sva(p) || adverbClass(p);}  //(Verb or Adverb)?
 Z I isescape(UC c) {R (c=='"'||c=='\\'||c=='\b'||c=='\n'||c=='\r'||c=='\t');}
 Z I needspt0(F f){if(isnan(f)||-FI==f||FI==f)R 0; Z C b[512];snprintf(b,512,"%.*g",(int)PP,f); R !stringHasChar(b,'.') && !stringHasChar(b,'e');}//no better way I know
 
+Z I OLEN=0;
 Z int splitprint(V u, const char *s, ...)  //print for either stdout or for 5: monadic (_5m)
 {
   Z C b[512];
   va_list args;
   va_start (args, s);
-  if(!u) vprintf (s, args); //stdout
+  if(!u) OLEN += vprintf (s, args); //stdout
   else //5: monadic
   {
     I n=vsnprintf(b,512,s,args);
+    OLEN+=n;
     if(!kapn(u,b,n)){} //todo: err handling
   }
   va_end (args);
@@ -222,7 +224,8 @@ void printAtDepth(V u, K a, I d, I x, I vdep, I b) //u {0=stdout or K* charvec }
   I f;F g;
 
   I pmax = 500;//limit output on long lists. could be improved. would be better as a global variable with <= 0 indicating disabled
-  #define CPMAX {if(!u && i>pmax){O_("...");break;}}
+  // #define CPMAX {if(!u && i>pmax){O_("...");break;}}
+  #define CPMAX {if(!u && OLEN>pmax){O_("...");break;}}
 
   if(0==t) DO(a->n, CPMAX printAtDepth(u,kK(a)[i],d+1,i*m,0,0);O_(i<_i-1?m?"\n":";":""))
   if(1==ABS(t)){
@@ -294,6 +297,7 @@ void printAtDepth(V u, K a, I d, I x, I vdep, I b) //u {0=stdout or K* charvec }
 
 K show(K a)
 {
+  OLEN=0;
   printAtDepth(0,a,0,0,0,0);
   if(a && a->t!=6)O("\n");
   R a;

@@ -1,6 +1,5 @@
 K KX(K x);
 K dot_monadic(K x);
-K Ks(S x);
 K make(K a);
 K kcloneI(K a,const char*f,int n);
 #define kclone(a) kcloneI(a,__FILE__,__LINE__)
@@ -11,7 +10,6 @@ extern C errmsg[256];
 I isColonDyadic(K x);
 K dot_tetradic(K a,K b,K c,K y);
 K dot_tetradic_2(K *g,K b,K c,K y);
-K Ki(I x);
 K DI(K d,I i);
 K *EVP(K e);
 K *lookupEVOrCreate(K *p,S k);

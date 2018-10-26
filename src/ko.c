@@ -3,14 +3,25 @@
 #include "incs.h"
 
 #include "k.h"
+#include "kc.h"
 #include "km.h"
 #include "ko.h"
 
-Z I w=0;
 K _kclone(K a);
 K kcloneI(K a,cS f,int n){
-  if(w)O("\n%s:%d kclone(%p)",f,n,a);
+  if(KONA_DEBUG)O("\n%s:%d kclone(%p)",f,n,a);
   R _kclone(a);}
+K kcopy(K a)//Shallow copy - list/dict
+{
+  U(a);
+  I t=a->t,n=a->n;
+  P(5!=t && t, (abort(),ME));
+  K z=newK(t,n),b,e;z->t=t;
+  if(5==t)DO(n,b=kK(a)[i];kK(z)[i]=(e=newK(0,3));M(e,z);kK(e)[0]=ci(kK(b)[0]);kK(e)[1]=ci(kK(b)[1]);kK(e)[2]=ci(kK(b)[2]);)
+  else DO(n,kK(z)[i]=ci(kK(a)[i]));
+  R z;
+}
+
 K _kclone(K a)//Deep copy -- eliminate where possible
 {
   if(!a) R 0;

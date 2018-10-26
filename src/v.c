@@ -2,6 +2,7 @@
 #include "scalar.h"
 
 #include "k.h"
+#include "kc.h"
 #include "km.h"
 #include "0.h"
 #include "v.h"
@@ -84,11 +85,13 @@ Z K* denameRecurse(K*p,S t,I create) {
 }
 
 K* denameD(K*d, S t, I create) {
+  if(KONA_DEBUG)O("denameD: t=[%s] crea=%lld",t,create);
   if(!simpleString(t)) R 0; //some kind of error
   R denameRecurse('.'==*t||!*t?&KTREE:d,t,create);
 }
 
 K* denameS(S dir_string, S t, I create) {
+  if(KONA_DEBUG)O("denameS: dir=[%s] t=[%s] crea=%lld",dir_string,t,create);
   R denameD('.'==*t||!*t?&KTREE:denameD(&KTREE,dir_string,create),t,create);
   //duplicates '.' functionality in denameD to avoid dictionary initialization
 }

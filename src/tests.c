@@ -619,14 +619,14 @@ Z I tests02()
   TC(x:!10;y:x;y[1]:100;x, !10) //cross-variable assignment
   TC(x:(1;1.0;"1");y:x;z:x;z[0]:2;y, (1;1.0;"1")) //demonstrate need for recursive ci/cd
   TC(1, x:.+(`a`b;1 2); y:x; ."y.a:11; x.a") //dict references
-  TC(x:.+(`a`b;1 2); y:x; y.a:11;x, .+(`a`b;1 2) )  // Bakul comments #205, case 1
+  TC(x:.+(`a`b;1 2); y:x; y[`a]:11;x, .+(`a`b;1 2) )  // Bakul comments #205, case 1 [pahihu y.a is VLE in K3.2]
   TC(d:.+(`a`b;1 2);d[`a]:d, .+(`a`b;1 2) )         // Bakul comments #205, case 2a
-  TC(d:.+(`a`b;1 2);d.a:d, .+(`a`b;1 2) )         // Bakul comments #205, case 2b
+  TC(d:.+(`a`b;1 2);d[`a]:d, .+(`a`b;1 2) )         // Bakul comments #205, case 2b [pahihu d.a is VLE in K3.2]
   TC(d:.+(`a`b;1 2); d[!d]:d, (.((`a;1;);(`b;2;));.((`a;1;);(`b;2;))) )   // #188
-  TC(.((`a;(9 9 9;9 9 9;9 9 9););(`b;2;)), d:.+(`a`b;(3 3#9;2));e:d;d.a[1;2]:e) //case 3
+  TC(.((`a;(9 9 9;9 9 9;9 9 9););(`b;2;)), d:.+(`a`b;(3 3#9;2));e:d;d[`a;1;2]:e) //case 3 [pahihu d.a is VLE in K3.2]
   TC( (.((`a;(9 9;9 9););(`b;2;));.((`a;(9 9;9 9););(`b;2;))), d:.+(`a`b;(2 2#9;2));d[]:d)  // case 4
   TC((2;(9 9 9;9 9 9;9 9 9)),  d:.+(`a`b;(3 3#9;2));d[]:|d[])                   //case 5
-  TC(x:.((`a;(0 1 2;3 4 5;6 7 8););(`b;10;));(x;x;x), d:.+(`a`b;(3 3#!9; 10));d.a[2]:(d;d;d)) // #43 case 3
+  TC(x:.((`a;(0 1 2;3 4 5;6 7 8););(`b;10;));(x;x;x), d:.+(`a`b;(3 3#!9; 10));d[`a;2]:(d;d;d)) // #43 case 3 [pahihu d.a is VLE in K3.2]
   TC_(".,(`d;;)", "d:.k")  // #43 cases 1 & 2
   TC_(".,(`d;.,(`d;;);)", "d:.k;d:.k;d")  // #43 case 4
   TC_(".((`a;;);(`b;;))", "a:b:.k;a")    // #43 case 5a

@@ -12,7 +12,6 @@ I test();
 K show(K a);
 I matchI(K a,K b);
 K X(S s);
-K Kd();
 extern K KTREE;
 I SC(S a,S b);
 extern F testtime;

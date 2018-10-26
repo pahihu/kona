@@ -8,9 +8,16 @@
 #include "ko.h"
 #include "kx.h"
 #include "km.h"
+#include "p.h"
 #include "v.h"
 
 extern volatile sig_atomic_t interrupted;
+
+#if 1
+#define DBG(x)	if(KONA_DEBUG){x;}
+#else
+#define DBG(x)
+#endif
 
 Z K bv_ex(V *p,K k);
 K dv_ex(K a,V *p,K b);
@@ -18,8 +25,10 @@ Z K _ex0(V *v,K k,I r,int _f);
 Z K ex0(V *v,K k,I r);
 Z K ex2(V *v,K k);
 Z V ex_(V a,I r);
-I cirRef(K p,K y);
-I cirRef_(K p,K y,I f);
+Z I cirVal(K p,K y);
+Z I cirVal_(K p,K y,I f);
+Z I cirRef(K *p,K y);
+Z I cirRef_(K *p,K *y,I f);
 K kdef(V v);
 
 __thread I fer=0;    // Flag Early Return
@@ -557,6 +566,7 @@ K vf_ex(V q, K g)
 
   if(n && (argc<gn || (gn<n && (!special||gn<=1) ))) //Project. Move this ahead of verbs when finished
   {
+    // KLONE: charfn stuff
     z=kclone(f); //Is this an opportunity to capture an under-referenced function?
                  //Consider if it could be in use as part of assignment, etc.
     if(!z)GC;
@@ -626,7 +636,7 @@ K vf_ex(V q, K g)
       fw=kV(f)[CACHE_WD]; I t=0;
       if(!fw || (t=(UI)kS(kK(fw)[CODE])[0]>DT_SIZE || (UI)kS(kK(fw)[CODE])[1]>DT_SIZE) ) {
         if(t) cd(kV(f)[CACHE_WD]);
-        K fc = kclone(f); //clone the function to pass for _f
+        K fc = kclone(f); //clone the function to pass for _f KLONE: charfn stuff
         cd(kV(fc)[CONJ]); kV(fc)[CONJ]=0;
         kV(fc)[DEPTH]++; fw=wd_(kC(o),o->n,&tree,fc); kV(f)[CACHE_WD]=fw; cd(fc); }
 
@@ -646,9 +656,9 @@ K vf_ex(V q, K g)
       ff=1; DO(kK(z)[PARAMS]->n, if(!strcmp(*kS(kK(kK(kK(z)[PARAMS])[i])[0]),"z")){ff=0; break;} ) }
     if(ff) {
       K d=kK(kK(KTREE)[0])[1]; K w=0;
-      DO(d->n, if(!strcmp(*kS(kK(kK(d)[i])[0]),"z")){w=kclone(kK(d)[i]); break;})
+      DO(d->n, if(!strcmp(*kS(kK(kK(d)[i])[0]),"z")){w=kclone(kK(d)[i]); break;}) // KLONE: charfn stuff
       if(w){
-        K p=kK(g)[0]; cd(kK(w)[1]); kK(w)[1]=kclone(p); K we=enlist(w);
+        K p=kK(g)[0]; cd(kK(w)[1]); kK(w)[1]=kclone(p); K we=enlist(w); // KLONE: charfn stuff
         K j0=dot_monadic(kK(z)[CACHE_TREE]); K j2=join(ci(j0),we); cd(j0);
         cd(kK(z)[CACHE_TREE]); kK(z)[CACHE_TREE]=dot_monadic(j2); cd(w); cd(we); cd(j0); cd(j2); encp=3; } } }
   if(encp==1) { I ff=0;
@@ -660,7 +670,7 @@ K vf_ex(V q, K g)
         DO(d->n, if(!strcmp(*kS(kK(kK(d)[i])[0]),"y")){y=kclone(kK(d)[i]); break;})
       else R NYI;
       if(y) {
-        K p=kK(g)[0]; cd(kK(y)[1]); kK(y)[1]=kclone(p); K ye=enlist(y);
+        K p=kK(g)[0]; cd(kK(y)[1]); kK(y)[1]=kclone(p); K ye=enlist(y); // KLONE: charfn stuff
         K j0=dot_monadic(kK(z)[CACHE_TREE]); K j2=join(ci(j0),ye); cd(j0);
         cd(kK(z)[CACHE_TREE]); kK(z)[CACHE_TREE]=dot_monadic(j2); cd(y); cd(ye); cd(j0); cd(j2); encp=2; } } }
   if(encp==0) { I ff=0;
@@ -669,7 +679,7 @@ K vf_ex(V q, K g)
     if(ff) {
       K xx=newK(4,1); *kK(xx)=(V)sp("x");
       K x=newK(0,3); kK(x)[0]=xx; kK(x)[1]=(K)_n(); kK(x)[2]=(K)_n();
-      K p=kK(g)[0]; cd(kK(x)[1]); kK(x)[1]=kclone(p); K xe=enlist(x);
+      K p=kK(g)[0]; cd(kK(x)[1]); kK(x)[1]=kclone(p); K xe=enlist(x); // KLONE: charfn stuff
       K j0=dot_monadic(kK(z)[CACHE_TREE]); K j2=join(ci(j0),xe); cd(j0);
       cd(kK(z)[CACHE_TREE]); kK(z)[CACHE_TREE]=dot_monadic(j2); cd(x); cd(xe); cd(j0); cd(j2); encp=1; } }
 
@@ -966,12 +976,12 @@ Z K ex2(V*v, K k)  //execute words --- all returns must be Ks. v: word list, k: 
     if(prnt && z && z->t==7) {
       if(kV(prnt)[PARAMS] && !kK(prnt)[PARAMS]->n && kV(z)[LOCALS] && !kK(z)[LOCALS]->n
          && kV(prnt)[LOCALS] && kK(prnt)[LOCALS]->n) {
-        kV(z)[CACHE_TREE]=kclone(kK(prnt)[CACHE_TREE]); if(prnt)cd(prnt); prnt=ci(z); }
+        kV(z)[CACHE_TREE]=kclone(kK(prnt)[CACHE_TREE]); if(prnt)cd(prnt); prnt=ci(z); } // KLONE: charfn stuff
       else if(kV(prnt)[LOCALS] && kK(prnt)[LOCALS]->n && kV(z)[PARAMS] && kK(z)[PARAMS]->n) {
 	if (kV(prnt)[CACHE_TREE]) {
 	  K j0=dot_monadic(kV(z)[PARAMS]); K j1=dot_monadic(kV(prnt)[CACHE_TREE]);
 	  K j2=join(ci(j0),j1); cd(j0); kV(z)[CACHE_TREE]=dot_monadic(j2); cd(j0); cd(j1); cd(j2); }
-	else kV(z)[CACHE_TREE]=kclone(kV(z)[PARAMS]); }}
+	else kV(z)[CACHE_TREE]=kclone(kV(z)[PARAMS]); }} // KLONE: charfn stuff
     R z; }
 
   if(!VA(*v) && (offsetColon == v[1] || (VA(v[1]) && offsetColon==v[2]) ) ) //Handle assignment
@@ -988,6 +998,7 @@ Z K ex2(V*v, K k)  //execute words --- all returns must be Ks. v: word list, k: 
         if(1e6<(UI)w) {
           K r=*(K*)w;
           if(r->t==5) { p=enumerate(r); cd(b); b=enlist(p); cd(p); } } }
+      P(!*w,VLE); // pahihu d:.+(..); e:d; d.a[..]:.. should be RE
     }
     if(!b)U(b=newK(0,0))
     c=Kv(); //mmo  Optimization: could use A struct instead, with array[] for CODE
@@ -1001,20 +1012,27 @@ Z K ex2(V*v, K k)  //execute words --- all returns must be Ks. v: word list, k: 
 
     if(fer>0) { cd(c); cd(d); cd(b); R _n(); }
 
-    /* XXX
-    if(*w){O("\n%lld w: ",rc(*w));show(*w);}else O("\n  w: NULL");
-    if(b){O("\n%lld b: ",rc(b));show(b);}
-    if(c){O("\n%lld c: ",rc(c));show(c);}
-    if(d){O("\n%lld d: ",rc(d));show(d);}
-    */
+    if(KONA_DEBUG){
+      DBG(O("-------------------\n");
+      if(a){O("\na: %p ",a);showx(a);}else O("\na: NULL");
+      if(*w){O("\nw: %p ",*w);showx(*w);}else O("\nw: NULL");
+      if(b){O("\nb: %p ",b);showx(b);}else O("\nb: NULL");
+      if(c){O("\nc: %p ",c);showx(c);}else O("\nc: NULL");
+      if(d){O("\nd: %p ",d);showx(d);}else O("\nd: NULL"););
+    }
 
-    if(cirRef(*w,d) || (((*w)->t==6 && d) && (d->t==0 || d->t==5 || ABS(d->t)!=d->t))){
+    I cv=cirVal(*w,d); // value reference
+    I cr=cv?cv:cirRef(w,d); // value reference
+    if((cr||cv) || (((*w)->t==6 && d) && (d->t==0 || d->t==5 || ABS(d->t)!=d->t))){ // XXX: list/dict/vector
       K x = d;
-      if(rc(x)) {d=kclone(x); cd(x);}
+      if(cv){DBG(O("---> kclone(d) VAL\n");) d=kclone(x); cd(x);}
+      else if(cr){DBG(O("---> kclone(d) REF\n");) d=kclone(x); cd(x);}
+      // if(d->t==0 || d->t==5){DBG(O("---> kcopy(d)\n");) d=kcopy(x); cd(x);}
+      // if(rc(x)>1) {d=kclone(x); cd(x);} // KLONE: ???
     }
     else if((*w)->t!=6){
       K x = *w;
-      if(rc(x)>1) { *w=kclone(x); cd(x); }
+      if(rc(x)>1) { DBG(O("---> kclone(w)\n");) *w=kclone(x); cd(x); } // KLONE: ???
     }
 
     K h=dot_tetradic_2(w,b,c,d);
@@ -1112,18 +1130,33 @@ Z K ex2(V*v, K k)  //execute words --- all returns must be Ks. v: word list, k: 
   R e;
 }
 
-I cirRef(K x,K y){
+Z I cirVal(K x,K y){
   VCHK(x);VCHK(y);
   if(x&&(x==y))R 1; // XXX
   I f=0;
   if(xt==6 || !y || (yt!=0 && yt!=5) || (UI)x<DT_SIZE) R 0;
-  DO(yn, f=cirRef_(x,kK(y)[yn-i-1],f))
+  DO(yn,f=cirVal_(x,kK(y)[yn-i-1],f);P(f,f);)
   R f;
 }
 
-I cirRef_(K x,K y,I f){
+Z I cirVal_(K x,K y,I f){
   VCHK(x);VCHK(y);
-  if(x==y)f=1;
-  DO(yn, if(!f && (yt==0 || yt==5)) f=cirRef_(x,kK(y)[yn-i-1],f))
+  if(x==y)R 1;//f=1;
+  DO(yn,if(!f && (yt==0 || yt==5)) f=cirVal_(x,kK(y)[yn-i-1],f);P(f,f);)
+  R f;
+}
+
+Z I cirRef(K *x,K y){
+  if(x&&(x==&y))R 1; // XXX
+  I f=0;
+  if(!y || (yt!=0 && yt!=5) || (UI)x<DT_SIZE) R 0;
+  DO(yn,f=cirRef_(x,&kK(y)[yn-i-1],f);P(f,f);)
+  R f;
+}
+
+Z I cirRef_(K *x,K *yr,I f){
+  if(x==yr)R 1;//f=1;
+  K y=*yr;
+  DO(yn,if(!f && (yt==0 || yt==5)) f=cirRef_(x,&kK(y)[yn-i-1],f);P(f,f);)
   R f;
 }

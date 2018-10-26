@@ -3,7 +3,6 @@ extern I SEED;
 void seedPRNG(I s);
 I StoI(S s,I *n);
 K backslash(S s,I n,K*dict);
-K Ki(I x);
 extern I PP;
 extern C PPON;
 extern I PPMAX;

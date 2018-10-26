@@ -19,6 +19,7 @@
 #include "0.h"
 #include "k.h"
 #include "km.h"
+#include "ks.h"
 #include "v.h"
 #include "vf.h"
 
