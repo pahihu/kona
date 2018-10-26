@@ -130,13 +130,13 @@ K cd(K x)
   MEMDBG(CheckK(x);)
   dc(x);
 
+  if(x->_c > 255) R x;
+
   SW(xt)
   {
     CSR(5,)
     CS(0, STAT(trst()); DO(xn, cd(kK(x)[xn-i-1])); STAT(elapsed("cd"))) //repool in reverse, attempt to maintain order
   }
-
-  if(x->_c > 255) R x;
 
   #ifdef DEBUG
   DO(kreci, if(x==krec[i]){krec[i]=0; break; })
@@ -184,11 +184,13 @@ K ci(K x)
   MEMDBG(CheckK(x);)
   ic(x);
 
+  #if 0
   SW(xt)
   {
     CSR(5,)
     CS(0, DO(xn, ci(kK(x)[i])))
   }
+  #endif
 
   R x;
 }
