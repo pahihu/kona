@@ -1,6 +1,7 @@
 #include "incs.h"
 
 #include "k.h"
+#include "kc.h"
 #include "km.h"
 #include "ko.h"
 #include "p.h"
@@ -139,6 +140,7 @@ K dot_ref(K *p, K *x, K *z, I s, K c, K y)
   {
     I argc = y?2:1;
     K args=newK(0,argc);U(args)//Cheating 0-type w/ NULLs
+    // O("\n(1) dot_ref: p=%p k=%p ",p,*p); showx(*p);
     kK(args)[0]=ci(*p);
     if(argc > 1) kK(args)[1] = ci(y);
     K r = specialAmendDot(c,args);
@@ -302,21 +304,33 @@ K dot_tetradic(K a, K b, K c, K y)//Handles triadic and tetradic case
 
 //make dict, monadic .((`foo;1 2 3);) variant. Assumes makeable() is true.
 //dicts are currently implemented as an association array (i.e., linear search), should change soon.
-K make(K a)
+K makeI(K a)
 {
-  //TODO: this will need to set reference counts on all dictionary entries, etc.
-  P(!makeable(a), RE)
+  DBG(if(KONA_DEBUG)O("\nsrc/vd.c:310 --- BEGIN MAKE ---");)
   I n=a->n;
   K x,y;
   K z=newK(5,n);
-  DO(n, kK(z)[i]=newK(0,3);)
-  DO(n, x=kK(z)[i]; y=kK(a)[i]; DO2(y->n,kK(x)[j]=y->t?Ks(kS(y)[j]):ci(kK(y)[j])) if(y->n<3)kK(x)[2]=_n())  //oom
+  DO(n, M(z,kK(z)[i]=newK(0,3)))
+  DO(n, x=kK(z)[i]; y=kK(a)[i]; DO2(yn,kK(x)[j]=yt?Ks(kS(y)[j]):ci(kK(y)[j])) if(yn<3)kK(x)[2]=_n())  //oom
+  DBG(if(KONA_DEBUG)O("\nsrc/vd.c:316 --- END MAKE ---");)
   R z;
 }
+
+K make(K a){
+  //TODO: this will need to set reference counts on all dictionary entries, etc.
+  P(!makeable(a), RE)
+  R makeI(a);}
+
 Z K unmake(K a){
-  // K z=kclone(a); z->t=0; R z; // KLONE: deep clone unnecessary
-  K z=kcopy(a); z->t=0; R z;
+  K z=kclone(a); z->t=0; R z; // KLONE: deep clone unnecessary
+#if 0
+  if(KONA_DEBUG)O("\nsrc/vd.c:319 --- BEGIN UNMAKE ---");
+  K z=kcopy(a); z->t=0; // XXX this is the culprit of all memory leaks
+  if(KONA_DEBUG)O("\nsrc/vd.c:321 --- END UNMAKE ---");
+  R z; // <=== XXX 5 memory leaks
+#endif
 }//TODO: deep clone inefficient
+
 Z K makeable(K a) //TODO: this has to be reworked. can't hang out raw in dot_monadic as it is currently
 {
   I t=a->t, n=a->n;
@@ -324,12 +338,20 @@ Z K makeable(K a) //TODO: this has to be reworked. can't hang out raw in dot_mon
   P(0!=t, 0)
   K x;
   //NB: .(`a`b;`c`d) is also a valid dictionary (sym vectors)
-  DO(n, x=kK(a)[i]; if( (0!=x->t && -4!=x->t) || x->n < 2 || 3 < x->n || (-4==x->t && x->n != 2) )R 0)
-  DO(n, x=kK(a)[i]; if(0==x->t) if( 4 != kK(x)[0]->t || (3==x->n && 5!=kK(x)[2]->t && 6!=kK(x)[2]->t)) R 0)
+  DO(n, x=kK(a)[i]; if( (0!=xt && -4!=xt) || xn < 2 || 3 < xn || (-4==xt && xn != 2) )R 0)
+  DO(n, x=kK(a)[i]; if(0==xt) if( 4 != kK(x)[0]->t || (3==xn && 5!=kK(x)[2]->t && 6!=kK(x)[2]->t)) R 0)
   R (K)1;
 }
 
+#ifdef DEBUG
+K _dot_monadic(K x,S f,I ln);
+K dot_monadic(K x) {R _dot_monadic(x,"operator",0);}
+
+K _dot_monadic(K x,S f,I ln) {
+#else
 K dot_monadic(K x) {
+#endif
+  DBG(if(KONA_DEBUG){O("\n%s:%lld dot_monadic(%p) ",f,ln,x);showx(x);})
   if(3==ABS(xt)){
     S s=kC(x); if(s[0]=='\\')fbs=1; else fbs=0;
     R KX(x); }
@@ -338,5 +360,5 @@ K dot_monadic(K x) {
     if(!p) R DOE;
     R ci(*p); }
   if(5==xt)R unmake(x);
-  if(makeable(x))R make(x);
+  if(makeable(x))R makeI(x);
   R vf_ex(offsetDot,x); }

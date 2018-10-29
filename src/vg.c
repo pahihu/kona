@@ -116,7 +116,7 @@ Z K intRange(K x)
   I h0=0,sa=0;uI m=0;
   K h, z=newK(xt,0);M(z);
   DO(xn,m|=kU(x)[i]);if(m)while(!(m&1)){m>>=1;sa++;}
-  h=newH(-1,m<xn?m:xn);M(h,z);
+  h=newH(-1,0==m?1:m<xn?m:xn);M(h,z);
   if(m<sizeof(I)*h->n){
   DO(xn,uI v=kU(x)[i];uI u=v>>sa;
          if(!kC(h)[u]){kC(h)[u]=1;z=kap(&z,&v);})
@@ -270,6 +270,7 @@ Z K symGroup(K x)
 
 Z K groupI(K x,K y,I n)//#x=#a;n=#?a
 {
+  VCHK(y);
   K z=newK(0,n);M(z);I*c=kI(y);
   if(n<65537){
     DO(n,K v=newK(-1,c[i]);M(v,z);kK(z)[i]=v;c[i]=0)
@@ -289,19 +290,19 @@ Z K intGroup(K x)
   K h,ok,xok,ck;I *o,*xo,*c;
   DO(xn,m|=kU(x)[i]);if(m)while(!(m&1)){m>>=1;sa++;}
   xok=newK(-1,xn);M(xok);xo=kI(xok);
-  ck=newK(-1,m<xn?m:xn);M(ck,xok);c=kI(ck);
+  ck=newK(-1,0==m?1:m<xn?m:xn);M(ck,xok);c=kI(ck);
   h=newH(-1,m<xn?m:xn);M(h,ck,xok);
   if(m<h->n){
     DO(xn,uI v=kU(x)[i]>>sa;
         if(!kI(h)[v]){kI(h)[v]=++j;}
-        I w=kI(h)[v]-1;xo[i]=w;c[w]++)
+        I w=kI(h)[v]-1;xo[i]=w;c[w]++;VCHK(ck);)
   }else{
     ok=newK(-1,h->n);M(ok,h,ck,xok);o=kI(ok);
     DO(xn,uI v=kU(x)[i];
-        if(!v){if(!h0)h0=++j;xo[i]=h0-1;c[h0-1]++;}
+        if(!v){if(!h0)h0=++j;xo[i]=h0-1;c[h0-1]++;VCHK(ck);}
         else{v>>=sa;uI u=hc(v);
         uI p;if(!hgI(h,u,v,&p)){hs(h,p,v);o[p]=j++;}
-        I w=o[p];xo[i]=w;c[w]++;})
+        I w=o[p];xo[i]=w;c[w]++;VCHK(ck);})
     cd(ok);
   }
   cd(h);
@@ -467,7 +468,7 @@ K take_reshape(K a, K b)
 Z void shapeCheck(K a, K p, I d)
 { //Descend through list a marking shape p as -1 where it doesn't correspond
   I at=a->t, an=a->n;
-  if(at>0 || an!=kI(p)[d]) kI(p)[d]=-1;//Mismatch or atom means p length too long
+  if((at>0 || an!=kI(p)[d]) && d < p->n) kI(p)[d]=-1;//Mismatch or atom means p length too long XXX pahihu: overwrite next
   else if(at && d < p->n-1) kI(p)[d+1]=-1;//Another case of p being too long
   else if(!at && an && kI(p)[d]!=-1 && d < p->n-1) DO(an, shapeCheck(kK(a)[i],p,d+1))
 }
@@ -669,20 +670,23 @@ K _hash(K x)
 {
   P(xt>0,RE)
   uI p;K y=(-3==xt)?newK(-1,1+UCHAR_MAX):newH(-1,xn);M(y);
+  VCHK(y);
   hcinit();
   DO(yn,kI(y)[i]=-1);
+  VCHK(y);
   SW(-xt){
   CS(0,DO(xn,K v=kK(x)[i];if(xn==_hgk(y,hcode(v),v,x,&p))hs(y,p,i)))
   CSR(1,)CS(2,DO(xn,uI v=kU(x)[i];if(xn==_hg(y,hc(v),(I)v,x,&p))hs(y,p,i)))
   CS(3,DO(xn,uI k=(UC)kC(x)[i];if(xn==kI(y)[k])kI(y)[k]=i))
   CS(4,DO(xn,S v=kS(x)[i];if(xn==_hgv(y,SV(v,SLOT_H),v,x,&p))hs(y,p,i)))}
-  y->t=-5; R y;
+  y->t=-5; VCHK(y); R y;
 }
 
 K hash_find(K a,K b)
 {
   K x=kK(a)[0],y=kK(a)[1];uI k,p;I i;
   P(xt>0,DOE)
+  VCHK(x); VCHK(y);
   if(xt&&(xt+b->t))R Ki(xn);
   hcinit();
   SW(-xt){

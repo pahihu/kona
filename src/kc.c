@@ -90,7 +90,7 @@ I args(int n,S*v) {
     CS('g',  KONA_DEBUG=1;)
     CS('h',  if(IPC_PORT)O("-i accepted, cannot also have -h\n"); else HTTP_PORT=optarg;)
     CS('i',  if(HTTP_PORT)O("-h accepted, cannot also have -i\n"); else {IPC_PORT=optarg;*kI(KONA_PORT)=atol(IPC_PORT);})
-    CS('e',  cd(X(optarg)); exit(0) )
+    CS('e',  k=X(optarg); cd(k); exit(0) )
     CS('x',  k=X(optarg); printAtDepth(0,k,0,0,0,0); O("\n"); cd(k); exit(0) )
     CSR(':', )
     CS('?',  O("%c\nabort",optopt); exit(0)) }

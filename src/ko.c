@@ -8,10 +8,14 @@
 #include "ko.h"
 
 K _kclone(K a);
+K _kcopy(K a);
 K kcloneI(K a,cS f,int n){
   if(KONA_DEBUG)O("\n%s:%d kclone(%p)",f,n,a);
   R _kclone(a);}
-K kcopy(K a)//Shallow copy - list/dict
+K kcopyI(K a,cS f,int n){//Shallow copy - list/dict
+  if(KONA_DEBUG)O("\n%s:%d kcopy(%p)",f,n,a);
+  R _kcopy(a);}
+K _kcopy(K a)//Shallow copy - list/dict
 {
   U(a);
   I t=a->t,n=a->n;

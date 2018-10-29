@@ -1,6 +1,7 @@
 #include "incs.h"
 #include "tests.h"
 #include "k.h"
+#include "kc.h"
 #include "km.h"
 
 //  Note:
@@ -30,26 +31,26 @@ I tp(I x){ switch(x){CS(0,failed++)  CS(1,passed++)CS(2,skipped++)} tests++; R x
 
 I tc(S a, S b) //test comparison .  R 0,1,2
 {
-  if(!(tests % 50)) O("t:%lld\n",tests); //commenting this causes an error. no idea why. fflush? macro stuff? >2 args bc of "skip" ?
+  if(!(tests % 50)) O("\nt:%lld",tests); //commenting this causes an error. no idea why. fflush? macro stuff? >2 args bc of "skip" ?
   if(!SC("skip",a)) R 2;
 
   kreci=0;
 
   KTREE=Kd();
+  if(KONA_DEBUG)O("\ntesting: %s",b);
   K x = X(a); fer=fer1=fom=fbr=0; if(cls){cd(cls);cls=0;}
-  // fprintf(stderr,"testing: %s\n",b);
   K y = X(b); fer=fer1=fom=fbr=0; if(cls){cd(cls);cls=0;}
   I m=matchI(x,y);
 
   if(!m)
   {
-    fprintf(stderr,"\nFailed. These are not equal:\n");
-    fprintf(stderr,"%s , %s\n", a,b);
-    fprintf(stderr,"********************************\n");
+    O("\nFailed. These are not equal:\n");
+    O("%s , %s\n", a,b);
+    O("********************************\n");
     show(x); fflush(stdout);
-    fprintf(stderr,"--------------------------------\n");
+    O("--------------------------------\n");
     show(y); fflush(stdout);
-    fprintf(stderr,"\n");
+    O("\n");
   }
   cd(x); cd(y);
 
@@ -57,9 +58,9 @@ I tc(S a, S b) //test comparison .  R 0,1,2
   I c=0; DO(kreci, if(krec[i]) c++)
   if(!c) R m;
 
-  fprintf(stderr,"Failed: Memory Leak - %s, %s \nAllocated K: %lld\nUnfreed K  : %lld\nLeak %%     : %f\n", a,b,kreci, c, c/(F)kreci);
+  O("\nFailed: Memory Leak - %s, %s \nAllocated K: %lld\nUnfreed K  : %lld\nLeak %%     : %f", a,b,kreci, c, c/(F)kreci);
   I j=-1;
-  DO(c, do j++; while(!krec[j] && j < kreci); if(j>=kreci) break; K k=krec[j]; if(k){O("c:%lld t:%lld n:%lld | k:%p (%s:%lld)\n",rc(k),k->t,k->n,k,krecF[j],krecLN[j]); show(k);} )
+  DO(c, do j++; while(!krec[j] && j < kreci); if(j>=kreci) break; K k=krec[j]; if(k){O("\nc:%lld t:%lld n:%lld | k:%p (%s:%lld)\n",rc(k),k->t,k->n,k,krecF[j],krecLN[j]); show(k);} )
   R 0;
 }
 
@@ -70,7 +71,9 @@ I test()
   tests01();
   tests02();
   testsIO();  //could become slow - in the future may not want to test by default
+  KTREE = Kd();
   K x; x=_(567);if(!tp(x && *kI(x)==567))fprintf(stderr,"\n\nK string execution broken\n\n"); cd(x);
+  cd(KTREE);
 
 //done:
   testtime=(clock()-testtime)/(F)CLOCKS_PER_SEC;
@@ -1362,6 +1365,8 @@ Z I testsBook()
   TC_("1", "8=&/#:'$10?`\"8\"")
 
   TC(3 2 1 0, <`d`cc`bbb`aaaa) // pahihu scn() fix
+
+  TC(1, d:`a`b!1 2; e:.:.:d; d~e)
 
   TC((1;"type") , @[.:;"_sin _sin (;)";:])
   TC((1;"type") , @[.:;"_sin _sin (0;)";:])

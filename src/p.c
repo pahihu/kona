@@ -31,16 +31,17 @@ Z S mm[] = {
 Z I dumm(I *m,I n){O("\n");DO(n,if(m[i]<0)O("-");O("%s ",mm[ABS(m[i])]));R 0;}
 Z void A(I n){DO(n,O(" "));}
 Z void dum7(K*_v,I a){
+  if(NIL==(S)_v){O("  NIL\n");R;}
   K v=*_v;
-  if(v<(K)0x100000000)R; // XXX garbage
+  if(!v){O("  garbage(%p,%p)\n",_v,v);R;} // XXX garbage
   int n=0;I vt=v->t,vn=v->n,f=1;
   S typ7[]={"wd","wordfn","cfn","charfn",":[]","if[]","while[]","do[]"};
-  V e=0;V*kw=kW(v);
+  V e=0;V*kw=0;
   if(!a)O("\n");
   if(7==vt){
     A(a);O("[%lld,%lld,%lld,%s]\n",vt,vn,rc(v),typ7[vn]);
     SW(vn){
-    CS(2, A(a);O(" val: %p %p %p\n",kw[0],kw[1],kw[2]))
+    CS(2, kw=kW(v);A(a);O(" val: %p %p %p\n",kw[0],kw[1],kw[2]))
     CD: {
       K par=(K)kV(v)[PARAMS],loc=(K)kV(v)[LOCALS],conj=(K)kV(v)[CONJ];
       if(par->n){A(a);O("params: ");dum7(&par,a+2);}
@@ -51,12 +52,13 @@ Z void dum7(K*_v,I a){
         if(cw){A(a);O("  cachewd: ");dum7(&cw,a+2);}
         if(ct){A(a);O("cachetree: ");dum7(&ct,a+2);}
         A(a);showx(v);
-      } else
+      } else {
+        kw=kW(v);
         while((e=*kw++)){
           if(f){A(a);O("entries-->\n");f=0;}
           A(a);O("%d entry",n++);
-          if((L)e<DT_SIZE){O("  dt: %s (%p)\n",DT[(L)e].text,e);}
-          else dum7((K*)e,a+2); } } } }
+          if((UI)e<DT_SIZE){O("  dt: %s (%p)\n",DT[(UI)e].text,e);}
+          else dum7((K*)e,a+2); } } } } }
   else{ A(a);O("%p ",_v);showx(v); }
 }
 #else
@@ -317,7 +319,7 @@ I mark(I*m,I k,I t){DO(k, m[i]=i?t:-t) R k;}
 //      this rule doesn't apply to function argument lists, eg: f:{  [a] 1} is ok. however f: {\n\n  [a;b;d]  1+1} not ok
 //      so the check probably has to do with whether some useful symbol occurred on the line already
 //other errors: syntax error
-K wd(S s, int n){lineA=s; fdc=0;R wd_(s,n,denameD(&KTREE,d_,1),0);}
+K wd(S s, int n){lineA=s; fdc=0;if(KONA_DEBUG)O("\np.c:320 ");R wd_(s,n,denameD(&KTREE,d_,1),0);}
 K wd_(S s, int n, K*dict, K func) //parse: s input string, n length ;
                                 //assumes: s does not contain a }])([{ mismatch, s is a "complete" expression
 {
@@ -760,7 +762,7 @@ I capture(S s,I n,I k,I*m,V*w,I*d,K*locals,K*dict,K func)
     CSR(MARK_BRACE  ,)
     CSR(MARK_NUMBER ,)
     CSR(MARK_QUOTE  ,)
-    CS (MARK_SYMBOL , z=newE(LS,z); P(!z,(L)ME) kap(locals,&z); cd(z); z=EVP(z) ) //oom
+    CS (MARK_SYMBOL , z=newE(LS,CHK(z)); P(!z,(L)ME) kap(locals,&z); cd(z); z=EVP(z) ) //oom XXX
   }
 
   *p=z;

@@ -9,4 +9,5 @@ extern S LS;
 I VA(V p);
 K kcloneI(K a,const char*f,int n);
 #define kclone(a)   kcloneI(a,__FILE__,__LINE__)
-K kcopy(K a);
+K kcopyI(K a,const char*f,int n);
+#define kcopy(a)    kcopyI(a,__FILE__,__LINE__)

@@ -12,12 +12,12 @@
 #define LLONG_MAX	INT64_MAX
 #endif
 
-#ifdef __x86_64__
-typedef long long L;
-typedef unsigned long long UI;
-#else
+#if defined(__Kona32__) || defined(__i386__)
 typedef long L;
 typedef unsigned long UI;
+#else
+typedef long long L;
+typedef unsigned long long UI;
 #endif
 
 typedef void* V;
@@ -43,13 +43,18 @@ typedef struct node{V k;unsigned nk;int b;struct node *c[2];}Node;typedef Node*N
 typedef struct pda{I i,s,n;S c;}Pda;typedef Pda*PDA; //holds parse state. pos in input, state, stacklength, stack
 typedef struct af{ V verb_over; V verb_scan; V verb_eachpair; } AF; //Alternative/Adverb Functions
 typedef struct tr{ I adverbClass; I arity; V func; S text; AF alt_funcs; } TR; //Table Row for Dispatch Table
+#ifdef DEBUG
+// #define MEMDEBUG
+#endif
 #ifdef MEMDEBUG
-extern K CheckK(K);
+extern K CheckK(K),ReadK(K,S,I);
 #define CHK(x)	CheckK(x)
 #define VCHK(x)	(void)CheckK(x)
+#define RDK(x)  (ReadK(x,__FILE__,__LINE__))
 #else
 #define CHK(x)	x
 #define VCHK(x)
+#define RDK(x) x
 #endif
 #define ke(x) ((CHK((K)x))->k)
 #define kK(x) ke(x)

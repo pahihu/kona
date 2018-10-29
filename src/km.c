@@ -7,6 +7,7 @@
 #include "incs.h"
 
 #include "k.h"
+#include "kc.h"
 #include "km.h"
 
 
@@ -30,13 +31,12 @@ Z V KP[KP_MAX+1]; //KPOOL
 I PG; //pagesize:  size_t page_size = (size_t) sysconf (_SC_PAGESIZE);
 F mUsed=0.0, mAlloc=0.0, mMap=0.0, mMax=0.0;
 #ifdef DEBUG
+// #define MEMDEBUG
 V mMinM=(V)-1;
 V mMaxM=(V) 0;
 I mMaxL=0;
-#define DBG(x)	x
-#define TRAPP *(volatile I*)0=1
+#define TRAPP {fflush(stdout);*(volatile I*)0=1;}
 #else
-#define DBG(x)
 #define TRAPP
 #endif
 
@@ -61,7 +61,24 @@ V alloc(size_t sz) {
   V r=malloc(sz);if(!r){fputs("out of memory\n",stderr);exit(1);}
   R r; }
 
+#ifdef __Kona32__
+size_t MagicP=((size_t)0xDEADBEEF); // XXX when MagicP is 0 then only 6 failures
+size_t FreeP =((size_t)0x8BADF00D);
+#else
 size_t MagicP=((size_t)0xDEADBEEFCAFEBABE);
+size_t FreeP =((size_t)0x8BADF00D8BADF00D);
+#endif
+//                       1234567890
+//	0	O
+//	1	I L
+//	2	Z
+//	3	B
+//	4	H
+//	5	S
+//	6	G
+//	7	T
+//	8	ATE
+//	9	G
 
 #ifdef DEBUG
 #define CMR(p) if((p)&&((p)<mMinM||(p)>=mMaxM))TRAPP
@@ -70,15 +87,29 @@ Z void CKP(){
   DO(KP_MIN,if(KP[i])TRAPP)
   DO(KP_MAX+1,CMR(KP[i]))
 }
+K ReadK(K x,S f,I ln) {
+  if(FreeP==x)O("\n%s:%lld reading garbage",f,ln);
+  R x;
+}
 K CheckK(K x)
 {
   // O("CheckK: %p\n",x);
   U(x);
-  if(glsz(x)>mMaxL)TRAPP;
+  if(FreeP==(size_t)x)R x;
+  if(x->_c<256)TRAPP; // refcnt mismatch
+  if(rc(x)<0)TRAPP; // negative refcnt
+  if(glsz(x)>mMaxL)TRAPP; // lane size greater than max lane size
   size_t m;I k=sz(xt,xn);memcpy(&m,(V)x+k,sizeof(size_t));
-  if(m!=MagicP)TRAPP;R x;
+  if(m!=MagicP)TRAPP; // MagicP mismatch
+  if(!xt || 5==xt)DO(xn,CheckK(x->k[i])); // recurse on list/dict
+  R x;
 }
 #ifdef MEMDEBUG
+Z void UnmarkK(K x)
+{
+  I k=sz(xt,xn);
+  memset((V)x+k,0,sizeof(size_t));
+}
 Z void MarkK(K x)
 {
   I k=sz(xt,xn);
@@ -102,16 +133,19 @@ Z K dc(K x){x->_c-=256;R x;}
 I glsz(K x){R 255&(x->_c);}
 Z K slsz(K x,I r){x->_c&=~(uI)255;x->_c|=r;MEMDBG(if(r>mMaxL)mMaxL=r;)R x;}
 K mrc(K x,I c){I k=sz(xt,xn);I r=lsz(k);x->_c=(c<<8)|r;R x;}
+Z I mCDL=0;
+Z void H(I n){O("\n");DO(2*n,O(" "))}
 #define STAT(x)
 //Arthur says he doesn't use malloc or free. Andrei Moutchkine claims smallest unit is vm page (his truss says no malloc + add pages one at a time).
 //Arthur not using malloc is probably true. No strdup & related functions in binary's strings. Note: Skelton references "different allocator" not in \w report
 //This source would be improved by getting ridding of remaing malloc/calloc/realloc
 #ifdef DEBUG
-K _cdg(K x,S f,I ln)
+K _cdg(K *pX,S f,I ln)
 #else
-K cd(K x)
+K _cd(K *pX)
 #endif
 {
+  K x=*pX;
   CKP();
   #ifdef DEBUG
   if(x && rc(x) <=0 ) { er(Tried to cd() already freed item) dd(tests) 
@@ -126,27 +160,34 @@ K cd(K x)
 
   P(!x,0)
   P(6==xt,0)
-  // DBG(if(7!=xt)O("\n%s:%lld cd(%lld,%p)",f,ln,xt,x);)
   MEMDBG(CheckK(x);)
   dc(x);
+  // DBG(if(!mCDL){H(mCDL);O("%s:%lld cd(%lld,%p,%lld)",f,ln,xt,x,rc(x));})
+  KDBG(H(mCDL);O("%s:%lld cd(%lld,%p,%lld)",f,ln,xt,x,rc(x));)
 
   if(x->_c > 255) R x;
 
   SW(xt)
   {
     CSR(5,)
-    CS(0, STAT(trst()); DO(xn, cd(kK(x)[xn-i-1])); STAT(elapsed("cd"))) //repool in reverse, attempt to maintain order
+    CS(0, 
+      KDBG(mCDL++;H(mCDL-1);O("--- BEGIN CD %p ---",x);)
+      STAT(trst()); DO(xn, cd(x->k[xn-i-1])); STAT(elapsed("cd"))
+      KDBG(--mCDL;H(mCDL);O("--- END CD %p ---",x);)
+      ) //repool in reverse, attempt to maintain order
   }
 
   #ifdef DEBUG
   DO(kreci, if(x==krec[i]){krec[i]=0; break; })
   #endif 
 
-  MEMDBG(CheckK(x);)
-
   SW(xt)
   {
-    CS(7, DO(-2+TYPE_SEVEN_SIZE,cd(kV(x)[2+i]))) //-4 special trick: don't recurse on V members. assumes sizeof S==K==V.  (don't free CONTeXT or DEPTH)
+    CS(7, 
+      KDBG(mCDL++;H(mCDL-1);O("--- BEGIN CD %p ---",x);)
+      DO(-2+TYPE_SEVEN_SIZE,cd(((V*)x->k)[2+i]))
+      KDBG(--mCDL;H(mCDL);O("--- END CD %p ---",x);)
+      ) //-4 special trick: don't recurse on V members. assumes sizeof S==K==V.  (don't free CONTeXT or DEPTH)
   }
 
   #ifdef DEBUG
@@ -167,6 +208,7 @@ K cd(K x)
     CKP();
   }
   else repool(x,r);
+  MEMDBG(*pX = FreeP;) // clear if reached 0
   R 0;
 }
 
@@ -180,9 +222,9 @@ K ci(K x)
 
   P(!x,0)
   P(6==xt,x)
-  // DBG(if(7!=xt)O("\n%s:%lld ci(%lld,%p)",f,ln,xt,x);)
   MEMDBG(CheckK(x);)
   ic(x);
+  KDBG(O("\n%s:%lld ci(%lld,%p,%lld)",f,ln,xt,x,rc(x));)
 
   #if 0
   SW(xt)
@@ -195,7 +237,7 @@ K ci(K x)
   R x;
 }
 
-I bp(I t) {SW(ABS(t)){CSR(1, R sizeof(I)) CSR(2, R sizeof(F)) CSR(3, R sizeof(C)) CD: R sizeof(V); } } //Default 0/+-4/5/6/7  (assumes sizeof(K)==sizeof(S)==...)
+I bp(I t) {if(-5==t)R sizeof(I);SW(ABS(t)){CSR(1, R sizeof(I)) CSR(2, R sizeof(F)) CSR(3, R sizeof(C)) CD: R sizeof(V); } } //Default 0/+-4/5/6/7  (assumes sizeof(K)==sizeof(S)==...)
 I sz(I t,I n){R 3*sizeof(I)+(7==t?TYPE_SEVEN_SIZE:n)*bp(t)+(3==ABS(t));} //not recursive. assert sz() > 0:  Everything gets valid block for simplified munmap/(free)
 
 Z I nearPG(I i){ I k=((size_t)i)&(PG-1);R k?i+PG-k:i;}//up 0,8,...,8,16,16,...
@@ -222,6 +264,7 @@ K newK(I t, I n)
   ic(slsz(z,r)); z->t=t; z->n=n;
   #ifdef DEBUG
   if(kreci<NKREC){krec[kreci]=z;krecLN[kreci]=ln;krecF[kreci++]=f;};
+  KDBG(O("\n%s:%lld newK=%p [%lld,%lld,%lld]",f,ln,z,z->t,z->n,rc(z));)
   #endif
   MEMDBG(MarkK(z);)
   R z;
@@ -328,6 +371,7 @@ Z I kexpander(K*p,I n) //expand only.
   if(r>KP_MAX) //Large anonymous mmapped structure - (simulate mremap)
   {
     I d=sz(a->t,n);
+    MEMDBG(d+=sizeof(size_t);)
     if(d<=(1<<r))R 1;
 #if 0
     V v;I c=sz(a->t,a->n),d=sz(a->t,n),e=nearPG(c),f=d-e;
@@ -353,6 +397,7 @@ Z I kexpander(K*p,I n) //expand only.
     R 1; //Couldn't add pages, copy to new space
   }
   I d=sz(a->t,n);
+  MEMDBG(d+=sizeof(size_t);)
   //Standard pool object
   if(d<=(1<<r))R 1;
   I s=lsz(d);
@@ -379,6 +424,7 @@ Z K kap1_(K *a,V v)//at<=0
     #endif
     *a=k;
   }
+  MEMDBG(UnmarkK(k);)
   k->n=p;
   MEMDBG(MarkK(k);)
   SW(-t)
@@ -419,6 +465,7 @@ Z K kapn_(K *a,V v,I n)
     #endif
     *a=k;
   }
+  MEMDBG(UnmarkK(k);)
   k->n=p;
   MEMDBG(MarkK(k);)
   CKP();
@@ -436,9 +483,18 @@ Z K kapn_(K *a,V v,I n)
   R *a;
 }
 
-extern K kapn(K *a,V v,I n){R kapn_(a,v,n);}
+extern K kapn(K *a,V v,I n){
+  MEMDBG(CheckK(*a);)
+  K r=kapn_(a,v,n);
+  MEMDBG(CheckK(r);)
+  R r;}
 
-extern K kap(K*a,V v){ if(!a)R 0; R (0<(*a)->t)?kapn_(a,v,1):kap1_(a,v); }
+extern K kap(K*a,V v){ 
+  MEMDBG(CheckK(*a);)
+  if(!a)R 0;
+  K r=(0<(*a)->t)?kapn_(a,v,1):kap1_(a,v); 
+  MEMDBG(CheckK(r);)
+  R r;}
 //extern K kap(K*a,V v){R kapn_(a,v,1);}
 
 I lszPDA,lszNode;

@@ -4,9 +4,13 @@ K _newE(S s,K k,S f,I ln);
 K _newEntry(S s,S f,I ln);
 #define newE(s,k)   _newE(s,k,__FILE__,__LINE__)
 #define newEntry(s) _newEntry(s,__FILE__,__LINE__)
+#define DBG(x)	x
+#define KDBG(x)	if(KONA_DEBUG){x;}
 #else
 K newE(S s,K k);
 K newEntry(S s);
+#define DBG(x)
+#define KDBG(x)
 #endif
 extern S d_;
 #ifdef DEBUG
@@ -71,10 +75,11 @@ extern I kreci;
 K show(K a);
 extern I tests;
 #ifdef DEBUG
-K _cdg(K a,S f,I ln);
-#define cd(x)	_cdg(x,__FILE__,__LINE__)
+K _cdg(K *pA,S f,I ln);
+#define cd(x)	_cdg(&(x),__FILE__,__LINE__)
 #else
-K cd(K a);
+K _cd(K *pA);
+#define cd(x)	_cd(&(x))
 #endif
 I OOM_CD(I g, ...);
 I cl2(I v);
