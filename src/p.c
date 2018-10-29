@@ -31,7 +31,7 @@ Z S mm[] = {
 Z I dumm(I *m,I n){O("\n");DO(n,if(m[i]<0)O("-");O("%s ",mm[ABS(m[i])]));R 0;}
 Z void A(I n){DO(n,O(" "));}
 Z void dum7(K*_v,I a){
-  if(NIL==(S)_v){O("  NIL\n");R;}
+  if(NIL==(K)_v){O("  NIL\n");R;}
   K v=*_v;
   if(!v){O("  garbage(%p,%p)\n",_v,v);R;} // XXX garbage
   int n=0;I vt=v->t,vn=v->n,f=1;

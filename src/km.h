@@ -78,8 +78,7 @@ extern I tests;
 K _cdg(K *pA,S f,I ln);
 #define cd(x)	_cdg(&(x),__FILE__,__LINE__)
 #else
-K _cd(K *pA);
-#define cd(x)	_cd(&(x))
+K cd(K a);
 #endif
 I OOM_CD(I g, ...);
 I cl2(I v);

@@ -140,12 +140,10 @@ Z void H(I n){O("\n");DO(2*n,O(" "))}
 //Arthur not using malloc is probably true. No strdup & related functions in binary's strings. Note: Skelton references "different allocator" not in \w report
 //This source would be improved by getting ridding of remaing malloc/calloc/realloc
 #ifdef DEBUG
-K _cdg(K *pX,S f,I ln)
+K _cdg(K *pX,S f,I ln){K x=*pX;
 #else
-K _cd(K *pX)
+K cd(K x){
 #endif
-{
-  K x=*pX;
   CKP();
   #ifdef DEBUG
   if(x && rc(x) <=0 ) { er(Tried to cd() already freed item) dd(tests) 
