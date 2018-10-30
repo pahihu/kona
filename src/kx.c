@@ -638,7 +638,9 @@ K vf_ex(V q, K g)
 
       if(!(tree=kV(f)[CACHE_TREE])) {  //could merge this and and CACHE_WD check by duplicating the arg merge DO
         tree=newK(5,p->n+s->n); if(!tree) {stk--; GC;} //note: cleanup is unusual -- could turn into double labels
+        // O("\n%s:%d tree->n=%lld p->n=%lld s->n=%lld",__FILE__,__LINE__,tree->n,p->n,s->n);fflush(stdout);
         DO(tree->n, if(!(kK(tree)[i]=newK(0,3))){cd(tree); stk--; GC;}) //shallow dict copy -- dictionary entry pool?
+        // O("\n%s:%d tree->n=%lld p->n=%lld s->n=%lld",__FILE__,__LINE__,tree->n,p->n,s->n);fflush(stdout);
         DO(tree->n, DO2(3,  kK(DI(tree,i))[j] = ci(kK((i<p->n?DI(p,i):DI(s,i-p->n)))[j])))//shallow copy
         kV(f)[CACHE_TREE]=tree; }
       if(fsf && prnt && kV(prnt)[LOCALS] && kV(prnt)[CACHE_TREE]){

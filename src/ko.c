@@ -75,7 +75,7 @@ K _kclone(K a)//Deep copy -- eliminate where possible
     kV(z)[DEPTH]=kV(a)[DEPTH];
     kV(z)[CONTeXT]=kV(a)[CONTeXT];
     cd(kV(z)[PARAMS]); kV(z)[PARAMS]=_kclone(kV(a)[PARAMS]); //oom ; fill instead of kclone?
-    // cd(kV(z)[LOCALS]); kV(z)[LOCALS]=_kclone(kV(a)[LOCALS]); //oom ; fill instead of kclone? XXX pahihu why replace this see above
+    if(1!=vt){cd(kV(z)[LOCALS]); kV(z)[LOCALS]=_kclone(kV(a)[LOCALS]);} //oom ; fill instead of kclone? XXX pahihu why replace this see above
     kV(z)[CONJ]=_kclone(kV(a)[CONJ]);  //oom
   }
 

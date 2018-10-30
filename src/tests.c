@@ -1366,6 +1366,11 @@ Z I testsBook()
 
   TC(3 2 1 0, <`d`cc`bbb`aaaa) // pahihu scn() fix
 
+  TC(5 3, m:{x,y}[5]; m[3]) // pahihu shallow cpy
+  TC(5 3, m:{x,y}[5]; {m[x]}[3])
+  TC(5 3, m:{x,y}[5]; {{m[x]}[3]}[])
+  // TC(5 3, {m:{x,y}; m[5;3]}[]) weird segfault
+
   TC(1, d:`a`b!1 2; e:.:.:d; d~e)
 
   TC((1;"type") , @[.:;"_sin _sin (;)";:])

@@ -322,12 +322,13 @@ K make(K a){
   R makeI(a);}
 
 Z K unmake(K a){
-  K z=kclone(a); z->t=0; R z; // KLONE: deep clone unnecessary
 #if 0
   KDBG(O("\nsrc/vd.c:319 --- BEGIN UNMAKE ---");)
   K z=kcopy(a); z->t=0; // XXX this is the culprit of all memory leaks
   KDBG(O("\nsrc/vd.c:321 --- END UNMAKE ---");)
   R z; // <=== XXX 5 memory leaks
+#else
+  K z=kclone(a); z->t=0; R z; // KLONE: deep clone unnecessary
 #endif
 }//TODO: deep clone inefficient
 
