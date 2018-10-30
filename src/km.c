@@ -268,9 +268,20 @@ K newK(I t, I n)
   R z;
 }
 
+// GMALLOC
+Z V ma(I k)
+{
+  V a=malloc(k);
+  R memset(a,0,k);
+}
+Z V unPOOL(I lane){ R ma(1<<lane);}
+
 Z V kallocI(I k,I r)
 {
   CKP();
+  // GMALLOC
+  R ma(k);
+
   if(r>KP_MAX)R amem(k,r);// allocate for objects of sz > 2^KP_MAX
   R unpool(r);
 }
@@ -344,6 +355,9 @@ I cl2(I v) //optimized 64-bit ceil(log_2(I))
 I lsz(I k){R k<=((I)1)<<KP_MIN?KP_MIN:cl2(k);} //pool lane from size. Ignore everywhere lanes < KP_MIN. MAX() was eliminated as an optimization
 I repool(V v,I r)//assert r < KP_MAX 
 {
+  // GMALLOC
+  free(v); R 0;
+
   I k=((I)1)<<r;
   CKP();
 #ifdef DEBUG
@@ -364,6 +378,14 @@ I repool(V v,I r)//assert r < KP_MAX
 }
 Z I kexpander(K*p,I n) //expand only. 
 {
+  // GMALLOC
+  K a=*p;
+  I c=sz(a->t,a->n),d=sz(a->t,n);
+  V v=ma(d);
+  memcpy(v,a,c);
+  *p = v; slsz(*p,lsz(d));
+  R 1;
+#if 0
   CKP();
   K a=*p;I r = glsz(a);
   if(r>KP_MAX) //Large anonymous mmapped structure - (simulate mremap)
@@ -389,7 +411,9 @@ Z I kexpander(K*p,I n) //expand only.
     I c=sz(a->t,a->n);
     memcpy(v,a,c); *p=v; slsz(*p,r);
     CKP();
-    I res=munmap(a,c); if(res) { show(kerr("munmap")); R 0; }
+    I res=0; // GMALLOC I res=munmap(a,c); 
+    free(a);
+    if(res) { show(kerr("munmap")); R 0; }
     CKP();
     mAlloc-=c;mUsed-=c;
     R 1; //Couldn't add pages, copy to new space
@@ -406,6 +430,7 @@ Z I kexpander(K*p,I n) //expand only.
   *p=x; slsz(*p,s);
   repool(a,r);
   R 1;
+#endif
 }
 
 Z K kap1_(K *a,V v)//at<=0
@@ -496,8 +521,8 @@ extern K kap(K*a,V v){
 //extern K kap(K*a,V v){R kapn_(a,v,1);}
 
 I lszPDA,lszNode;
-N newN(){R unpool(lszNode);}
-PDA newPDA(){PDA p=unpool(lszPDA);U(p) p->c=alloc(1); if(!p->c){ME;R 0;} R p;}
+N newN(){R unPOOL(lszNode);}
+PDA newPDA(){PDA p=unPOOL(lszPDA);U(p) p->c=alloc(1); if(!p->c){ME;R 0;} R p;}
 I push(PDA p, C c){R appender(&p->c,&p->n,&c,1);} 
 C    peek(PDA p){I n=p->n; R n?p->c[n-1]:0;}
 C     pop(PDA p){R p->n>0?p->c[--(p->n)]:0;}

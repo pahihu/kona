@@ -58,7 +58,7 @@ K _kclone(K a)//Deep copy -- eliminate where possible
                   {
                     K r=_kclone(*(K*)w); //oom
                     V q=newE(LS,r); //oom
-                    kap((K*) kV(z)+LOCALS,&q);//oom
+                    kap((K*) kV(z)+LOCALS,&q);//oom XXX pahihu: this builds LOCALS(z) which is referenced in CODE(z)
                     cd(q);//kap does ci
                     q=EVP(q); //oom free z etc. kap needs checking
                     v[i]=q;
@@ -75,7 +75,7 @@ K _kclone(K a)//Deep copy -- eliminate where possible
     kV(z)[DEPTH]=kV(a)[DEPTH];
     kV(z)[CONTeXT]=kV(a)[CONTeXT];
     cd(kV(z)[PARAMS]); kV(z)[PARAMS]=_kclone(kV(a)[PARAMS]); //oom ; fill instead of kclone?
-    cd(kV(z)[LOCALS]); kV(z)[LOCALS]=_kclone(kV(a)[LOCALS]); //oom ; fill instead of kclone?
+    // cd(kV(z)[LOCALS]); kV(z)[LOCALS]=_kclone(kV(a)[LOCALS]); //oom ; fill instead of kclone? XXX pahihu why replace this see above
     kV(z)[CONJ]=_kclone(kV(a)[CONJ]);  //oom
   }
 

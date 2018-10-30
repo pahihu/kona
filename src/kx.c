@@ -572,7 +572,8 @@ K vf_ex(V q, K g)
     if(2==n && 1==adverbClass(*u) ) n=gn; //   / \ '  but maybe should exclude '
   }
 
-  if(kK(*(K*)q)[CODE]->n==3 && offsetWhat==(V)kV(kK(*(K*)q)[CODE])[1]){
+  K qc0de=kK(*(K*)q)[CODE];
+  if(7==qc0de->t && 3==qc0de->n && offsetWhat==(V)kV(qc0de)[1]){
     z=what(*(K*)kV(kK(*(K*)q)[CODE])[0],*(K*)kV(g)); GC; }
 
   if(n && (argc<gn || (gn<n && (!special||gn<=1) ))) //Project. Move this ahead of verbs when finished
@@ -583,13 +584,15 @@ K vf_ex(V q, K g)
     if(!z)GC;
     I ae=0; K*m=(K*)kV(z)+CONJ;
     if(special && gn!=4)n=2; // .'"98" cases. allows a:.[+] then a 2 3  (. is forced 2-adic & not .[;;;]) is this a kluge?
-    if(3<kK(z)[CODE]->n  && (V*)kK(kK(z)[CODE])[1]==(V)offsetAt && (V*)kK(kK(z)[CODE])[2]==(V)offsetEach){ae=1; n=1;}
+    K zc0de=kK(z)[CODE]; // O("\n%s:%d zc0de=%p [%lld,%lld,%lld]",__FILE__,__LINE__,zc0de,zc0de->t,zc0de->n,rc(zc0de));
+    if(3<zc0de->n  && (V*)kK(zc0de)[1]==(V)offsetAt && (V*)kK(zc0de)[2]==(V)offsetEach){ae=1; n=1;}
     if(!*m) *m=newK(0,n);
     if(!*m){cd(z);GC;}
     K *q=kK(*m);
     DO((*m)->n, if(!q[i] && j<gn) q[i]=ci(kK(g)[j++]))
     if(ae) {
       V w[5]; w[0]=(V)kS(kK(z)[CODE])[0]; w[1]=(V)offsetAt; w[2]=(V)offsetEach; w[3]=(V)kK(kK(z)[CONJ]); w[4]=0;
+      // O("\n%s:%d &w[0]=%p w[0]=%p",__FILE__,__LINE__,&w[0],w[0]);
       K zz= ex2(&w[0],0); cd(g); cd(z); R zz; }
     GC;
   }//K3.2 Projection {[a;b;c]}[;1][1;] returns self. Indicates different (7-0 style?) method
@@ -716,6 +719,7 @@ Z V ex_(V a, I r)//Expand wd()->7-0 types, expand and evaluate brackets
   K x,y=0,z,tmp;
 
   if(!a || VA(a) || bk(a)) R a;
+  // O("\n%s:%d a=%p",__FILE__,__LINE__,a);fflush(stdout);
   if(!(x=*(K*)a) || 7!=xt || (0<xn && xn<4)) R ci(x); //assert xn>=4 -> conditionals or similar
 
   r=xn<4?r:xn; //suggests maybe r should be stored on 7type itself
@@ -958,6 +962,7 @@ I cva(V p){P(!KONA_APL_DYAD,sva(p)); U(p);UI q=(UI)p;R q<DT_SIZE?DT[q].arity:val
 
 Z K ex2(V*v, K k)  //execute words --- all returns must be Ks. v: word list, k: conjunction?
 {
+  // O("\n%s:%d EX2(%p,%p)",__FILE__,__LINE__,v,k);fflush(stdout);
   VCHK(k);
   K t2,t3,e,u;
   I i=0;
@@ -1090,6 +1095,7 @@ Z K ex2(V*v, K k)  //execute words --- all returns must be Ks. v: word list, k: 
     u=v[1]; //This u thing fixes repeated use of 7-1 subparen like f:|/0(0|+)\;f a;f b;
             //Not thread-safe. Adding ex_ result to LOCALS on 7-1 is probably better. See below
     v[1]=VA(t3)?t3:(V)&t3;
+    // O("\n%s:%d v=%p *v=%p",__FILE__,__LINE__,v,*v);fflush(stdout);
     t0=ex_(*v,1); if(fer>0 && strcmp(errmsg,"undescribed")){cd(t2); if(!VA(t3))cd(t3); R(t0);}
     if(t0>(K)DT_SIZE && t0->t==7 && t0->n==3) {
       VCHK(t0);

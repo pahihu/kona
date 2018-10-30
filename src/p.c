@@ -6,8 +6,8 @@
 #include "v.h"
 #include "vf.h"
 
-S lineA;
-S lineB;
+S lineA = 0;
+S lineB = 0;
 __thread I fdc=1;   // Flag denameD create
 I fll=0;            //flag line length
 
@@ -323,6 +323,7 @@ K wd(S s, int n){lineA=s; fdc=0;if(KONA_DEBUG)O("\np.c:320 ");R wd_(s,n,denameD(
 K wd_(S s, int n, K*dict, K func) //parse: s input string, n length ;
                                 //assumes: s does not contain a }])([{ mismatch, s is a "complete" expression
 {
+  S olineB=lineB;
   if(!s) R 0;
   if(strstr(s,":\\t")) { show(kerr("\\t  syntax")); R 0; }
   if(syntaxChk(s)) R SYE;
@@ -384,6 +385,7 @@ K wd_(S s, int n, K*dict, K func) //parse: s input string, n length ;
   kV(v)[CODE]=kw; // return what we just built
   kW(v)[c]=0;
   if(KONA_DEBUG)dum7(&v,0);
+  lineB=olineB;
   R v;
 }
 
@@ -680,7 +682,9 @@ I capture(S s,I n,I k,I*m,V*w,I*d,K*locals,K*dict,K func)
       )
     CS(MARK_VERB   ,  // "+" "4:" "_bin"  ;  grab "+:", "4::"
                       if(s[k]=='\\'){z=(V)0x7c; break;}   //trace or scan
-                      if(s[k]==':' && s[strlen(s)-1]!=':' && lineB && lineB[strlen(lineB)-1]!=']' && lineB[0]!=')'){
+		      I lenB=lineB?strlen(lineB):0;
+		      I lenS=s?strlen(s):0;
+                      if(s[k]==':' && lenS && s[lenS-1]!=':' && lenB && lineB[lenB-1]!=']' && lineB[0]!=')'){ // XXX pahihu invalid memory address lineB
                         I i=0;
                         for(i=k-1;i>0;i--){if(s[i]!=' '){c=s[i];break;} } }
                       if('_'==s[k] && r > 1)
