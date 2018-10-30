@@ -573,7 +573,7 @@ K vf_ex(V q, K g)
   }
 
   K qc0de=kK(*(K*)q)[CODE];
-  if(7==qc0de->t && 3==qc0de->n && offsetWhat==(V)kV(qc0de)[1]){
+  if((7==qc0de->t || -4==qc0de->t) && 3==qc0de->n && offsetWhat==(V)kV(qc0de)[1]){
     z=what(*(K*)kV(kK(*(K*)q)[CODE])[0],*(K*)kV(g)); GC; }
 
   if(n && (argc<gn || (gn<n && (!special||gn<=1) ))) //Project. Move this ahead of verbs when finished
@@ -584,12 +584,13 @@ K vf_ex(V q, K g)
     if(!z)GC;
     I ae=0; K*m=(K*)kV(z)+CONJ;
     if(special && gn!=4)n=2; // .'"98" cases. allows a:.[+] then a 2 3  (. is forced 2-adic & not .[;;;]) is this a kluge?
-    K zc0de=kK(z)[CODE]; // O("\n%s:%d zc0de=%p [%lld,%lld,%lld]",__FILE__,__LINE__,zc0de,zc0de->t,zc0de->n,rc(zc0de));
-    if(7==zc0de->t && 3<zc0de->n && (V*)kK(zc0de)[1]==(V)offsetAt && (V*)kK(zc0de)[2]==(V)offsetEach){ae=1; n=1;}
+    K zc0de=kK(z)[CODE]; // O("\n%s:%d zc0de=%p [%lld,%lld,%lld]",__FILE__,__LINE__,zc0de,zc0de->t,zc0de->n,rc(zc0de));fflush(stdout);
+    if((7==zc0de->t || -4==zc0de->t) && 3<zc0de->n && (V*)kK(zc0de)[1]==(V)offsetAt && (V*)kK(zc0de)[2]==(V)offsetEach){ae=1; n=1;}
     if(!*m) *m=newK(0,n);
     if(!*m){cd(z);GC;}
     K *q=kK(*m);
     DO((*m)->n, if(!q[i] && j<gn) q[i]=ci(kK(g)[j++]))
+    // O("\n%s:%d ae=%lld",__FILE__,__LINE__,ae);
     if(ae) {
       V w[5]; w[0]=(V)kS(kK(z)[CODE])[0]; w[1]=(V)offsetAt; w[2]=(V)offsetEach; w[3]=(V)kK(kK(z)[CONJ]); w[4]=0;
       // O("\n%s:%d &w[0]=%p w[0]=%p",__FILE__,__LINE__,&w[0],w[0]);
