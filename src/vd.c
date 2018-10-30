@@ -306,13 +306,13 @@ K dot_tetradic(K a, K b, K c, K y)//Handles triadic and tetradic case
 //dicts are currently implemented as an association array (i.e., linear search), should change soon.
 K makeI(K a)
 {
-  DBG(if(KONA_DEBUG)O("\nsrc/vd.c:310 --- BEGIN MAKE ---");)
+  KDBG(O("\nsrc/vd.c:310 --- BEGIN MAKE ---");)
   I n=a->n;
   K x,y;
   K z=newK(5,n);
   DO(n, M(z,kK(z)[i]=newK(0,3)))
   DO(n, x=kK(z)[i]; y=kK(a)[i]; DO2(yn,kK(x)[j]=yt?Ks(kS(y)[j]):ci(kK(y)[j])) if(yn<3)kK(x)[2]=_n())  //oom
-  DBG(if(KONA_DEBUG)O("\nsrc/vd.c:316 --- END MAKE ---");)
+  KDBG(O("\nsrc/vd.c:316 --- END MAKE ---");)
   R z;
 }
 
@@ -324,9 +324,9 @@ K make(K a){
 Z K unmake(K a){
   K z=kclone(a); z->t=0; R z; // KLONE: deep clone unnecessary
 #if 0
-  if(KONA_DEBUG)O("\nsrc/vd.c:319 --- BEGIN UNMAKE ---");
+  KDBG(O("\nsrc/vd.c:319 --- BEGIN UNMAKE ---");)
   K z=kcopy(a); z->t=0; // XXX this is the culprit of all memory leaks
-  if(KONA_DEBUG)O("\nsrc/vd.c:321 --- END UNMAKE ---");
+  KDBG(O("\nsrc/vd.c:321 --- END UNMAKE ---");)
   R z; // <=== XXX 5 memory leaks
 #endif
 }//TODO: deep clone inefficient
@@ -351,7 +351,7 @@ K _dot_monadic(K x,S f,I ln) {
 #else
 K dot_monadic(K x) {
 #endif
-  DBG(if(KONA_DEBUG){O("\n%s:%lld dot_monadic(%p) ",f,ln,x);showx(x);})
+  KDBG(O("\n%s:%lld dot_monadic(%p) ",f,ln,x);showx(x);)
   if(3==ABS(xt)){
     S s=kC(x); if(s[0]=='\\')fbs=1; else fbs=0;
     R KX(x); }

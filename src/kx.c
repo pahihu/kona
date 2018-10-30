@@ -506,7 +506,7 @@ K vf_ex(V q, K g)
   if(ee && !kV(g)[0] && kV(g)[1])fom=1;
 
   if( ((k || (*(K*)q)->t==7) && ( ((UI)q<DT_SIZE || (*(V*)q))  && gn>n && !(!n && 1>=gn)))
-      || (ee && kV(g)[0] && kV(g)[1]) ) {
+      || (ee && g->n>1 && kV(g)[0] && kV(g)[1]) ) {
     if(kK(g)[0]==NULL){VE; GC;}
     if(3!=kK(g)[0]->t || 1==(*(K*)q)->n || kK(g)[1]==NULL) {
       if(g->t==0 && gn==2 && kK(*(K*)q)[CODE]->t==-4
@@ -585,7 +585,7 @@ K vf_ex(V q, K g)
     I ae=0; K*m=(K*)kV(z)+CONJ;
     if(special && gn!=4)n=2; // .'"98" cases. allows a:.[+] then a 2 3  (. is forced 2-adic & not .[;;;]) is this a kluge?
     K zc0de=kK(z)[CODE]; // O("\n%s:%d zc0de=%p [%lld,%lld,%lld]",__FILE__,__LINE__,zc0de,zc0de->t,zc0de->n,rc(zc0de));
-    if(3<zc0de->n  && (V*)kK(zc0de)[1]==(V)offsetAt && (V*)kK(zc0de)[2]==(V)offsetEach){ae=1; n=1;}
+    if(7==zc0de->t && 3<zc0de->n && (V*)kK(zc0de)[1]==(V)offsetAt && (V*)kK(zc0de)[2]==(V)offsetEach){ae=1; n=1;}
     if(!*m) *m=newK(0,n);
     if(!*m){cd(z);GC;}
     K *q=kK(*m);
@@ -747,7 +747,10 @@ K ex(K a) {   //Input is (usually, but not always) 7-0 type from wd()
   I ofam=fam;nfam++;
   VCHK(a);
   U(a); if(a->t==7 && kVC(a)>(K)DT_SIZE && 7==kVC(a)->t && 6==kVC(a)->n)fwh=1;
-  if(a->t==7 && kV(kK(a)[CODE])[1]==offsetColon && kV(kK(a)[CODE])[2]!=offset3m) fam=0;
+  if(a->t==7){
+    K ac0de=kK(a)[CODE];
+    if(ac0de->n>2 && kV(ac0de)[1]==offsetColon && kV(ac0de)[2]!=offset3m) fam=0;
+  }
   K z=ex_(&a,0); cd(a); if(fer==1)fer=fer1=0;
   fwh=stk=stk1=prj=prj2=fsf=0;
   KSET(prnt,0);
@@ -1014,7 +1017,7 @@ Z K ex2(V*v, K k)  //execute words --- all returns must be Ks. v: word list, k: 
     U(a=*w);
     if(7==a->t && 0==a->n && (b=kV(a)[CONJ]) && 7==b->t && 0==b->n )
     {
-      U(b=ex_(kV(a)+CONJ,((L)*kW(b)==1 || (L)*(kW(b)+1)==1)?1:2))
+      U(b=ex_(kV(a)+CONJ,((L)*kW(b)==1||(kVC(b)->n>1 && (L)*(kW(b)+1)==1))?1:2))
       w=*kW(a); //K temp=a;  //a=ci(*kW(a)); w=*kW(a); cd(temp);
       if(b->t==0 && b->n==0) {
         if(1e6<(UI)w) {

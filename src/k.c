@@ -557,7 +557,11 @@ L DT_OFFSET(V v){I i=0; while(v!=DT[i].func)i++; R i;} //init only
 
 I kreci=0;  //should be inside DEBUG case but needed in r.c cached verbs, at least until caching method changes
 #ifdef DEBUG
-void tf(N n){if(!n)R;DO(2,tf(n->c[i]));if(n->k)repool(n->k-NSLOTS*sizeof(Slot),lsz(sizeofSym(strlen(n->k))));repool(n,lszNode);} //tree free
+void tf(N n){
+  if(!n)R;DO(2,tf(n->c[i]));
+  // XXX pahihu symbols are not allocated from buddy
+  // if(n->k)repool(n->k-NSLOTS*sizeof(Slot),lsz(sizeofSym(strlen(n->k))));
+  repool(n,lszNode);} //tree free
 V krec[NKREC];
 I krecLN[NKREC];
 S krecF[NKREC];
