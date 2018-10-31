@@ -293,8 +293,8 @@ Z K each2(K a, V *p, K b) {
       if(f)d=dv_ex(a,p-1,g); else d=dv_ex(0,p-1,g);
       cd(g); M(d,z) kK(z)[i]=d)
     if(0==bt){
-      if(prnt)prnt0=ci(prnt);
-      if(grnt)grnt0=ci(grnt);
+      if(prnt)KSET(prnt0,ci(prnt)); // XXX
+      if(grnt)KSET(grnt0,ci(grnt));
       DO(bn,
         if(f)d=dv_ex(a,p-1,kK(b)[i]);
         else {
@@ -848,8 +848,7 @@ Z K _ex0(V*v,K k,I r,int _f) //r: {0,1,2} -> {code, (code), [code]}
 
       K t=0; if(k->n==1) t=first(k);
       if((k->n>1 || (t && t->n==1)) && !sva(*q) && adverbClass(*q))
-      { int ext2=0;
-        if(k->n==1 && !prj2){
+      { if(k->n==1 && !prj2){
 	  // === 181010AP resize, because of KP_MIN=5 ===
           if(6!=k->t){I v=0;kap(&k,&v);}
         }
@@ -984,7 +983,9 @@ Z K ex2(V*v, K k)  //execute words --- all returns must be Ks. v: word list, k: 
       if(prnt && kV(z)[PARAMS] && kV(prnt)[CACHE_TREE] && !kV(z)[CACHE_TREE] && !kK(z)[LOCALS]->n) {
         if(0==encp || 1==encp){
           K j0=DOT_monadic(kV(z)[PARAMS]); K j1=DOT_monadic(kV(prnt)[CACHE_TREE]); K j2=join(ci(j0),j1); cd(j0);
-          kV(z)[CACHE_TREE]=DOT_monadic(encp?j1:j2); cd(j0); cd(j1); cd(j2); }
+          kV(z)[CACHE_TREE]=DOT_monadic(encp?j1:j2); 
+          KDBG(O("\n%s:%d z=%p CACHE_TREE(z)=%p",__FILE__,__LINE__,z,kV(z)[CACHE_TREE]);)
+          cd(j0); cd(j1); cd(j2); }
 	KSET(kK(prnt)[CACHE_WD],0); }
       if(prnt && kV(prnt)[CODE] && kK(prnt)[CODE]->t==-3 && kC(kK(prnt)[CODE])[0]=="{"[0] &&
         kC(kK(prnt)[CODE])[kK(prnt)[CODE]->n-1]=="}"[0] && strchr(kC(kK(prnt)[CODE]),"y"[0])){
@@ -1017,6 +1018,7 @@ Z K ex2(V*v, K k)  //execute words --- all returns must be Ks. v: word list, k: 
     if(adverbClass(v[1]))R SYE;//Could potentially handle instead of erroring
     K a=0,b=0,c=0,d=0,p=0;
     K*w=*v;
+    if(&NIL==w)R VLE; // pahihu: referencing y.a when type of y is not known
     U(a=*w);
     if(7==a->t && 0==a->n && (b=kV(a)[CONJ]) && 7==b->t && 0==b->n )
     {
@@ -1043,25 +1045,35 @@ Z K ex2(V*v, K k)  //execute words --- all returns must be Ks. v: word list, k: 
     if(KONA_DEBUG){
       O("-------------------\n");
       if(a){O("\na: %p ",a);showx(a);}else O("\na: NULL");
-      if(*w){O("\nw: %p ",*w);showx(*w);}else O("\nw: NULL");
+      if(*w){O("\nw: %p *w:%p",w,*w);showx(*w);}else O("\nw: NULL");
       if(b){O("\nb: %p ",b);showx(b);}else O("\nb: NULL");
       if(c){O("\nc: %p ",c);showx(c);}else O("\nc: NULL");
       if(d){O("\nd: %p ",d);showx(d);}else O("\nd: NULL");
     }
 
     I cv=cirVal(*w,d); // value reference
-    I cr=cv?cv:cirRef(w,d); // value reference
+    I cr=cv?cv:cirRef(w,d); // ptr reference
+#if 1
+    if(cr||cv){
+      K x = d;
+      if(cv){KDBG(O("---> kclone(d) VAL\n");) d=kclone(x); cd(x);}
+      else if(cr){KDBG(O("---> kclone(d) REF\n");) d=kclone(x); cd(x);}
+    }
+    if(d && rc(d)>1 && (0==d->t||5==d->t)){KDBG(O("---> kcopy(d)\n");) K x=d; d=kcopy(x); cd(x);}
+#else
     if((cr||cv) || (((*w)->t==6 && d) && (d->t==0 || d->t==5 || ABS(d->t)!=d->t))){ // XXX: list/dict/vector
       K x = d;
       if(cv){KDBG(O("---> kclone(d) VAL\n");) d=kclone(x); cd(x);}
       else if(cr){KDBG(O("---> kclone(d) REF\n");) d=kclone(x); cd(x);}
-      // if(d->t==0 || d->t==5){DBG(O("---> kcopy(d)\n");) d=kcopy(x); cd(x);}
-      // if(rc(x)>1) {d=kclone(x); cd(x);} // KLONE: ???
+      else if(rc(x)>1){
+        if(5==xt){KDBG(O("---> kcopy(d)\n");) d=kcopy(x); cd(x);}
+      }
     }
     else if((*w)->t!=6){
       K x = *w;
       if(rc(x)>1) { KDBG(O("---> kclone(w)\n");) *w=kclone(x); cd(x); } // KLONE: ???
     }
+#endif
 
     K h=dot_tetradic_2(w,b,c,d);
     cd(c); cd(d); M(b,h)
@@ -1122,6 +1134,7 @@ Z K ex2(V*v, K k)  //execute words --- all returns must be Ks. v: word list, k: 
     if(*(v+1+i)==offsetDot && t0->t==7 && t0->n==1 && kK(kK(t0)[CODE])[1]==(V)offsetEach) {
       K p=kV(t0)[CODE]; I i=p->n-2;  V*q=(V*) kK(p)+i; e=bv_ex(q,t2); }
     else{e= dv_ex(t0,v+1+i,t2); v[1]=u;}
+    
     cd(t0); cd(t2); if(!VA(t3)) cd(t3);
     R e; }
 

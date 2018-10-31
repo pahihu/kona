@@ -76,7 +76,7 @@ K show(K a);
 extern I tests;
 #ifdef DEBUG
 K _cdg(K *pA,S f,I ln);
-#define cd(x)	_cdg(&(x),__FILE__,__LINE__)
+#define cd(x)	_cdg((K*)&(x),__FILE__,__LINE__)
 #else
 K cd(K a);
 #endif

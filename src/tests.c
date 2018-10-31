@@ -67,6 +67,8 @@ I tc(S a, S b) //test comparison .  R 0,1,2
 I test()
 { testtime=clock();
 
+  // TC(x:.+(`a`b;1 2); y:x; y.a:11;x, .+(`a`b;1 2) )  // Bakul comments #205, case 1 [pahihu y.a is VLE in K3.2]
+
   testsBook();
   tests01();
   tests02();

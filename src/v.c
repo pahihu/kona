@@ -57,6 +57,9 @@ K lookupEntryOrCreate(K *p, S k) {    //****only *dict or *_n are passed to here
   P(strchr(k,'.'),DOE)
   x=newEntry(k);
   if(6==a->t){cd(*p); *p=newK(5,0);} //mm/o is this done right?
+  // XXX pahihu I am not sure.. causes segfault under gmalloc
+  // dot_ref() releases this dict because not referenced from the K-tree
+  // later because wd() contains a ref to it, causes a segfault
   kap(p,&x); //oom
   cd(x);
   R x;
