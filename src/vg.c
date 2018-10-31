@@ -1,5 +1,6 @@
 #include "incs.h"
 #include "k.h"
+#include "kc.h"
 #include "kg.h"
 #include "km.h"
 #include "vc.h"
@@ -613,11 +614,15 @@ K join(K x, K y) {      //TODO: 5,6?
   if(!xk) zt=-ABS(yt);
   else if(!yk) zt=-ABS(xt);  //'else' is sic. In "K3.21 2006-02-01" right empty list takes precedence
   if(zt < -4) zt=0;
-  /*
+#if 0
   if(1==rc(x)&&(zt==xt)&&(xt==yt)){
-    O("self join: x=(%lld,%lld,%lld) y=(%lld,%lld,%lld)\n",rc(x),xt,xk,rc(y),yt,yk);
-    K ox=x;kapn(&x,kK(y),yk);R x==ox?ci(x):x;
-  }*/
+    KDBG(O("\n%s:%d self join: x=%p [%lld,%lld,%lld] y=%p [%lld,%lld,%lld]",__FILE__,__LINE__,x,xt,xk,rc(x),y,yt,yk,rc(y));fflush(stdout);)
+    KDBG(O("\n x=%p ",x);showx(x);O("\n y=%p ",y);showx(y);)
+    K ox=x;kapn(&x,kK(y),yk);
+    KDBG(O("\n:%s:%d joined x=%p [%lld,%lld,%lld]",__FILE__,__LINE__,x,xt,xn,rc(x));fflush(stdout);)
+    R ox==x?ci(x):x;
+  }
+#endif
   I zn=xk+yk;
   K z=newK(zt,zn);U(z)
 
