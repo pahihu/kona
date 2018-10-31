@@ -229,7 +229,7 @@ K dollar(K a, K b) //form/format_dyadic
         if(rc(b1)>rc(b)){
           // if(pr){fprintf(stderr,"DBG: rc(b1)>rc(b)\n");pr=0;}
           if(!ht){ht=newH(-4,32768);dat=newH(-4,32768);}
-          if(chk&&!hgI(ht,(uI)b1>>6,(I)b1,&p)){
+          if(chk&&!hgI(ht,(uI)b1>>KP_MIN,(I)b1,&p)){
 	    if(2*ndat<ht->n){
               ndat++;kK(ht)[p]=b1;q=(kK(dat)[p]=dollar(a1,b1));
             }else chk=0;

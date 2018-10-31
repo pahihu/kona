@@ -89,3 +89,4 @@ void trst();
 void elapsed(S m);
 extern I lszNode,lszPDA;
 V kalloc(I k,I*r);
+#define KP_MIN 5

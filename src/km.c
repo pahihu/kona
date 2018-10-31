@@ -25,7 +25,7 @@
 //Linux: cat /proc/cpuinfo | grep cache_alignment
 //OSX: sysctl -a | grep cache
 //Simple tests on Kona confirmed 6 is an improvement over 5
-#define KP_MIN  5 //2^x, must be at least ceil(lg(sizeof(V)))
+// KP_MIN  //2^x, must be at least ceil(lg(sizeof(V)))
 #define KP_MAX 26 //2^x, 26->64MB  //TODO: base on available memory at startup (fixed percent? is 64M/2G a good percent?)
 Z V KP[KP_MAX+1]; //KPOOL
 I PG; //pagesize:  size_t page_size = (size_t) sysconf (_SC_PAGESIZE);
