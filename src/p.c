@@ -17,6 +17,34 @@ I fll=0;            //flag line length
 #define WHERE
 #endif
 
+Z int leaked(K x){
+#ifdef DEBUG
+  DO(kreci,P(x==krec[i],'*'))
+#endif
+  R ' ';
+}
+
+Z void dum7(K*,I),dum7I(K*,I,I);
+Z void A(I n){DO(n,O(" "));}
+#define NSOS 16
+Z K sos[NSOS];I nsos=0;
+
+void showp(K x,I a){
+  if(!a)O("\n");
+  DO(a,O(" ");)
+  if(!x){O("(%p)\n",x);R;}
+  O("(%p) [%lld,%lld,%lld] %c",x,xt,xn,rc(x),leaked(x));
+  DO(nsos,if(sos[i]==x){O(" cirRef(%lld)\n",nsos);R;})
+  if(NSOS==nsos){O(" SOS full\n");R;}
+  sos[nsos++]=x;
+       if(0==xt){O("\n");DO(xn,showp(kK(x)[i],a+2));}
+  else if(5==xt){O("\n");DO(xn,showp(kK(x)[i],a+2));}
+  else if(6==xt)O("_n\n");
+  else if(7==xt)dum7I(&x,a+2,0);
+  else show(x);
+  nsos--;
+}
+
 void showx(K x){ O("(%p) [%lld,%lld,%lld] ",x,xt,xn,rc(x));show(x);if(6==xt)O("\n");}
 #if 1
 Z S mm[] = {
@@ -35,13 +63,17 @@ Z S mm[] = {
   "MARK_CONDITIONAL",
   "COUNT" };
 Z I dumm(I *m,I n){O("\n");DO(n,if(m[i]<0)O("-");O("%s ",mm[ABS(m[i])]));R 0;}
-Z void A(I n){DO(n,O(" "));}
-Z void dum7(K*_v,I a){
+Z void dum7I(K*_v,I a,I chk){
+  Z S typ7[]={"wd","wordfn","cfn","charfn",":[]","if[]","while[]","do[]"};
   if(NIL==(K)_v){O("  NIL\n");R;}
   K v=*_v;
   if(!v){O("  garbage(%p,%p)\n",_v,v);R;} // XXX garbage
   int n=0;I vt=v->t,vn=v->n,f=1;
-  S typ7[]={"wd","wordfn","cfn","charfn",":[]","if[]","while[]","do[]"};
+  if(chk){
+    DO(nsos,if(v==sos[i]){A(a);O("[%lld,%lld,%lld,%s] cirRef\n",vt,vn,rc(v),typ7[vn]);R;})
+    if(NSOS==nsos){O(" SOS full\n");R;}
+    sos[nsos++]=v;
+  }
   V e=0;V*kw=0;
   if(!a)O("\n");
   if(7==vt){
@@ -57,7 +89,7 @@ Z void dum7(K*_v,I a){
         K cw=(K)kV(v)[CACHE_WD];K ct=(K)kV(v)[CACHE_TREE];
         if(cw){A(a);O("  cachewd: ");dum7(&cw,a+2);}
         if(ct){A(a);O("cachetree: ");dum7(&ct,a+2);}
-        A(a);showx(v);
+        A(a);O("\n");showp(v,a+2);
       } else {
         kw=kW(v);
         while((e=*kw++)){
@@ -65,8 +97,10 @@ Z void dum7(K*_v,I a){
           A(a);O("%d entry",n++);
           if((UI)e<DT_SIZE){O("  dt: %s (%p)\n",DT[(UI)e].text,e);}
           else dum7((K*)e,a+2); } } } } }
-  else{ A(a);O("%p ",_v);showx(v); }
+  else{ A(a);O("%p ",_v);O("\n");showp(v,a+2); }
+  if(chk)nsos--;
 }
+Z void dum7(K*_v,I a){dum7I(_v,a,1);}
 #else
 #define dumm(x,y)
 #define dum7(x,y)

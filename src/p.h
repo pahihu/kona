@@ -59,3 +59,4 @@ I charpos(S s,C c);
 K lookupEntryOrCreate(K *p,S k);
 I oerr();
 void showx(K x);
+void showp(K x,I a);

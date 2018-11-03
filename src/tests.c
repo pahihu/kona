@@ -3,6 +3,13 @@
 #include "k.h"
 #include "kc.h"
 #include "km.h"
+#include "p.h"
+
+#ifdef DEBUG
+#define SHOW(x)	showp(x,0)
+#else
+#define SHOW(x)	show(x)
+#endif
 
 //  Note:
 //
@@ -60,7 +67,7 @@ I tc(S a, S b) //test comparison .  R 0,1,2
 
   O("\nFailed: Memory Leak - %s, %s \nAllocated K: %lld\nUnfreed K  : %lld\nLeak %%     : %f", a,b,kreci, c, c/(F)kreci);
   I j=-1;
-  DO(c, do j++; while(!krec[j] && j < kreci); if(j>=kreci) break; K k=krec[j]; if(k){O("\nc:%lld t:%lld n:%lld | k:%p (%s:%lld)\n",rc(k),k->t,k->n,k,krecF[j],krecLN[j]); show(k);} )
+  DO(c, do j++; while(!krec[j] && j < kreci); if(j>=kreci) break; K k=krec[j]; if(k){O("\nc:%lld t:%lld n:%lld | k:%p (%s:%lld)\n",rc(k),k->t,k->n,k,krecF[j],krecLN[j]); SHOW(k); } )
   R 0;
 }
 

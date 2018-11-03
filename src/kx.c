@@ -50,18 +50,33 @@ __thread I frg=0;    // Flag reset globals
 	 I nfam=0;   // Flag: nest fam
 
 Z K Djoin(K x,K y) { // join dicts
-  K j0=DOT_monadic(x); K j1=DOT_monadic(y);
+#if 0
+  K j0=DOT_monadic(x); K k1=kclone(y); K j1=DOT_monadic(k1); cd(k1);
   K j2=join(ci(j0),j1); cd(j0);
   K r=DOT_monadic(j2);
   cd(j2); cd(j1); cd(j0);
-  R r;}
+  R r;
+#else
+  K x0=DOT_monadic(x);
+  K ye,e,v;
+  DO(yn,ye=kK(y)[i];e=newK(0,3);M(e,x0);
+    kK(e)[0]=ci(kK(ye)[0]);
+    v=kK(ye)[1];
+    kK(e)[1]=v?7==v->t?kclone(v):ci(v):v;
+    kK(e)[2]=ci(kK(ye)[2]);
+    kap(&x0,&e);cd(e))
+  x0->t=5;
+  R x0;
+#endif
+}
 
 Z K DSjoin(K x, K y) { // join dict / scalar (enlist first)
   K ye=enlist(y);
   K j0=DOT_monadic(x); K j2=join(ci(j0),ye); cd(j0);
   K r=DOT_monadic(j2);
   cd(y); cd(ye); cd(j0); cd(j2); 
-  R r;}
+  R r;
+}
 
 Z K cjoin(K x,K y) {
   VCHK(x);VCHK(y);
@@ -775,7 +790,7 @@ Z K _ex0(V*v,K k,I r,int _f) //r: {0,1,2} -> {code, (code), [code]}
                 if(grnt)KSET(grnt,0)}
               U(x) z=bk(x)?_n():x;
               if(fer>0 && !fCheck)CDk(R z);
-              if(grnt && (!prnt || rc(prnt)==2))KSET(prnt,ci(grnt))
+              if(grnt && (!prnt || 2==rc(prnt)))KSET(prnt,ci(grnt)) // XXX
             } )
     CS(4, for(i=-1;i<n;i++)
             if(-1==i||bk(v[i])){
