@@ -665,16 +665,15 @@ K vf_ex(V q, K g)
 
       I j=0; K*e; K fw;
 
+      K otree=0;
       if(!(tree=kV(f)[CACHE_TREE])) {  //could merge this and and CACHE_WD check by duplicating the arg merge DO
         tree=newK(5,p->n+s->n); if(!tree) {stk--; GC;} //note: cleanup is unusual -- could turn into double labels
-        // O("\n%s:%d tree->n=%lld p->n=%lld s->n=%lld",__FILE__,__LINE__,tree->n,p->n,s->n);fflush(stdout);
         DO(tree->n, if(!(kK(tree)[i]=newK(0,3))){cd(tree); stk--; GC;}) //shallow dict copy -- dictionary entry pool?
-        // O("\n%s:%d tree->n=%lld p->n=%lld s->n=%lld",__FILE__,__LINE__,tree->n,p->n,s->n);fflush(stdout);
         DO(tree->n, DO2(3,  kK(DI(tree,i))[j] = ci(kK((i<p->n?DI(p,i):DI(s,i-p->n)))[j])))//shallow copy
         kV(f)[CACHE_TREE]=tree; }
       if(fsf && prnt && kV(prnt)[LOCALS] && kV(prnt)[CACHE_TREE]){
         KSET(kV(prnt)[CACHE_TREE],Djoin(kV(prnt)[LOCALS],kV(prnt)[CACHE_TREE]));
-        tree=kV(prnt)[CACHE_TREE]; KSET(kV(prnt)[CACHE_WD],0); }
+        otree=(tree=kV(prnt)[CACHE_TREE]); KSET(kV(prnt)[CACHE_WD],0); }
 
       DO(p->n,e=EVP(DI(tree,i)); cd(*e); *e=0; if(r && i<r->n) *e=ci(kK(r)[i]); if(!*e && j<g->n) *e=ci(kK(g)[j++])) //merge in: CONJ with function args
 
@@ -691,7 +690,7 @@ K vf_ex(V q, K g)
       if(stk1>1e3) {cd(g); kerr("stack"); R _n();}
       #endif
       ci(fw); stk1++; z=ex(fw); stk1--;
-      DO(p->n,e=EVP(DI(tree,i)); cd(*e); *e=0; )
+      tree=otree?otree:kV(f)[CACHE_TREE];DO(p->n,e=EVP(DI(tree,i)); cd(*e); *e=0; )
       stk--;
     )
   }

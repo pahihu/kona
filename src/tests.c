@@ -74,8 +74,6 @@ I tc(S a, S b) //test comparison .  R 0,1,2
 I test()
 { testtime=clock();
 
-  // TC(x:.+(`a`b;1 2); y:x; y.a:11;x, .+(`a`b;1 2) )  // Bakul comments #205, case 1 [pahihu y.a is VLE in K3.2]
-
   testsBook();
   tests01();
   tests02();
@@ -1381,6 +1379,10 @@ Z I testsBook()
   // TC(5 3, {m:{x,y}; m[5;3]}[]) weird segfault
 
   TC(1, d:`a`b!1 2; e:.:.:d; d~e)
+  TC_("(\"ab\";\"ba\")", "p:{[n]:[1=#n;,n;{x,\',/p[n _dv x]}\'n]}; ,/p[\"ab\"]") // pahihu variations of issue #377: leaks
+  TC_("(\"ab\";\"ba\")", "p:{[n]:[1=#n;,n;{x,\',/p[n _dv x]}\'n]}; ,/p\"ab\"") // pahihu variations of issue #377: NO leaks
+  TC_("(,\"ab\";,\"ba\")", "p:{[n]:[1=#n;,n;{x,\',/p[n _dv x]}\'n]}; p[\"ab\"]") // pahihu variations of issue #377: NO leaks
+  TC_("(\"ab\";\"ba\")", "p:{[n]:[1=#n;,n;{x,\',/p[n _dv x]}\'n]}; ,/p@\"ab\"") // pahihu variations of issue #377: NO leaks
 
   TC((1;"type") , @[.:;"_sin _sin (;)";:])
   TC((1;"type") , @[.:;"_sin _sin (0;)";:])
