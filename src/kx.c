@@ -70,12 +70,26 @@ Z K Djoin(K x,K y) { // join dicts
 #endif
 }
 
-Z K DSjoin(K x, K y) { // join dict / scalar (enlist first)
+Z K DSjoin(K*x, K y) { // join dict / scalar (enlist first)
+#if 0
   K ye=enlist(y);
-  K j0=DOT_monadic(x); K j2=join(ci(j0),ye); cd(j0);
+  K j0=DOT_monadic(*x); K j2=join(ci(j0),ye); cd(j0);
   K r=DOT_monadic(j2);
   cd(y); cd(ye); cd(j0); cd(j2); 
   R r;
+#else
+  (*x)->t=0; kap(x,&y); cd(y); (*x)->t=5;
+  R *x;
+#endif
+}
+
+Z K CTjoin(K *tree,S sym,K p){
+  I pt=p->t;
+  K x=newK(0,3); kK(x)[0]=Ks(sym);
+  // kK(x)[1]=kclone(p); // KLONE: charfn stuff
+  kK(x)[1]=(5==pt||0==pt)?kcopy(p):ci(p); // KLONE: charfn stuff
+  kK(x)[2]=_n();
+  R DSjoin(tree,x);
 }
 
 Z K cjoin(K x,K y) {
@@ -684,34 +698,21 @@ K vf_ex(V q, K g)
 
   if(encp==2) { I ff=0;      // Access the parameters of an enclosing function
     if(z && z->t==7 && z->n==3 && kV(z)[CODE] && strchr(kC(kK(z)[CODE]),"z"[0]) && kV(z)[PARAMS] && kK(z)[PARAMS]->n) {
-      ff=1; DO(kK(z)[PARAMS]->n, if(!strcmp(*kS(kK(kK(kK(z)[PARAMS])[i])[0]),"z")){ff=0; break;} ) }
+      ff=1; DO(kK(z)[PARAMS]->n, if(IFP[2]==*kS(kK(kK(kK(z)[PARAMS])[i])[0])){ff=0; break;} ) }
     if(ff) {
-      K d=kK(kK(KTREE)[0])[1]; K w=0;
-      DO(d->n, if(!strcmp(*kS(kK(kK(d)[i])[0]),"z")){w=kclone(kK(d)[i]); break;}) // KLONE: charfn stuff
-      if(w){
-        K p=kK(g)[0]; KSET(kK(w)[1],kclone(p)); // KLONE:: charfn stuff
-        KSET(kK(z)[CACHE_TREE],DSjoin(kK(z)[CACHE_TREE],w));
-        encp=3; } } }
+      CTjoin(&kK(z)[CACHE_TREE],IFP[2],kK(g)[0]);
+      encp=3; } }
   if(encp==1) { I ff=0;
     if(z && z->t==7 && z->n==3 && kV(z)[CODE] && strchr(kC(kK(z)[CODE]),"y"[0]) && kV(z)[PARAMS] && kK(z)[PARAMS]->n) {
-      ff=1; DO(kK(z)[PARAMS]->n, if(!strcmp(*kS(kK(kK(kK(z)[PARAMS])[i])[0]),"y")){ff=0; break;} ) }
+      ff=1; DO(kK(z)[PARAMS]->n, if(IFP[1]==*kS(kK(kK(kK(z)[PARAMS])[i])[0])){ff=0; break;} ) }
     if(ff) {
-      K d=kK(kK(KTREE)[0])[1]; K y=0;
-      if(6!=d->t && !(5==d->t && 6==kK(kK(d)[0])[1]->t))
-        DO(d->n, if(!strcmp(*kS(kK(kK(d)[i])[0]),"y")){y=kclone(kK(d)[i]); break;})
-      else R NYI;
-      if(y) {
-        K p=kK(g)[0]; KSET(kK(y)[1],kclone(p)); // KLONE: charfn stuff
-        KSET(kK(z)[CACHE_TREE],DSjoin(kK(z)[CACHE_TREE],y));
-        encp=2; } } }
+      CTjoin(&kK(z)[CACHE_TREE],IFP[1],kK(g)[0]);
+      encp=2; } }
   if(encp==0) { I ff=0;
     if(z && z->t==7 && z->n==3 && kV(z)[CODE] && strchr(kC(kK(z)[CODE]),"x"[0]) && kV(z)[PARAMS] && kK(z)[PARAMS]->n) {
-      ff=1; DO(kK(z)[PARAMS]->n, if(!strcmp(*kS(kK(kK(kK(z)[PARAMS])[i])[0]),"x")){ff=0; break;} ) }
+      ff=1; DO(kK(z)[PARAMS]->n, if(IFP[0]==*kS(kK(kK(kK(z)[PARAMS])[i])[0])){ff=0; break;} ) }
     if(ff) {
-      K xx=newK(4,1); *kK(xx)=(V)sp("x");
-      K x=newK(0,3); kK(x)[0]=xx; kK(x)[1]=(K)_n(); kK(x)[2]=(K)_n();
-      K p=kK(g)[0]; KSET(kK(x)[1],kclone(p)); // KLONE: charfn stuff
-      KSET(kK(z)[CACHE_TREE],DSjoin(kK(z)[CACHE_TREE],x));
+      CTjoin(&kK(z)[CACHE_TREE],IFP[0],kK(g)[0]);
       encp=1; } }
 
 cleanup:

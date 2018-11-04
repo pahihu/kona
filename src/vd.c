@@ -342,7 +342,7 @@ Z K unmake(K a){
 #else
   K z=kclone(a); z->t=0; R z; // KLONE: deep clone unnecessary
 #endif
-}//TODO: deep clone inefficient
+}
 
 Z K makeable(K a) //TODO: this has to be reworked. can't hang out raw in dot_monadic as it is currently
 {
