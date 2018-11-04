@@ -15,9 +15,10 @@ K kcloneI(K a,cS f,int n){
 K kcopyI(K a,cS f,int n){//Shallow copy - list/dict
   if(KONA_DEBUG)O("\n%s:%d kcopy(%p)",f,n,a);
   R _kcopy(a);}
-K _kcopy(K x)//Shallow copy - list/dict
+K _kcopy(K x)//Shallow copy - list/dict, deep copy - TYPE_SEVEN, others ci()
 {
   U(x);
+  if(7==xt)R _kclone(x);
   if(0!=xt && 5!=xt)R ci(x);
   K z=newK(xt,xn),b,e;
   if(5==xt)DO(xn,b=kK(x)[i];kK(z)[i]=(e=newK(0,3));M(e,z);kK(e)[0]=_kcopy(kK(b)[0]);kK(e)[1]=_kcopy(kK(b)[1]);kK(e)[2]=_kcopy(kK(b)[2]);)
