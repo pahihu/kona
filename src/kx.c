@@ -50,13 +50,6 @@ __thread I frg=0;    // Flag reset globals
 	 I nfam=0;   // Flag: nest fam
 
 Z K Djoin(K x,K y) { // join dicts
-#if 0
-  K j0=DOT_monadic(x); K k1=kclone(y); K j1=DOT_monadic(k1); cd(k1);
-  K j2=join(ci(j0),j1); cd(j0);
-  K r=DOT_monadic(j2);
-  cd(j2); cd(j1); cd(j0);
-  R r;
-#else
   K x0=DOT_monadic(x);
   K ye,e,v;
   DO(yn,ye=kK(y)[i];e=newK(0,3);M(e,x0);
@@ -67,20 +60,11 @@ Z K Djoin(K x,K y) { // join dicts
     kap(&x0,&e);cd(e))
   x0->t=5;
   R x0;
-#endif
 }
 
 Z K DSjoin(K*x, K y) { // join dict / scalar (enlist first)
-#if 0
-  K ye=enlist(y);
-  K j0=DOT_monadic(*x); K j2=join(ci(j0),ye); cd(j0);
-  K r=DOT_monadic(j2);
-  cd(y); cd(ye); cd(j0); cd(j2); 
-  R r;
-#else
   (*x)->t=0; kap(x,&y); cd(y); (*x)->t=5;
   R *x;
-#endif
 }
 
 Z K CTjoin(K *tree,S sym,K p){
