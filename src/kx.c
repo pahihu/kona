@@ -322,7 +322,7 @@ Z K each2(K a, V *p, K b) {
       if(f)d=dv_ex(a,p-1,g); else d=dv_ex(0,p-1,g);
       cd(g); M(d,z) kK(z)[i]=d)
     if(0==bt){
-      if(prnt)KSET(prnt0,ci(prnt)); // XXX
+      if(prnt)KSET(prnt0,ci(prnt));
       if(grnt)KSET(grnt0,ci(grnt));
       DO(bn,
         if(f)d=dv_ex(a,p-1,kK(b)[i]);
@@ -608,6 +608,7 @@ K vf_ex(V q, K g)
   if(n && (argc<gn || (gn<n && (!special||gn<=1) ))) //Project. Move this ahead of verbs when finished
   {
     // KLONE: charfn stuff
+    // O("\n%s:%d kclone(f)",__FILE__,__LINE__);
     z=kclone(f); //Is this an opportunity to capture an under-referenced function?
                  //Consider if it could be in use as part of assignment, etc.
     if(!z)GC;
@@ -680,9 +681,13 @@ K vf_ex(V q, K g)
       fw=RDK(kV(f)[CACHE_WD]); I t=0;
       if(!fw || (t=(UI)kS(kK(fw)[CODE])[0]>DT_SIZE || (UI)kS(kK(fw)[CODE])[1]>DT_SIZE) ) {
         if(t) KSET(kV(f)[CACHE_WD],0);
-        K fc = kclone(f); //clone the function to pass for _f KLONE: charfn stuff
-        KSET(kV(fc)[CONJ],0);
-        kV(fc)[DEPTH]++; fw=wd_(kC(o),o->n,&tree,fc); KSET(kV(f)[CACHE_WD],fw); cd(fc); }
+	// pahihu: do NOT clone here
+        K fC=ci(kV(f)[CONJ]); K fCT=ci(kV(f)[CACHE_TREE]); KSET(kV(f)[CONJ],0); KSET(kV(f)[CACHE_TREE],0);
+        K fc=ci(f);
+        kV(fc)[DEPTH]++; fw=wd_(kC(o),o->n,&tree,fc); KSET(kV(f)[CACHE_WD],fw); kV(fc)[DEPTH]--;
+	cd(fc);
+	kV(f)[CONJ]=fC; kV(f)[CACHE_TREE]=fCT;
+        }
 
       #ifdef DEBUG
       if(stk1>5) {cd(g); kerr("stack"); R _n();}

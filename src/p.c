@@ -2,6 +2,7 @@
 #include "k.h"
 #include "kc.h"
 #include "km.h"
+#include "ko.h"
 #include "p.h"
 #include "v.h"
 #include "vf.h"
@@ -684,7 +685,8 @@ I capture(S s,I n,I k,I*m,V*w,I*d,K*locals,K*dict,K func)
                       //      it uses the non-path-creating form of dename
 
                       if(2==r && '_'==*u && stringHasChar(n_s,u[1]))
-                        if('f'==u[1]){z=func?ci(func):_n(); } //TODO: stack error --- but be careful to generalize.
+                        if('f'==u[1]){z=func?kclone(func):_n(); } //TODO: stack error --- but be careful to generalize.
+			  // pahihu: clone only here when necessary
                           // proper soln will handle cycle f:{ g 0} g:{f 0}
                           // see "getrusage" or http://stackoverflow.com/questions/53827/checking-available-stack-size-in-c
                         else z=((K(*)())vn_[charpos(n_s,u[1])])();

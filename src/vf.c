@@ -1,6 +1,7 @@
 #include "incs.h"
 #include "k.h"
 #include "km.h"
+#include "ko.h"
 #include "ks.h"
 #include "vf.h"
 #include "vg.h"
