@@ -305,8 +305,8 @@ V kalloc(I k,I*r) //bytes. assumes k>0
 }
 
 Z V amem(I k,I r) {
-  K z;I kk=1<<r;I kpg=kk<PG?PG:kk;
-  if(MAP_FAILED==(z=mmap(0,kk,PROT_READ|PROT_WRITE,MAP_PRIVATE|MAP_ANON,-1,0)))R ME;
+  K z;I kpg=k<PG?PG:k;
+  if(MAP_FAILED==(z=mmap(0,k,PROT_READ|PROT_WRITE,MAP_PRIVATE|MAP_ANON,-1,0)))R ME;
   mAlloc+=kpg; //kk<PG?PG:kk;
 #ifdef DEBUG
   if((V)z<mMinM)mMinM=z;
@@ -396,6 +396,7 @@ Z I kexpander(K*p,I n) //expand only.
   I c=sz(a->t,a->n),d=sz(a->t,n);
   V v=ma(d);
   memcpy(v,a,c);
+  free(a);
   *p = v; slsz(*p,lsz(d));
   R 1;
 #else
@@ -420,12 +421,11 @@ Z I kexpander(K*p,I n) //expand only.
     if(g) if(MAP_FAILED!=mmap((V)a+e,f,PROT_READ|PROT_WRITE,MAP_PRIVATE|MAP_ANON|MAP_FIXED,-1,0)){mAlloc+=f;mUsed+=f;if(mUsed>mMax)mMax=mUsed;R 1;}  //Add pages to end
 #endif
 #endif
-    r=lsz(d); V v;U(v=amem(d,r))
+    r=lsz(d); V v;U(v=amem(1<<r,r)) // double mem
     I c=sz(a->t,a->n);
     memcpy(v,a,c); *p=v; slsz(*p,r);
     CKP();
-    I res=0; // GMALLOC I res=munmap(a,c); 
-    free(a);
+    I res=munmap(a,c); 
     if(res) { show(kerr("munmap")); R 0; }
     CKP();
     mAlloc-=c;mUsed-=c;
@@ -436,7 +436,7 @@ Z I kexpander(K*p,I n) //expand only.
   //Standard pool object
   if(d<=(1<<r))R 1;
   I s=lsz(d);
-  K x=kallocI(d,s); U(x)
+  K x=kallocI(1<<s,s); U(x) // double mem
   I c=sz(a->t,a->n);
   memcpy(x,a,c);
   CKP();
