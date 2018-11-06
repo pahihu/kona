@@ -45,7 +45,7 @@ I FC(F a, F b)//Floating-Point Compare
     else if(y.i<0)y.i=LLONG_MIN-y.i;
     ad=llabs(x.i-y.i);
     if(ad<1023){
-      if(Isubn(xu))R x.i<y.i?-1:x.i!=y.i?1:0;
+      if(Isubn(xu))R x.i<y.i?-1:x.i!=y.i/*?1:0*/;
       if(ad<513)R 0;
       // sxxx xxxx xxxx uuuu uuuu ....
       xu=513+((255&(xu>>44))<<1);

@@ -51,7 +51,7 @@ Z I scn(S a,I na,S b,I nb){
     if(!r)r=1;
   }else r=fastcmp(a,b,na);
   // fprintf(stderr,"DBG: %s(%lld) %s(%lld) r:%lld\n",a,na,b,nb,r);
-  R r<0?-1:r>0?1:0;
+  R r<0?-1:r>0/*?1:0*/;
 }
 
 Z I SEQ(S a,I na,S b,I nb){
@@ -125,8 +125,8 @@ I strlenn(S s,I k){S t=memchr(s,'\0',k); R t?t-s:k;}
 
 I StoI(S s,I *n){S t; errno=0; *n=strtol(s,&t,10); R !(errno!=0||t==s||*t!=0);}
 
-I SC(S a,S b){I x=strcmp(a,b); R x<0?-1:x>0?1:0;}//String Compare: strcmp unfortunately does not draw from {-1,0,1}
-I SCN(S a,S b,I n){I x=strncasecmp(a,b,n); R x<0?-1:x>0?1:0;}
+I SC(S a,S b){I x=strcmp(a,b); R x<0?-1:x>0/*?1:0*/;}//String Compare: strcmp unfortunately does not draw from {-1,0,1}
+I SCN(S a,S b,I n){I x=strncasecmp(a,b,n); R x<0?-1:x>0/*?1:0*/;}
 S spI(S k,I nk)//symbol from phrase: string interning, Ks(sp("aaa")). This should be called before introducing any sym to the instance
 { //We are using this to ensure any two 'character-identical' symbols are in fact represented by the same pointer S
   //See Knuth Algorithm 6.2.2T
@@ -155,7 +155,7 @@ S spI(S k,I nk)//symbol from phrase: string interning, Ks(sp("aaa")). This shoul
     else if(p->b==-a){s->b= 0; r->b=a;}
     p->b=0;
   }
-  t->c[s==t->c[1]?1:0]=p;
+  t->c[s==t->c[1]/*?1:0*/]=p;
   R q->k;
 }
 S sp(S s){R spI(s,strlen(s));}
@@ -185,3 +185,4 @@ void OS(N x,unsigned y)
   if(x->k&&SV(x->k,y))O("%p: %u\n",x->k,SV(x->k,y));
   OS(x->c[1],y);
 }
+I SM=0;I smark(void){R ++SM;}

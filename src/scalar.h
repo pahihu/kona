@@ -13,17 +13,17 @@
   I zn=at>0?bn:an;
 
 /* Macro case: N:N, 1:N, N:1 implicit looping for op */
-#define SCALAR_OP_CASE(op, cres, ca, cb)                      \
+#define SCALAR_OP_CASE(op, cres, ta, ca, tb, cb)                      \
    if (an==bn) { DO(zn,cres [i]= op (ca [i], cb [i])) }       \
-   else if (an==1) { DO(zn,cres [i]= op (ca [0], cb [i])) }   \
-   else /* bn==1 */ { DO(zn,cres [i]= op (ca [i], cb [0])) }
+   else if (an==1) { ta _s=ca[0]; DO(zn,cres [i]= op (_s, cb [i])) }   \
+   else /* bn==1 */ { tb _s=cb[0]; DO(zn,cres [i]= op (ca [i], _s)) }
 
 /* Scalar operator macro, with proper float/int/array treatment */
 #define SCALAR_OP(op,verb)                                                      \
-   if (2==ABS(at) && 2==ABS(bt)) { SCALAR_OP_CASE(op,kF(z),kF(a),kF(b)) }       \
-   else if (2==ABS(at) && 1==ABS(bt)) { SCALAR_OP_CASE(op,kF(z),kF(a),kI(b)) }  \
-   else if (1==ABS(at) && 2==ABS(bt)) { SCALAR_OP_CASE(op,kF(z),kI(a),kF(b)) }  \
-   else if (1==ABS(at) && 1==ABS(bt)) { SCALAR_OP_CASE(op,kI(z),kI(a),kI(b)) }  \
+   if (2==ABS(at) && 2==ABS(bt)) { SCALAR_OP_CASE(op,kF(z),F,kF(a),F,kF(b)) }       \
+   else if (2==ABS(at) && 1==ABS(bt)) { SCALAR_OP_CASE(op,kF(z),F,kF(a),I,kI(b)) }  \
+   else if (1==ABS(at) && 2==ABS(bt)) { SCALAR_OP_CASE(op,kF(z),I,kI(a),F,kF(b)) }  \
+   else if (1==ABS(at) && 1==ABS(bt)) { SCALAR_OP_CASE(op,kI(z),I,kI(a),I,kI(b)) }  \
    else if (0==at || 0==bt) { dp(&z,verb,a,b); }
 
 /* Macro case: N:N, 1:N, N:1 implicit looping for expression */

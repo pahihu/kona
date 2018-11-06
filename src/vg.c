@@ -3,6 +3,7 @@
 #include "kc.h"
 #include "kg.h"
 #include "km.h"
+#include "ks.h"
 #include "vc.h"
 #include "vg.h"
 
@@ -86,7 +87,7 @@ Z K charRange(K a)
 Z K symRange(K x)
 {
   K z=newK(-4,0);M(z);
-  setS(2,0);DO(xn,S s=kS(x)[i];if(!SV(s,2)){SV(s,2)=-1;z=kap(&z,&s);})
+  I sm=smark();DO(xn,S s=kS(x)[i];if(sm!=SV(s,1)){SV(s,1)=sm;z=kap(&z,&s);})
   R z;
 }
 
@@ -570,11 +571,11 @@ K where(K x)
 {
   P(!xn,newK(-1,0))
   P(1!=ABS(xt),IE)
-  I zn=0,y,j,t=0;
+  I zn=0,y,t=0;
   //DO(xn,if((y=kI(x)[i])<0)R DOE;zn+=y)
-  DO(xn,if((y=kI(x)[i])<0)continue;zn+=y)//skip negatives instead of error
+  DO(xn,if((y=kI(x)[i])>=0)zn+=y;)//skip negatives instead of error
   K z=newK(-1,zn); U(z)
-  DO(xn, for(j=0;j<kI(x)[i];j++)kI(z)[t++]=i)//Handles a-> == +-1
+  DO(xn, DO2(kI(x)[i], kI(z)[t++]=i))
   R z;
 }
 

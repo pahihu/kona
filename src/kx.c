@@ -22,10 +22,7 @@ Z K _ex0(V *v,K k,I r,int _f);
 Z K ex0(V *v,K k,I r);
 Z K ex2(V *v,K k);
 Z V ex_(V a,I r);
-Z I cirVal(K p,K y);
-Z I cirVal_(K p,K y,I f);
-Z I cirRef(K *p,K y);
-Z I cirRef_(K *p,K *y,I f);
+Z int cirValRef(K *p,K y);
 K kdef(V v);
 
 __thread I fer=0;    // Flag Early Return
@@ -1039,29 +1036,12 @@ Z K ex2(V*v, K k)  //execute words --- all returns must be Ks. v: word list, k: 
       if(d){O("\nd: %p ",d);showx(d);}else O("\nd: NULL");
     }
 
-    I cv=cirVal(*w,d); // value reference
-    I cr=cv?cv:cirRef(w,d); // ptr reference
-#if 1
-    if(cr||cv){
-      K x = d;
-      if(cv){KDBG(O("---> kclone(d) VAL\n");) d=kclone(x); cd(x);}
-      else if(cr){KDBG(O("---> kclone(d) REF\n");) d=kclone(x); cd(x);}
+    int cvr=cirValRef(w,d);
+    if(cvr){
+      KDBG(O("---> kclone(d) VALREF\n");)
+      K x = d; d=kclone(x); cd(x);
     }
     if(d && rc(d)>1 && (0==d->t||5==d->t)){KDBG(O("---> kcopy(d)\n");) K x=d; d=kcopy(x); cd(x);}
-#else
-    if((cr||cv) || (((*w)->t==6 && d) && (d->t==0 || d->t==5 || ABS(d->t)!=d->t))){ // XXX: list/dict/vector
-      K x = d;
-      if(cv){KDBG(O("---> kclone(d) VAL\n");) d=kclone(x); cd(x);}
-      else if(cr){KDBG(O("---> kclone(d) REF\n");) d=kclone(x); cd(x);}
-      else if(rc(x)>1){
-        if(5==xt){KDBG(O("---> kcopy(d)\n");) d=kcopy(x); cd(x);}
-      }
-    }
-    else if((*w)->t!=6){
-      K x = *w;
-      if(rc(x)>1) { KDBG(O("---> kclone(w)\n");) *w=kclone(x); cd(x); } // KLONE: ???
-    }
-#endif
 
     K h=dot_tetradic_2(w,b,c,d);
     cd(c); cd(d); M(b,h)
@@ -1159,33 +1139,23 @@ Z K ex2(V*v, K k)  //execute words --- all returns must be Ks. v: word list, k: 
   R e;
 }
 
-Z I cirVal(K x,K y){
-  VCHK(x);VCHK(y);
-  if(x&&(x==y))R 1; // XXX
-  I f=0;
-  if(xt==6 || !y || (yt!=0 && yt!=5) || (UI)x<DT_SIZE) R 0;
-  DO(yn,f=cirVal_(x,kK(y)[yn-i-1],f);P(f,f);)
-  R f;
+Z int cirValRef_(K *xr,K *yr);
+Z int cirValRef(K *xr,K y){
+  if(!y || (yt!=0 && yt!=5) || (UI)xr<DT_SIZE) R 0;
+  if(xr&&(xr==&y))R 1;
+  K x=*xr;
+  if(x&&(x==y))R 1;
+  DO(yn,P(cirValRef_(xr,&kK(y)[yn-i-1]),1);)
+  R 0;
 }
 
-Z I cirVal_(K x,K y,I f){
-  VCHK(x);VCHK(y);
-  if(x==y)R 1;//f=1;
-  DO(yn,if(!f && (yt==0 || yt==5)) f=cirVal_(x,kK(y)[yn-i-1],f);P(f,f);)
-  R f;
-}
-
-Z I cirRef(K *x,K y){
-  if(x&&(x==&y))R 1; // XXX
-  I f=0;
-  if(!y || (yt!=0 && yt!=5) || (UI)x<DT_SIZE) R 0;
-  DO(yn,f=cirRef_(x,&kK(y)[yn-i-1],f);P(f,f);)
-  R f;
-}
-
-Z I cirRef_(K *x,K *yr,I f){
-  if(x==yr)R 1;//f=1;
+Z int cirValRef_(K *xr,K *yr){
+  if(!xr)R 0;
+  K x=*xr;
+  if(!x)R 0;
+  if(xr==yr)R 1;
   K y=*yr;
-  DO(yn,if(!f && (yt==0 || yt==5)) f=cirRef_(x,&kK(y)[yn-i-1],f);P(f,f);)
-  R f;
+  if(x==y)R 1;
+  DO(yn,if((yt==0 || yt==5)){P(cirValRef_(xr,&kK(y)[yn-i-1]),1);})
+  R 0;
 }

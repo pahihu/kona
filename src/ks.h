@@ -17,3 +17,4 @@ Slot wleft(N x,unsigned y,Slot z);
 Slot wright(N x,unsigned y,Slot z);
 void OS(N x,unsigned y);
 size_t sizeofSym(size_t k);
+I smark(void);
