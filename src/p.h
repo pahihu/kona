@@ -4,7 +4,6 @@ extern I fbr;
 extern I fbs;
 V alloc(size_t sz);
 L charsVerb(C c);
-I SC(S a,S b);
 K *denameS(S dir_string,S t,I create);
 K EV(K e);
 extern V vn_[];

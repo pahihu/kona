@@ -259,14 +259,16 @@ Z K charGroup(K x)
 
 Z K symGroup(K x)
 {
-  I j=0;
-  K uk=newK(-1,xn);M(uk);I*u=kI(uk);
-  setS(1,0);setS(2,0);
-  DO(xn,S s=kS(x)[i];if(!SV(s,2)){u[j]=(L)s;SV(s,2)=++j;}SV(s,1)++)
-  K y=newK(0,j);M(y,uk);
-  DO(j,S s=(S)(L)u[i];K z=newK(-1,SV(s,1));M(z,y,uk);kK(y)[i]=z;u[i]=0)
-  DO(xn,S s=kS(x)[i];I w=SV(s,2)-1;K z=kK(y)[w];kI(z)[u[w]++]=i)
-  cd(uk);
+  S s;I m=smark();K z,y=newK(-4,0);M(y);
+  DO(xn,S s=kS(x)[i];
+    if(m==SV(s,2))SV(s,1)++;
+    else{SV(s,2)=m;SV(s,1)=1;kap(&y,&s);}) // y:?x
+  // cheating: replace the symbols with list ptrs
+  if(yn==xn){
+    DO(yn,s=kS(y)[i];z=newK(-1,1);M(y,z);kK(y)[i]=z;kI(z)[0]=i);yt=0;
+  }else{
+    DO(yn,s=kS(y)[i];M(y,kK(y)[i]=newK(-1,SV(s,1)));SV(s,2)=i+1;SV(s,1)=0;);yt=0;
+    DO(xn,s=kS(x)[i];I w=SV(s,2)-1;K z=kK(y)[w];kI(z)[SV(s,1)++]=i)}
   R y;
 }
 

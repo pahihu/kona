@@ -3,6 +3,7 @@
 #include "k.h"
 #include "kc.h"
 #include "km.h"
+#include "ks.h"
 #include "p.h"
 
 #ifdef DEBUG

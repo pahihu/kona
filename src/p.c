@@ -3,6 +3,7 @@
 #include "kc.h"
 #include "km.h"
 #include "ko.h"
+#include "ks.h"
 #include "p.h"
 #include "v.h"
 #include "vf.h"

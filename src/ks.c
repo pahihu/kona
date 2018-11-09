@@ -162,22 +162,22 @@ S sp(S s){R spI(s,strlen(s));}
 
 //S spkC(K a){S u=strdupn(kC(a),a->n),v=sp(u);free(u);R v;}
 S spn(S s,unsigned n){unsigned k=0;while(k<n && s[k])k++; /*S u=strdupn(s,k); if(!u)R 0;*/ S v=spI(s,k); /*free(u);*/ R v;} //safer/memory-efficient strdupn
-Slot wleft(N x,unsigned y,Slot z)
+Slot wleft(N x,Slot z,I m)
 {
   if(!x)R z;
-  z=wleft(x->c[0],y,z);
-  if(x->k&&SV(x->k,y)){Slot o=SV(x->k,y);SV(x->k,y)=z;z+=o;}
-  R wleft(x->c[1],y,z);
+  z=wleft(x->c[0],z,m);
+  if(x->k&&m==SV(x->k,2)&&SV(x->k,1)){Slot o=SV(x->k,1);SV(x->k,1)=z;z+=o;}
+  R wleft(x->c[1],z,m);
 }
-Slot wright(N x,unsigned y,Slot z)
+Slot wright(N x,Slot z,I m)
 {
   if(!x)R z;
-  z=wright(x->c[1],y,z);
-  if(x->k&&SV(x->k,y)){Slot o=SV(x->k,y);SV(x->k,y)=z;z+=o;}
-  R wright(x->c[0],y,z);
+  z=wright(x->c[1],z,m);
+  if(x->k&&m==SV(x->k,2)&&SV(x->k,1)){Slot o=SV(x->k,1);SV(x->k,1)=z;z+=o;}
+  R wright(x->c[0],z,m);
 }
-Z void ssI(N x,unsigned y,Slot z){if(x){DO(2,ssI(x->c[i],y,z));if(x->k)SV(x->k,y)=z;}}
-void setS(unsigned y,Slot z){ssI(SYMBOLS,y,z);}
+// Z void ssI(N x,unsigned y,Slot z){if(x){DO(2,ssI(x->c[i],y,z));if(x->k)SV(x->k,y)=z;}}
+// void setS(unsigned y,Slot z){ssI(SYMBOLS,y,z);}
 void OS(N x,unsigned y)
 {
   if(!x)R;
@@ -186,3 +186,4 @@ void OS(N x,unsigned y)
   OS(x->c[1],y);
 }
 I SM=0;I smark(void){R ++SM;}
+I nsym(void){R ns;}

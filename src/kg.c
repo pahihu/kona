@@ -5,6 +5,7 @@
 #include "k.h"
 #include "kg.h"
 #include "km.h"
+#include "ks.h"
 
 Z I gt=0;
 Z I mergerComparer(K a, I r, I i, I j);
@@ -259,14 +260,77 @@ K radixGrade(K a,I r,uI h)
   cd(w);cd(z);cd(y);
   R x;
 }
+
+Z I Part(V *A,I lo,I hi,int(*cmp)(const V,const V))
+{
+  V pivot=A+lo;
+  I i=lo-1,j=hi+1;
+  for(;;){
+    do{i++;}while(cmp(A+i,pivot)<0);
+    do{j--;}while(cmp(A+j,pivot)>0);
+    if(i>=j)R j;
+    V tmp=A[i];A[i]=A[j];A[j]=tmp;
+  }
+}
+
+Z void QS(V *A,I lo,I hi,int(*cmp)(const V,const V))
+{
+  if(lo<hi){
+    I p=Part(A,lo,hi,cmp);
+    QS(A,lo,p,cmp);
+    QS(A,p+1,hi,cmp);
+  }
+}
+
+Z void QSort(V *A,I n,int (*cmp)(const V,const V))
+{
+  if(n<2)R;
+  QS(A,0,n-1,cmp);
+}
+
+Z int symLS(const V a,const V b)
+{
+  S *px=*(S**)a,*py=*(S**)b;
+  S x=*px,y=*py;
+  I r=SC(x,y);
+  if(r)R r;
+  if(px<py)R -1;
+  else if(px>py)R 1;
+  R 0;
+}
+
+Z int symGT(const V a,const V b)
+{
+  S *px=*(S**)a,*py=*(S**)b;
+  S x=*px,y=*py;
+  I r=SC(x,y);
+  if(r)R r;
+  if(px>py)R -1;
+  else if(px<py)R 1;
+  R 0;
+}
+
 K symGrade(K x,I r)
 {
-  K z=newK(-1,xn);M(x);
-  setS(1,0);DO(xn,S s=kS(x)[i];SV(s,1)=SV(s,1)+1)
-  //O("=== count\n");OS(SYMBOLS,1);
-  if(!r) wleft(SYMBOLS,1,0);
-  else   wright(SYMBOLS,1,0);
-  //O("=== mark\n");OS(SYMBOLS,1);
-  DO(xn,S s=kS(x)[i];I y=SV(s,1);kI(z)[y++]=i;SV(s,1)=y)
+  K z=newK(-1,xn),y=0;M(z);
+  I m=smark();S s;
+  int b=16384<nsym(); // symtab big?
+  if(b){y=newK(-4,0);M(y,z);}
+  DO(xn,S *p=kS(x)+i;s=*p;
+    if(m==SV(s,2))SV(s,1)++;
+    else{SV(s,2)=m;SV(s,1)=1;if(b)kap(&y,&p);})
+  if(b){
+    V v;
+    QSort(kV(y),yn,r?symGT:symLS);
+    if(yn==xn){ // all unique
+      DO(yn,v=kV(y)[i];s=*(S*)v;kI(z)[i]=(S*)v-kS(x));cd(y);R z;
+    }else{
+      Slot n=0,c=0;
+      DO(yn,v=kV(y)[i];s=*(S*)v;c=SV(s,1);SV(s,1)=n;n+=c);cd(y);}
+  }else{
+    if(!r) wleft(SYMBOLS,0,m);
+      else   wright(SYMBOLS,0,m);}
+  DO(xn,s=kS(x)[i];kI(z)[SV(s,1)++]=i)
   R z;
 }
+
