@@ -676,8 +676,10 @@ K vf_ex(V q, K g)
       if(stk1>1e3) {cd(g); kerr("stack"); R _n();}
       #endif
       ci(fw); stk1++; z=ex(fw); stk1--;
-      // tree=otree?otree:kV(f)[CACHE_TREE];DO(p->n,e=EVP(DI(tree,i)); cd(*e); *e=0; )
+      // pahihu: tree may be released here, we do not hold a reference on it !!!
+      // 'perm' test succeeds in TEST, caused DE in RELEASE
       tree=otree?(prnt?kV(prnt)[CACHE_TREE]:0):kV(f)[CACHE_TREE];
+      //tree=otree?prnt?kV(prnt)[CACHE_TREE]:0:kV(f)[CACHE_TREE];
       if(tree)DO(p->n,e=EVP(DI(tree,i)); cd(*e); *e=0; )
       stk--;
     )
