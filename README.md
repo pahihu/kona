@@ -2,6 +2,30 @@
 
 ![Kona](https://raw.githubusercontent.com/kevinlawler/kona/master/Kona.png)
 
+What is changed?
+----------------
+
+I have changed the memory management of Kona. Containers does not increment
+the reference count of the members.
+
+You can enable APL dyadic word syntax on the command line with the `-2`
+switch. You can then use infix syntax for dyadic verbs:
+
+        over:{x/y}
+        a:10?1.
+        (+)over a
+
+You can check [QKA](https://github.com/pahihu/QKA) for some Q verbs implemented
+on Kona.
+
+
+Good luck !
+
+pahihu 26 / 02 /2021
+
+
+
+
 What is Kona?
 -------------
 
