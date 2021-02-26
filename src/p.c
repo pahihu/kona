@@ -1,16 +1,18 @@
 #include "incs.h"
 #include "k.h"
+#include "kc.h"
 #include "km.h"
 #include "p.h"
 #include "v.h"
 #include "vf.h"
 
-S lineA;
-S lineB;
+S lineA = 0;
+S lineB = 0;
 __thread I fdc=1;   // Flag denameD create
 I fll=0;            //flag line length
 
-#if 0
+void showx(K x){ O("[%lld,%lld,%lld] ",xt,xn,rc(x));show(x);if(6==xt)O("\n");}
+#if 1
 Z S mm[] = {
   "UNMARKED",
   "IGNORE",
@@ -27,20 +29,21 @@ Z S mm[] = {
   "MARK_CONDITIONAL",
   "COUNT" };
 Z I dumm(I *m,I n){O("\n");DO(n,if(m[i]<0)O("-");O("%s ",mm[ABS(m[i])]));R 0;}
-Z void showx(K x){ O("[%lld,%lld,%lld] ",xt,xn,rc(x));show(x);if(6==xt)O("\n");}
 Z void A(I n){DO(n,O(" "));}
 Z void dum7(K*_v,I a){
+  if(NIL==(K)_v){O("  NIL\n");R;}
   K v=*_v;
+  if(!v){O("  garbage(%p,%p)\n",_v,v);R;} // XXX garbage
   int n=0;I vt=v->t,vn=v->n,f=1;
   S typ7[]={"wd","wordfn","cfn","charfn",":[]","if[]","while[]","do[]"};
-  V e=0;V*kw=kW(v);
+  V e=0;V*kw=0;
   if(!a)O("\n");
   if(7==vt){
     A(a);O("[%lld,%lld,%lld,%s]\n",vt,vn,rc(v),typ7[vn]);
     SW(vn){
-    CS(2, A(a);O(" val: %p %p %p\n",kw[0],kw[1],kw[2]))
+    CS(2, kw=kW(v);A(a);O(" val: %p %p %p\n",kw[0],kw[1],kw[2]))
     CD: {
-      K par=(K)kV(v)[PARAMS],loc=(K)kV(v)[PARAMS],conj=(K)kV(v)[CONJ];
+      K par=(K)kV(v)[PARAMS],loc=(K)kV(v)[LOCALS],conj=(K)kV(v)[CONJ];
       if(par->n){A(a);O("params: ");dum7(&par,a+2);}
       if(loc->n){A(a);O("locals: ");dum7(&loc,a+2);}
       if(conj){A(a);O("  conj: ");dum7(&conj,a+2);}
@@ -49,12 +52,13 @@ Z void dum7(K*_v,I a){
         if(cw){A(a);O("  cachewd: ");dum7(&cw,a+2);}
         if(ct){A(a);O("cachetree: ");dum7(&ct,a+2);}
         A(a);showx(v);
-      } else
+      } else {
+        kw=kW(v);
         while((e=*kw++)){
           if(f){A(a);O("entries-->\n");f=0;}
           A(a);O("%d entry",n++);
-          if((L)e<DT_SIZE){O("  dt: %s (%p)\n",DT[(L)e].text,e);}
-          else dum7((K*)e,a+2); } } } }
+          if((UI)e<DT_SIZE){O("  dt: %s (%p)\n",DT[(UI)e].text,e);}
+          else dum7((K*)e,a+2); } } } } }
   else{ A(a);O("%p ",_v);showx(v); }
 }
 #else
@@ -315,10 +319,11 @@ I mark(I*m,I k,I t){DO(k, m[i]=i?t:-t) R k;}
 //      this rule doesn't apply to function argument lists, eg: f:{  [a] 1} is ok. however f: {\n\n  [a;b;d]  1+1} not ok
 //      so the check probably has to do with whether some useful symbol occurred on the line already
 //other errors: syntax error
-K wd(S s, int n){lineA=s; fdc=0;R wd_(s,n,denameD(&KTREE,d_,1),0);}
+K wd(S s, int n){lineA=s; fdc=0;if(KONA_DEBUG)O("\np.c:320 ");R wd_(s,n,denameD(&KTREE,d_,1),0);}
 K wd_(S s, int n, K*dict, K func) //parse: s input string, n length ;
                                 //assumes: s does not contain a }])([{ mismatch, s is a "complete" expression
 {
+  S olineB=lineB;
   if(!s) R 0;
   if(strstr(s,":\\t")) { show(kerr("\\t  syntax")); R 0; }
   if(syntaxChk(s)) R SYE;
@@ -343,7 +348,7 @@ K wd_(S s, int n, K*dict, K func) //parse: s input string, n length ;
   marker(mark_verb,  MARK_VERB)  // ( D+: | _AA+ | V ) where D := [0-9] , V := ~!@#$%^&*_-+=|<,>.?:
   marker(mark_ignore,MARK_IGNORE)// get leftover spaces, anything else we want to ignore
 
-  dumm(m,n);
+  if(KONA_DEBUG)dumm(m,n);
 
   DO(n,if(m[i]==MARK_UNMARKED){cd(v);cd(km); R PE;})
   //DO(n,if(m[i]>0 && (!i || m[i]!=ABS(m[i-1]) )){cd(v);cd(km); R PE;})  //this is true but unnecessary. we handle "_db_bd 1"
@@ -379,7 +384,8 @@ K wd_(S s, int n, K*dict, K func) //parse: s input string, n length ;
 
   kV(v)[CODE]=kw; // return what we just built
   kW(v)[c]=0;
-  dum7(&v,0);
+  if(KONA_DEBUG)dum7(&v,0);
+  lineB=olineB;
   R v;
 }
 
@@ -422,7 +428,8 @@ Z I param_validate(S s,I n) // Works on ([]) and {[]} but pass inside exclusive 
   R 4==p?1:2; //State-4 yield 1 (pass, good parameters), otherwise yield 2 (fail, bad paramters)
 }
 
-Z K* inKtreeR(K*p,S t,I create) {
+Z K* inKtreeR(K*p,S t,I create,I lvl) {
+  if(KONA_DEBUG)O("\ninKtree(%lld): t=[%s] crea=%lld",lvl,t,create);
   if(!*t)R p;
   if('.'==*t)t++;
   I c=0,a=(*p)->t;
@@ -441,12 +448,12 @@ Z K* inKtreeR(K*p,S t,I create) {
   else { K a=*p; if(5==a->t)e=DE(a,k); P(!e,(K*)0) }
   if('.'==*t && (!t[1] || '.'==t[1])) { t++; p=EAP(e); }    //attribute dict
   else p=EVP(e); //value
-  R inKtreeR(p,t,create);
+  R inKtreeR(p,t,create,++lvl);
 }
 
 K* inKtree(K*d, S t, I create) {
   if(!simpleString(t)) R 0; //some kind of error
-  R inKtreeR('.'==*t||!*t?&KTREE:d,t,create);
+  R inKtreeR('.'==*t||!*t?&KTREE:d,t,create,0);
 }
 
 //TODO: capture - oom all
@@ -581,7 +588,7 @@ I capture(S s,I n,I k,I*m,V*w,I*d,K*locals,K*dict,K func)
                         M(z,t,j);
                         I n=0;
                         DO(3, if(DE(t,IFP[2-i])){n=3-i;break;})
-                        DO(n,denameD(zdict,IFP[i],1)) //TODO: oom
+                        DO(n,if(KONA_DEBUG)O("\np.c:585 ");denameD(zdict,IFP[i],1)) //TODO: oom
                         cd(t); cd(j);
                       }
 
@@ -655,10 +662,10 @@ I capture(S s,I n,I k,I*m,V*w,I*d,K*locals,K*dict,K func)
                         //else if(':'==s[k+r] && ':'==s[k+r+1] && -MARK_VERB==m[k+r+1])
                         //  {m[k+r]=MARK_NAME; r++; z=denameS(kV(func)[CONTeXT],u);} //m[]=  probably superfluous
                         else if(-MARK_VERB==m[k+r] && ':'==s[k+r+1] && -MARK_VERB==m[k+r+1])
-                          {if(':'==s[k+r])r++; z=denameS(kV(func)[CONTeXT],u,1);}
-                        else if(dict==(K*)kV(func)+LOCALS && ':'==s[k+r] && -MARK_VERB==m[k+r]) z=denameD(dict,u,1);
+                          {if(':'==s[k+r])r++; if(KONA_DEBUG)O("\np.c:661 ");z=denameS(kV(func)[CONTeXT],u,1);}
+                        else if(dict==(K*)kV(func)+LOCALS && ':'==s[k+r] && -MARK_VERB==m[k+r]) { if(KONA_DEBUG)O("\np.c:660 ");z=denameD(dict,u,1);}
                           //K3.2:  a+:1 format applies to context-globals not locals
-                        else z=denameS(kV(func)[CONTeXT],u,0);//Otherwise check the context (refactor with above?)
+                        else {if(KONA_DEBUG)O("\np.c:664 ");z=denameS(kV(func)[CONTeXT],u,0);}//Otherwise check the context (refactor with above?)
                       }
                       else {
                         if(fll>0)fdc=0;
@@ -671,11 +678,13 @@ I capture(S s,I n,I k,I*m,V*w,I*d,K*locals,K*dict,K func)
                            oerr(); O("%s\n%c\n",u,'^');
                            #endif
                            R err;}
-                        z=denameD(dict,u,fll&&fdc); }
+          		if(KONA_DEBUG)O("\np.c:675 fdc=%lld ",fdc); z=denameD(dict,u,fll&&fdc); }
       )
     CS(MARK_VERB   ,  // "+" "4:" "_bin"  ;  grab "+:", "4::"
                       if(s[k]=='\\'){z=(V)0x7c; break;}   //trace or scan
-                      if(s[k]==':' && s[strlen(s)-1]!=':' && lineB && lineB[strlen(lineB)-1]!=']' && lineB[0]!=')'){
+		      I lenB=lineB?strlen(lineB):0;
+		      I lenS=s?strlen(s):0;
+                      if(s[k]==':' && lenS && s[lenS-1]!=':' && lenB && lineB[lenB-1]!=']' && lineB[0]!=')'){ // XXX pahihu invalid memory address lineB
                         I i=0;
                         for(i=k-1;i>0;i--){if(s[i]!=' '){c=s[i];break;} } }
                       if('_'==s[k] && r > 1)
@@ -757,7 +766,7 @@ I capture(S s,I n,I k,I*m,V*w,I*d,K*locals,K*dict,K func)
     CSR(MARK_BRACE  ,)
     CSR(MARK_NUMBER ,)
     CSR(MARK_QUOTE  ,)
-    CS (MARK_SYMBOL , z=newE(LS,z); P(!z,(L)ME) kap(locals,&z); cd(z); z=EVP(z) ) //oom
+    CS (MARK_SYMBOL , z=newE(LS,CHK(z)); P(!z,(L)ME) kap(locals,&z); cd(z); z=EVP(z) ) //oom XXX
   }
 
   *p=z;

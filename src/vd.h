@@ -1,6 +1,11 @@
 K KX(K x);
 K dot_monadic(K x);
-K Ks(S x);
+#ifdef DEBUG
+K _dot_monadic(K x,S f,I ln);
+#define DOT_monadic(x)	_dot_monadic(x,__FILE__,__LINE__)
+#else
+#define DOT_monadic(x)	dot_monadic(x)
+#endif
 K make(K a);
 K kcloneI(K a,const char*f,int n);
 #define kclone(a) kcloneI(a,__FILE__,__LINE__)
@@ -11,7 +16,6 @@ extern C errmsg[256];
 I isColonDyadic(K x);
 K dot_tetradic(K a,K b,K c,K y);
 K dot_tetradic_2(K *g,K b,K c,K y);
-K Ki(I x);
 K DI(K d,I i);
 K *EVP(K e);
 K *lookupEVOrCreate(K *p,S k);
@@ -23,15 +27,12 @@ I countI(K a);
 K vf_ex(V q,K g);
 K dot(K a,K b);
 K collapse(K x);
-K cd(K a);
 K promote(K a);
 K _n();
-K ci(K a);
 K at(K x,K y);
 K of(K a,K b);
 K demote(K a);
 K lookup(K a,S b);
-K newK(I t,I n);
 K at_verb(K a,K b);
 extern S fnc;
 extern V fncp[128];

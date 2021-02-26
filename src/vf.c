@@ -1,7 +1,9 @@
 #include "incs.h"
 #include "k.h"
 #include "km.h"
+#include "ks.h"
 #include "vf.h"
+#include "vg.h"
 
 /* format */
 
@@ -13,9 +15,14 @@ S CSK(K x){ R !x?0:4==xt?*kS(x):3==ABS(xt)?kC(x):0;}//non-allocating CSTRING fro
 Z K formKsCS(S s)
 {
   //Could remove this function. It's equivalent to Ks(sp(s))
-  S t=sp(s);
+  I n;while(isspace(*s))s++;
+  if((n=strlen(s))){
+    while(n&&isspace(s[n-1]))n--;
+  }
+  // S t=spn(s,n);
+  S t=spI(s,n);
   if(!t)R 0; //oom
-  K z=Ks(t); //oom
+  K z=Ks(t);
   if(!z)R 0;
   R z;
 }
@@ -72,7 +79,7 @@ Z K formatFn(K a){ V *v=kW(a),p; I i,k,n,r=0; K z=0; C t[256]=""; S s=(C*)t;
 Z K formatS(S x)
 { I n=strlen(x);
   K z=newK(-3,n);
-  if(z)sprintf(kC(z),"%s",x); //OK since 3/-3 is null-terminated
+  if(z)memcpy(kC(z),x,n); //OK since 3/-3 is null-terminated
   R z;
 }
 Z K formatF(F x, I y, I c)
@@ -80,15 +87,73 @@ Z K formatF(F x, I y, I c)
   Z C buf[32];
   int k=y;
   S b= 0==c?"%.*g":1==c?"%.*f":"%.*e";// %#.*g ??
-  sprintf(buf,b,k,x);I n=strlen(buf);
+  I n=sprintf(buf,b,k,x);
   K z=newK(-3,n);
   if(z)memcpy(kC(z),buf,n);
   R z;
 }
+Z I ItoA(S buf, I n)
+{
+    int   sign = 0;
+    int   len;
+    int   docpy = 0;
+    char  *ptr;
+    Z C   tmp[32];
+
+    if (n < 0)
+    { sign = 1;
+      n = -n;
+    }
+    
+         if (n <         10LL) ptr = &buf[len = 2 + sign];
+    else if (n <        100LL) ptr = &buf[len = 3 + sign];
+    else if (n <       1000LL) ptr = &buf[len = 4 + sign];
+    else if (n <      10000LL) ptr = &buf[len = 5 + sign];
+    else if (n <     100000LL) ptr = &buf[len = 6 + sign];
+    else if (n <    1000000LL) ptr = &buf[len = 7 + sign];
+    else if (n <   10000000LL) ptr = &buf[len = 8 + sign];
+    else if (n <  100000000LL) ptr = &buf[len = 9 + sign];
+    else if (n < 1000000000LL) ptr = &buf[len =10 + sign];
+    else if (8 == sizeof(I))
+    {
+           if (n <         10000000000LL) ptr = &buf[len =11 + sign];
+      else if (n <        100000000000LL) ptr = &buf[len =12 + sign];
+      else if (n <       1000000000000LL) ptr = &buf[len =13 + sign];
+      else if (n <      10000000000000LL) ptr = &buf[len =14 + sign];
+      else if (n <     100000000000000LL) ptr = &buf[len =15 + sign];
+      else if (n <    1000000000000000LL) ptr = &buf[len =16 + sign];
+      else if (n <   10000000000000000LL) ptr = &buf[len =17 + sign];
+      else if (n <  100000000000000000LL) ptr = &buf[len =18 + sign];
+      else if (n < 1000000000000000000LL) ptr = &buf[len =19 + sign];
+      else
+      { ptr = &tmp[32];
+        docpy = 1;
+      }
+    }
+    else
+    { ptr = &tmp[32];
+      docpy = 1;
+    }
+
+    *--ptr = '\0';
+    do
+    { *--ptr = '0' + (n % 10);
+      n /= 10;
+    } while (n);
+    
+    if (sign)
+      *--ptr = '-';
+
+    if (docpy)
+      memmove(buf, ptr, len = &tmp[31] - ptr + 1);
+
+    return --len;
+}
 Z K formatI(I x)
 {
   Z C buf[72];
-  sprintf(buf,"%lld",x);I n=strlen(buf);
+
+  I n=ItoA(buf,x);
   K z=newK(-3,n);
   if(z)memcpy(kC(z),buf,n);
   R z;
@@ -97,7 +162,8 @@ K format(K a)
 {
   I at=a->t, an=a->n;
   K z;
-  if(3==ABS(at)){z=kclone(a); z->t=-3; R z;}
+  if(-3==at)R ci(a);
+  else if(3==at){z=kclone(a); z->t=-3; R z;} // KLONE: OK
   else if(7==at)R formatFn(a);
   else if(6==at)R newK(-3,0);
   else if(5==at)R formatS(sp(".(..)"));//Beats me -- this has a similar signature to a _hash
@@ -106,7 +172,17 @@ K format(K a)
   else if(1==at)R formatI(*kI(a));
   z=newK(0,an);
   if     ( 0==at)DO(an, kK(z)[i]=format (kK(a)[i]))
-  else if(-1==at)DO(an, kK(z)[i]=formatI(kI(a)[i]))
+  else if(-1==at){
+    K str[65536]; I minI=*kI(a);
+    DO(an, I u=kI(a)[i];if(u<minI)minI=u)
+    memset(str,0,65536*sizeof(K));
+    DO(an,
+        I u=kI(a)[i];if(minI<=u&&u<minI+65536){
+          I x=u-minI;
+          if(!str[x])kK(z)[i]=(str[x]=formatI(u));
+	  else kK(z)[i]=ci(str[x]);
+        } else kK(z)[i]=formatI(u))
+  }
   else if(-2==at)DO(an, kK(z)[i]=formatF(kF(a)[i],PP,0))
   else if(-4==at)DO(an, kK(z)[i]=formatS(kS(a)[i]))
   R z;
@@ -146,7 +222,23 @@ K dollar(K a, K b) //form/format_dyadic
     a=x?promote(a):ci(a); //-3
     b=y?promote(b):ci(b); //-3
     z=a&&b?newK(0,x?a->n:b->n):0;
-    if(z)DO(z->n, K q=dollar(x?kK(a)[i]:a,y?kK(b)[i]:b); M(q,z,a,b) kK(z)[i]=q)
+    if(z){
+      K q,a1,b1,ht=0,dat;uI p=0,ndat=0;int chk=1,pr=1;
+      DO(z->n,
+        q=0;a1=x?kK(a)[i]:a;b1=y?kK(b)[i]:b;
+        if(rc(b1)>rc(b)){
+          // if(pr){fprintf(stderr,"DBG: rc(b1)>rc(b)\n");pr=0;}
+          if(!ht){ht=newH(-4,32768);dat=newH(-4,32768);}
+          if(chk&&!hgI(ht,(uI)b1>>6,(I)b1,&p)){
+	    if(2*ndat<ht->n){
+              ndat++;kK(ht)[p]=b1;q=(kK(dat)[p]=dollar(a1,b1));
+            }else chk=0;
+          }else q=ci(kK(dat)[p]);
+        }
+        if(!q)q=dollar(a1,b1);
+        M(q,z,a,b) kK(z)[i]=q);
+      if(ht){cd(dat);cd(ht);}
+    }
     cd(a);cd(b);
     R demote(z);
   }
@@ -184,14 +276,16 @@ K dollar(K a, K b) //form/format_dyadic
 
   if(3==ABS(bt)) //"Form"
   {
+    K z=0;
     if(3==bt) b=enlist(b);//mm/o
 
-    if(4==at && !strlen(*kS(a))) R formKsCS(CSK(b));
-    if(3==ABS(at))               R ci(b);
-    if(2==at)                    R formKfCS(CSK(b)); //Had '&& 0.0 == *kF(a)' here but the manual is wrong
-    if(1==at && !*kI(a))         R formKiCS(CSK(b));
+         if(4==at && !strlen(*kS(a))) z=formKsCS(CSK(b));
+    else if(3==ABS(at))               z=ci(b);
+    else if(2==at)                    z=formKfCS(CSK(b)); //Had '&& 0.0 == *kF(a)' here but the manual is wrong
+    else if(1==at && !*kI(a))         z=formKiCS(CSK(b));
     //if(5<=at)
-    R 0;//TODO: Else parse-execute (6,7, looks like for 5, maybe 4 too???)
+    if(3==bt) cd(b);
+    R z;//TODO: Else parse-execute (6,7, looks like for 5, maybe 4 too???)
   }
 
   R TE;

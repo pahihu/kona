@@ -22,7 +22,7 @@
 #define DGT (1<<26)
 #define MSB ((uI)IN)
 Z I FtoI(F a){union{F f;I i;}u;if(isnan(a))R LLONG_MIN;u.f=a;R 0>u.i?LLONG_MIN-u.i:u.i;}
-Z uI ItoU(I a){R 0x8000000000000000ULL^(uI)a;}
+Z uI ItoU(I a){R (uI)LLONG_MIN^(uI)a;}
 
 K grade_updown(K a, I r)
 {
@@ -75,7 +75,7 @@ K enlist(K x)
 
 Z K charRange(K a)
 {
-  I n=a->n,j=0;UC c[UCHAR_MAX];
+  I n=a->n;UC c[UCHAR_MAX];
   memset(c,0,UCHAR_MAX*sizeof(C));
   K z=newK(-3,0);M(z);
   DO(n,UC x=(UC)kC(a)[i];if(!c[x]){c[x]=1;z=kap(&z,&kC(a)[i]);})
@@ -84,39 +84,39 @@ Z K charRange(K a)
 
 Z K symRange(K x)
 {
-  I j=0;
   K z=newK(-4,0);M(z);
   setS(2,0);DO(xn,S s=kS(x)[i];if(!SV(s,2)){SV(s,2)=-1;z=kap(&z,&s);})
   R z;
 }
 
 #define HFR 1
-Z K newH(I n){ I m=1<<(HFR+cl2(n));K h=newK(-1,m);M(h);R h; }
-Z I hg(K h,uI hk,I k,uI*p)
+K newH(I t,I n){ I m=1<<(HFR+cl2(n));K h=newK(t,m);M(h);R h; }
+I hgI(K h,uI hk,I k,uI*p)
 {
-  I n=h->n,*d=kI(h);uI u=hk&(n-1);
+  I n=h->n-1,*d=kI(h);uI u=hk&n;
   while(d[u]){
     if(k==d[u]){*p=u;R k;}
-    if(++u==n)u=0;
+    u=n&(u+1);
   }*p=u;R 0;
 }
 #define hs(h,p,k) kI(h)[p]=(k)
 
 Z uI hcc[8]={0,0,0,0,0,0,0,0};
 Z void hcinit(){if(!hcc[0])DO(8,hcc[i]=genrand64_int64());}
-Z uint32_t hc(uI u)
+Z uI hc(uI u)
 {
-    DO(8,u^=hcc[i];u+=u>>8;)
-    return (uint32_t)u^(u>>32);
+    // DO(8,u^=hcc[i];u+=u>>8;)
+    // return (uint32_t)u^(u>>32);
+    R (u * 11400714819323198485LLU);
 }
 
 Z K intRange(K x)
 {
   hcinit();
-  I j=0,h0=0,sa=0;uI m=0;
+  I h0=0,sa=0;uI m=0;
   K h, z=newK(xt,0);M(z);
   DO(xn,m|=kU(x)[i]);if(m)while(!(m&1)){m>>=1;sa++;}
-  h=newH(m<xn?m:xn);M(h,z);
+  h=newH(-1,0==m?1:m<xn?m:xn);M(h,z);
   if(m<sizeof(I)*h->n){
   DO(xn,uI v=kU(x)[i];uI u=v>>sa;
          if(!kC(h)[u]){kC(h)[u]=1;z=kap(&z,&v);})
@@ -125,7 +125,7 @@ Z K intRange(K x)
   DO(xn,uI v=kU(x)[i];
       if(!v){if(!h0){h0=1;z=kap(&z,&v);}}
       else{uI vsa=v>>sa;uI u=hc(vsa);uI p;
-        if(!hg(h,u,vsa,&p)){hs(h,p,vsa);z=kap(&z,&v);}})
+        if(!hgI(h,u,vsa,&p)){hs(h,p,vsa);z=kap(&z,&v);}})
   }
 cleanup:
   cd(h);
@@ -134,32 +134,35 @@ cleanup:
 
 Z I KEQ(K a, K b)//List Equal (K Equal)
 {
+  P(a==b,1);
+
   I at=a->t, an=a->n, bt=b->t, bn=b->n;
   I A=ABS(at);
 
-  if(at!=bt)R 0;
-  if(an!=bn)R 0;
+  P(at!=bt,0);
+  P(an!=bn,0);
 
-  if     (7==A)R 0;//TODO: sort functions?
-  else if(6==A)R 1;
-  else if(5==A)R 0;//TODO: sort dictionaries?
-  else if(4==A)DO(an, if(kS(a)[i]!=kS(b)[i])R 0)
-  else if(3==A)DO(an, if(kC(a)[i]!=kC(b)[i])R 0)
-  else if(2==A)DO(an, if(FC(kF(a)[i],kF(b)[i]))R 0)
-  else if(1==A)DO(an, if(kI(a)[i]!=kI(b)[i])R 0)
-  else if(0==A)DO(an, if(!KEQ(kK(a)[i],kK(b)[i]))R 0)
+  SW(A){
+  CS(0,DO(an, U(KEQ(kK(a)[i],kK(b)[i]))))
+  CS(1,DO(an, U(kI(a)[i]==kI(b)[i])))
+  CS(2,DO(an, if(FC(kF(a)[i],kF(b)[i]))R 0))
+  CS(3,DO(an, U(kC(a)[i]==kC(b)[i])))
+  CS(4,DO(an, U(kS(a)[i]==kS(b)[i])))
+  CSR(5,R 0)//TODO: sort dictionaries?
+  CSR(6,R 1)
+  CSR(7,R 0)}//TODO: sort functions?
   R 1;
 }
 
-Z K shg(K sh,uI hk,K k,uI*p)
+Z K hgK(K sh,uI hk,K k,uI*p)
 {
-  I n=sh->n;K*d=kK(sh);uI u=hk&(n-1);
+  I n=sh->n-1;K*d=kK(sh);uI u=hk&n;
   while(d[u]){
-    if(KEQ(k,d[u])){*p=u;R k;}
-    if(++u==n)u=0;
+    if(KEQ(k,d[u])){*p=u;R d[u];}
+    u=n&(u+1);
   }*p=u;R 0;
 }
-#define shs(sh,p,k) kK(sh)[p]=(k)
+#define hsK(sh,p,k) kK(sh)[p]=(k)
 
 uint32_t fnv1a(UC *x,I n)//Fowler-Noll-Vo FNV-1a hash
 {
@@ -174,7 +177,7 @@ Z UI hcode(K x)
   CSR(7,R t)//nyi
   CSR(6,R (UI)&NIL)
   CSR(5,R t)//nyi
-  CSR(4,DO(xn,S v=kS(x)[i];if(!SV(v,1))SV(v,1)=fnv1a((UC*)v,strlen(v));u+=SV(v,1))R xt+u)
+  CSR(4,DO(xn,S v=kS(x)[i];u+=SV(v,SLOT_H))R xt+u)
   CSR(3,R xt+fnv1a((UC*)kC(x),xn))
   CSR(2,)
   CSR(1,DO(xn,uI v=kI(x)[i];u+=hc(v))R xt+u)
@@ -187,12 +190,11 @@ Z K listRange(K x)
 {
   hcinit();
   I j=0;
-  setS(1,0);
-  K sh=newH(xn);M(sh);
+  K sh=newH(-1,xn);M(sh);
   K z=newK(xt,xn);M(sh,z);
   DO(xn,uI p;K kv=kK(x)[i];
      uI u=hcode(kv);
-     if(!shg(sh,u,kv,&p)){shs(sh,p,kv);kK(z)[j++]=ci(kv);})
+     if(!hgK(sh,u,kv,&p)){hsK(sh,p,kv);kK(z)[j++]=ci(kv);})
   if(xn==j)GC;
   K y=newK(xt,j);if(!y)GC;
   DO(j,kK(y)[i]=ci(kK(z)[i]));cd(z);z=y;
@@ -268,6 +270,7 @@ Z K symGroup(K x)
 
 Z K groupI(K x,K y,I n)//#x=#a;n=#?a
 {
+  VCHK(y);
   K z=newK(0,n);M(z);I*c=kI(y);
   if(n<65537){
     DO(n,K v=newK(-1,c[i]);M(v,z);kK(z)[i]=v;c[i]=0)
@@ -287,19 +290,19 @@ Z K intGroup(K x)
   K h,ok,xok,ck;I *o,*xo,*c;
   DO(xn,m|=kU(x)[i]);if(m)while(!(m&1)){m>>=1;sa++;}
   xok=newK(-1,xn);M(xok);xo=kI(xok);
-  ck=newK(-1,m<xn?m:xn);M(ck,xok);c=kI(ck);
-  h=newH(m<xn?m:xn);M(h,ck,xok);
+  ck=newK(-1,0==m?1:m<xn?m:xn);M(ck,xok);c=kI(ck);
+  h=newH(-1,m<xn?m:xn);M(h,ck,xok);
   if(m<h->n){
     DO(xn,uI v=kU(x)[i]>>sa;
         if(!kI(h)[v]){kI(h)[v]=++j;}
-        I w=kI(h)[v]-1;xo[i]=w;c[w]++)
+        I w=kI(h)[v]-1;xo[i]=w;c[w]++;VCHK(ck);)
   }else{
     ok=newK(-1,h->n);M(ok,h,ck,xok);o=kI(ok);
     DO(xn,uI v=kU(x)[i];
-        if(!v){if(!h0)h0=++j;xo[i]=h0-1;c[h0-1]++;}
+        if(!v){if(!h0)h0=++j;xo[i]=h0-1;c[h0-1]++;VCHK(ck);}
         else{v>>=sa;uI u=hc(v);
-        uI p;if(!hg(h,u,v,&p)){hs(h,p,v);o[p]=j++;}
-        I w=o[p];xo[i]=w;c[w]++;})
+        uI p;if(!hgI(h,u,v,&p)){hs(h,p,v);o[p]=j++;}
+        I w=o[p];xo[i]=w;c[w]++;VCHK(ck);})
     cd(ok);
   }
   cd(h);
@@ -311,11 +314,11 @@ Z K listGroup(K x)
 {
   hcinit();
   I j=0;
-  K h=newH(xn);M(h);K ok=newK(-1,h->n);M(ok,h);I*o=kI(ok);
+  K h=newH(-1,xn);M(h);K ok=newK(-1,h->n);M(ok,h);I*o=kI(ok);
   K xok=newK(-1,xn);M(xok,ok,h);I*xo=kI(xok);
   K ck=newK(-1,xn);M(ck,xok,ok,h);I*c=kI(ck);
   DO(xn,K v=kK(x)[i];uI u=hcode(v);
-      uI p;if(!shg(h,u,v,&p)){shs(h,p,v);o[p]=j++;}
+      uI p;if(!hgK(h,u,v,&p)){hsK(h,p,v);o[p]=j++;}
       I w=o[p];xo[i]=w;c[w]++)
   cd(ok);cd(h);
   K z=groupI(xok,ck,j);
@@ -365,7 +368,7 @@ I VAT(I i){R 1<=i && i<=4?i:0;} //vector atom type
 K flip(K a)
 {
   K x;I i,p=a->n,q=-1;
-  if(a->t || !p)R ci(a);//Identity on atoms/vectors && empty 0-list && 0-list of atoms
+  if((5!=a->t && a->t) || !p)R ci(a);//Identity on atoms/vectors && empty 0-list && 0-list of atoms
   DO(p, x=kK(a)[i]; if(x->t<1)q=x->n);
   if(-1==q)R ci(a);//Identity on 0-list of atoms
   DO(p, x=kK(a)[i]; if(x->t<1 && x->n!=q)R LE;)
@@ -465,7 +468,7 @@ K take_reshape(K a, K b)
 Z void shapeCheck(K a, K p, I d)
 { //Descend through list a marking shape p as -1 where it doesn't correspond
   I at=a->t, an=a->n;
-  if(at>0 || an!=kI(p)[d]) kI(p)[d]=-1;//Mismatch or atom means p length too long
+  if((at>0 || an!=kI(p)[d]) && d < p->n) kI(p)[d]=-1;//Mismatch or atom means p length too long XXX pahihu: overwrite next
   else if(at && d < p->n-1) kI(p)[d+1]=-1;//Another case of p being too long
   else if(!at && an && kI(p)[d]!=-1 && d < p->n-1) DO(an, shapeCheck(kK(a)[i],p,d+1))
 }
@@ -610,6 +613,11 @@ K join(K x, K y) {      //TODO: 5,6?
   if(!xk) zt=-ABS(yt);
   else if(!yk) zt=-ABS(xt);  //'else' is sic. In "K3.21 2006-02-01" right empty list takes precedence
   if(zt < -4) zt=0;
+  /*
+  if(1==rc(x)&&(zt==xt)&&(xt==yt)){
+    O("self join: x=(%lld,%lld,%lld) y=(%lld,%lld,%lld)\n",rc(x),xt,xk,rc(y),yt,yk);
+    K ox=x;kapn(&x,kK(y),yk);R x==ox?ci(x):x;
+  }*/
   I zn=xk+yk;
   K z=newK(zt,zn);U(z)
 
@@ -630,30 +638,30 @@ K join(K x, K y) {      //TODO: 5,6?
 
 Z I _hg(K h,uI k,I v,K x,uI*p)
 {
-  I n=h->n;I*d=kI(h),i;uI u=k&(n-1);
+  I n=h->n-1;I*d=kI(h),i;uI u=k&n;
   while(-1!=(i=d[u])){
     if(v==kI(x)[i]){*p=u;R i;}
-    if(++u==n)u=0;
+    u=n&(u+1);
   }
   *p=u;R xn;
 }
 
 Z I _hgk(K h,uI k,K v,K x,uI*p)
 {
-  I n=h->n;I*d=kI(h),i;uI u=k&(n-1);
+  I n=h->n-1;I*d=kI(h),i;uI u=k&n;
   while(-1!=(i=d[u])){
     if(KEQ(v,kK(x)[i])){*p=u;R i;}
-    if(++u==n)u=0;
+    u=n&(u+1);
   }
   *p=u;R xn;
 }
 
 Z I _hgv(K h,uI k,V v,K x,uI*p)
 {
-  I n=h->n;I*d=kI(h),i;uI u=k&(n-1);
+  I n=h->n-1;I*d=kI(h),i;uI u=k&n;
   while(-1!=(i=d[u])){
     if(v==kV(x)[i]){*p=u;R i;}
-    if(++u==n)u=0;
+    u=n&(u+1);
   }
   *p=u;R xn;
 }
@@ -661,27 +669,31 @@ Z I _hgv(K h,uI k,V v,K x,uI*p)
 K _hash(K x)
 {
   P(xt>0,RE)
-  uI p;K y=(-3==xt)?newK(-1,1+UCHAR_MAX):newH(xn);M(y);
+  uI p;K y=(-3==xt)?newK(-1,1+UCHAR_MAX):newH(-1,xn);M(y);
+  VCHK(y);
   hcinit();
   DO(yn,kI(y)[i]=-1);
+  VCHK(y);
   SW(-xt){
   CS(0,DO(xn,K v=kK(x)[i];if(xn==_hgk(y,hcode(v),v,x,&p))hs(y,p,i)))
   CSR(1,)CS(2,DO(xn,uI v=kU(x)[i];if(xn==_hg(y,hc(v),(I)v,x,&p))hs(y,p,i)))
   CS(3,DO(xn,uI k=(UC)kC(x)[i];if(xn==kI(y)[k])kI(y)[k]=i))
-  CS(4,setS(1,0);DO(xn,S v=kS(x)[i];if(!SV(v,1))SV(v,1)=fnv1a((UC*)v,strlen(v));if(xn==_hgv(y,SV(v,1),v,x,&p))hs(y,p,i)))}
-  y->t=-5; R y;
+  CS(4,DO(xn,S v=kS(x)[i];if(xn==_hgv(y,SV(v,SLOT_H),v,x,&p))hs(y,p,i)))}
+  y->t=-5; VCHK(y); R y;
 }
 
 K hash_find(K a,K b)
 {
   K x=kK(a)[0],y=kK(a)[1];uI k,p;I i;
   P(xt>0,DOE)
+  VCHK(x); VCHK(y);
   if(xt&&(xt+b->t))R Ki(xn);
   hcinit();
   SW(-xt){
-  CS(0,i=_hgk(y,hcode(b),b,x,&p))
+  CS(0,i=_hgk(y,hcode(b),b,x,&p);)
   CSR(1,)CS(2,{uI v=*kU(b);i=_hg(y,hc(v),(I)v,x,&p);})
   CS(3,k=(UC)*kC(b);i=kI(y)[k];if(i<0)i=xn)
-  CS(4,{S v=*kS(b);k=fnv1a((UC*)v,strlen(v));i=_hgv(y,k,v,x,&p);}) }
-  R Ki(i);
+  CS(4,{S v=*kS(b);k=SV(v,SLOT_H);i=_hgv(y,k,v,x,&p);}) }
+  // O("hash_find: rc(a,%p)=%lld rc(b,%p)=%lld\n",a,rc(a),b,rc(b));
+  R Ki(-1==i?xn:i);
 }

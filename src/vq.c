@@ -112,17 +112,26 @@ Z K qrand(K a,K b)
 {
   I at=a->t,bt=b->t;
   K y;
-  P(1!=ABS(at)||(1!=bt&&2!=bt),IE)
+  P(1!=ABS(at)||(1!=bt&&2!=bt&&4!=bt),IE)
   I c=*kI(a),n=ABS(c);
   P(1==bt && c<0 && *kI(b) < -c,LE)
   P(1==bt && *kI(b)<0,DOE)
+  I d=0;
+  if(4==bt){
+    S s=*kS(b);
+    P(1!=strlen(s),DOE);
+    d=s[0]-'0';
+    P(d<1||d>8,DOE);
+  }
 
   I j=0,k,s;
-  U(y=newK(1==bt?-1:-2,n))
+  U(y=newK(-bt,n))
 
+  if(4==bt){C sym[9];sym[d]='\0';DO(n,DO2(d,sym[j]='a'+16*RF());kS(y)[i]=sp(sym));R y;}
   if(2==bt){F f=*kF(b);DO(n,kF(y)[i]=RF()*f) R y;}
-  I d=*kI(b);
-  if(c>=0)DO(n,kI(y)[i]=d*RF())    //this could be better (small numerical error)
+  d=*kI(b);
+       if(!d)  DO(n,kI(y)[i]=LLONG_MIN+LLONG_MAX*2.0*RF())
+  else if(c>=0)DO(n,kI(y)[i]=d*RF())    //this could be better (small numerical error)
   else //deal
   {
     vitter(kI(y),y->n,d); //Vitter's algorithm

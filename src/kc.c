@@ -5,6 +5,8 @@
 #include <signal.h>
 #include "k.h"
 #include "kc.h"
+#include "km.h"
+#include "ks.h"
 
 #if defined(__OpenBSD__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__ANDROID__)
 #include <sys/socket.h>
@@ -27,6 +29,8 @@ extern void win_usleep(unsigned int); //buggy TDMGCC64 usleep()
 #endif
 
 K KONA_GSET=0,KONA_IDX=0;
+I KONA_APL_DYAD=0;
+I KONA_DEBUG=0;
 
 Z I randomBits();
 I oerr(){R O("%s %s\n",errmsg,"error");}
@@ -81,10 +85,12 @@ I args(int n,S*v) {
         if(!(a=newK(-3, len))){cd(KONA_ARGS);R 0;}
         strncpy(kC(a),v[i],len);
         kK(KONA_ARGS)[i]=a )
-  while(-1!=(c=getopt(n,v,":h:i:e:x:")))SW(c) {
+  while(-1!=(c=getopt(n,v,":2gh:i:e:x:")))SW(c) {
+    CS('2',  KONA_APL_DYAD=1;)
+    CS('g',  KONA_DEBUG=1;)
     CS('h',  if(IPC_PORT)O("-i accepted, cannot also have -h\n"); else HTTP_PORT=optarg;)
     CS('i',  if(HTTP_PORT)O("-h accepted, cannot also have -i\n"); else {IPC_PORT=optarg;*kI(KONA_PORT)=atol(IPC_PORT);})
-    CS('e',  cd(X(optarg)); exit(0) )
+    CS('e',  k=X(optarg); cd(k); exit(0) )
     CS('x',  k=X(optarg); printAtDepth(0,k,0,0,0,0); O("\n"); cd(k); exit(0) )
     CSR(':', )
     CS('?',  O("%c\nabort",optopt); exit(0)) }
@@ -122,6 +128,7 @@ I kinit() {       //oom (return bad)
   #endif
 
   if(PG&(PG-1)){er(Pagesize not power of 2); exit(1);}
+  lszNode=lsz(sizeof(Node));lszPDA=lsz(sizeof(PDA));
 
   ninit();
 
@@ -251,7 +258,7 @@ I lines(FILE*f) {
     //You could put lines(stdin) in main() to have not-multiplexed command-line-only input
 
 I line(FILE*f, S*a, I*n, PDA*p) {  //just starting or just executed: *a=*n=*p=0,  intermediate is non-zero
-  S s=0; I b=0,c=0,m=0; K k; F d; fbr=fer=0; fam=1;
+  S s=0; I b=0,c=0,m=0; K k; F d; fbr=fer=0; fam=1; nfam=0;
 
   //kluge:  isatty() fails using mingw-10.0 with msys2
   #ifndef __MINGW32__

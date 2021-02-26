@@ -1,6 +1,8 @@
 #include "incs.h"
 #include "tests.h"
 #include "k.h"
+#include "kc.h"
+#include "km.h"
 
 //  Note:
 //
@@ -29,26 +31,26 @@ I tp(I x){ switch(x){CS(0,failed++)  CS(1,passed++)CS(2,skipped++)} tests++; R x
 
 I tc(S a, S b) //test comparison .  R 0,1,2
 {
-  if(!(tests % 50)) O("t:%lld\n",tests); //commenting this causes an error. no idea why. fflush? macro stuff? >2 args bc of "skip" ?
+  if(!(tests % 50)) O("\nt:%lld",tests); //commenting this causes an error. no idea why. fflush? macro stuff? >2 args bc of "skip" ?
   if(!SC("skip",a)) R 2;
 
   kreci=0;
 
   KTREE=Kd();
+  if(KONA_DEBUG)O("\ntesting: %s",b);
   K x = X(a); fer=fer1=fom=fbr=0; if(cls){cd(cls);cls=0;}
-  // fprintf(stderr,"testing: %s\n",b);
   K y = X(b); fer=fer1=fom=fbr=0; if(cls){cd(cls);cls=0;}
   I m=matchI(x,y);
 
   if(!m)
   {
-    fprintf(stderr,"\nFailed. These are not equal:\n");
-    fprintf(stderr,"%s , %s\n", a,b);
-    fprintf(stderr,"********************************\n");
+    O("\nFailed. These are not equal:\n");
+    O("%s , %s\n", a,b);
+    O("********************************\n");
     show(x); fflush(stdout);
-    fprintf(stderr,"--------------------------------\n");
+    O("--------------------------------\n");
     show(y); fflush(stdout);
-    fprintf(stderr,"\n");
+    O("\n");
   }
   cd(x); cd(y);
 
@@ -56,9 +58,9 @@ I tc(S a, S b) //test comparison .  R 0,1,2
   I c=0; DO(kreci, if(krec[i]) c++)
   if(!c) R m;
 
-  fprintf(stderr,"Failed: Memory Leak - %s, %s \nAllocated K: %lld\nUnfreed K  : %lld\nLeak %%     : %f\n", a,b,kreci, c, c/(F)kreci);
+  O("\nFailed: Memory Leak - %s, %s \nAllocated K: %lld\nUnfreed K  : %lld\nLeak %%     : %f", a,b,kreci, c, c/(F)kreci);
   I j=-1;
-  DO(c, do j++; while(!krec[j] && j < kreci); if(j>=kreci) break; K k=krec[j]; if(k){O("c:%lld t:%lld n:%lld | k:%p\n",rc(k),k->t,k->n,k); show(k);} )
+  DO(c, do j++; while(!krec[j] && j < kreci); if(j>=kreci) break; K k=krec[j]; if(k){O("\nc:%lld t:%lld n:%lld | k:%p (%s:%lld)\n",rc(k),k->t,k->n,k,krecF[j],krecLN[j]); show(k);} )
   R 0;
 }
 
@@ -69,10 +71,12 @@ I test()
   tests01();
   tests02();
   testsIO();  //could become slow - in the future may not want to test by default
+  KTREE = Kd();
   K x; x=_(567);if(!tp(x && *kI(x)==567))fprintf(stderr,"\n\nK string execution broken\n\n"); cd(x);
+  cd(KTREE);
 
 //done:
-  testtime=(clock()-testtime)/CLOCKS_PER_SEC;
+  testtime=(clock()-testtime)/(F)CLOCKS_PER_SEC;
   F rate=passed/((F)tests-skipped);
   O("Test pass rate: %.4f, Total: %lld, Passed: %lld, Skipped: %lld, Failed: %lld, Time: %fs\n", rate,tests,passed,skipped,failed,testtime);
   I r=1==rate;
@@ -618,14 +622,14 @@ Z I tests02()
   TC(x:!10;y:x;y[1]:100;x, !10) //cross-variable assignment
   TC(x:(1;1.0;"1");y:x;z:x;z[0]:2;y, (1;1.0;"1")) //demonstrate need for recursive ci/cd
   TC(1, x:.+(`a`b;1 2); y:x; ."y.a:11; x.a") //dict references
-  TC(x:.+(`a`b;1 2); y:x; y.a:11;x, .+(`a`b;1 2) )  // Bakul comments #205, case 1
+  TC(x:.+(`a`b;1 2); y:x; y[`a]:11;x, .+(`a`b;1 2) )  // Bakul comments #205, case 1 [pahihu y.a is VLE in K3.2]
   TC(d:.+(`a`b;1 2);d[`a]:d, .+(`a`b;1 2) )         // Bakul comments #205, case 2a
-  TC(d:.+(`a`b;1 2);d.a:d, .+(`a`b;1 2) )         // Bakul comments #205, case 2b
+  TC(d:.+(`a`b;1 2);d[`a]:d, .+(`a`b;1 2) )         // Bakul comments #205, case 2b [pahihu d.a is VLE in K3.2]
   TC(d:.+(`a`b;1 2); d[!d]:d, (.((`a;1;);(`b;2;));.((`a;1;);(`b;2;))) )   // #188
-  TC(.((`a;(9 9 9;9 9 9;9 9 9););(`b;2;)), d:.+(`a`b;(3 3#9;2));e:d;d.a[1;2]:e) //case 3
+  TC(.((`a;(9 9 9;9 9 9;9 9 9););(`b;2;)), d:.+(`a`b;(3 3#9;2));e:d;d[`a;1;2]:e) //case 3 [pahihu d.a is VLE in K3.2]
   TC( (.((`a;(9 9;9 9););(`b;2;));.((`a;(9 9;9 9););(`b;2;))), d:.+(`a`b;(2 2#9;2));d[]:d)  // case 4
   TC((2;(9 9 9;9 9 9;9 9 9)),  d:.+(`a`b;(3 3#9;2));d[]:|d[])                   //case 5
-  TC(x:.((`a;(0 1 2;3 4 5;6 7 8););(`b;10;));(x;x;x), d:.+(`a`b;(3 3#!9; 10));d.a[2]:(d;d;d)) // #43 case 3
+  TC(x:.((`a;(0 1 2;3 4 5;6 7 8););(`b;10;));(x;x;x), d:.+(`a`b;(3 3#!9; 10));d[`a;2]:(d;d;d)) // #43 case 3 [pahihu d.a is VLE in K3.2]
   TC_(".,(`d;;)", "d:.k")  // #43 cases 1 & 2
   TC_(".,(`d;.,(`d;;);)", "d:.k;d:.k;d")  // #43 case 4
   TC_(".((`a;;);(`b;;))", "a:b:.k;a")    // #43 case 5a
@@ -1313,7 +1317,56 @@ Z I testsBook()
   TC(640640 320320 160160 80080 40040 20020 10010 5005,f:{:[x!2;x;_ x*0.5]}; (10000<) f\\640640)
   TC(640640 320320 160160 80080 40040 20020 10010 5005,f:{:[x!2;x;_ x*0.5]}; {x>10000} f\\640640)
 
-  TC(1, a:`a`b`c!3 3#!9;b:.((`a;0 1 2);(`b;3 4 5);(`c;6 7 8));a~b )
+  TC(1, a:`a`b`c!3 3#!9;b:.((`a;0 1 2);(`b;3 4 5);(`c;6 7 8));a~b ) // pahihu
+  TC(1, a:`a`b`c!1 2 3;b:.((`a;1);(`b;2);(`c;3));a~b ) // bang mkdict
+  TC(1, a:`a!1;b:.,(`a;1);a~b )
+  TC(1, a:1 2!3 4;b:.((`"1";3);(`"2";4));a~b )
+  TC(1, a:1.1 2.2!3 4;b:.((`"1.1";3);(`"2.2";4));a~b )
+  TC(1, a:"ab"!3 4;b:.((`a;3);(`b;4));a~b )
+  TC(1, a:(`a`b`c;(1 2;10 20;100 200);(;;));b:+`a`b`c!(1 2;10 20;100 200);a~b )
+
+  TC_(",\"a\"", "$\"a\"") // pahihu memory leaks
+  TC_("`a", "`$\"a\"")
+  TC_(",\"a\"", "\"\"$\"a\"")
+
+  TC(0 1, a:("roam";"rome");a _rematch "r.me") // pahihu _rematch
+  TC(1 1, a:("roam";"rome");a _rematch "ro.*")
+  TC(1 0, a:("roam";"rome");a _rematch "ro[ab].")
+  TC(0 1, a:("roam";"rome");a _rematch "ro[^ab].")
+  TC(1, "a[c"_rematch"a[[]c")
+  TC(1 0, (`$("ab*c";"abcc"))_rematch"ab[*]c")
+  TC(1 0, (`$("ab?c";"abcc"))_rematch"ab[?]c")
+  TC(1 0, (`$("ab^c";"abcc"))_rematch"ab[*^]c")
+
+  TC(0 1, a:("roam";"rome");a _like "r?me") // pahihu _like
+  TC(1 1, a:("roam";"rome");a _like "ro*")
+  TC(1 0, a:("roam";"rome");a _like "ro[ab]?")
+  TC(0 1, a:("roam";"rome");a _like "ro[^ab]?")
+  TC(1, "a[c"_like"a[[]c")
+  TC(1 0, (`$("ab*c";"abcc"))_like"ab[*]c")
+  TC(1 0, (`$("ab?c";"abcc"))_like"ab[?]c")
+  TC(1 0, (`$("ab^c";"abcc"))_like"ab[*^]c")
+
+  TC(1, s:`$"a"; s~`a) // pahihu trim on symbol cast
+  TC(1, s:`$" a"; s~`a)
+  TC(1, s:`$"a "; s~`a)
+  TC(1, s:`$" a "; s~`a)
+  TC(1, s:`$" "; s~`)
+  TC(1, s:`$"  "; s~`)
+  TC(1, s:`$""; s~`)
+
+  TC_("1", "1=&/#:'$10?`\"1\"") // pahihu random sym gen
+  TC_("1", "2=&/#:'$10?`\"2\"")
+  TC_("1", "3=&/#:'$10?`\"3\"")
+  TC_("1", "4=&/#:'$10?`\"4\"")
+  TC_("1", "5=&/#:'$10?`\"5\"")
+  TC_("1", "6=&/#:'$10?`\"6\"")
+  TC_("1", "7=&/#:'$10?`\"7\"")
+  TC_("1", "8=&/#:'$10?`\"8\"")
+
+  TC(3 2 1 0, <`d`cc`bbb`aaaa) // pahihu scn() fix
+
+  TC(1, d:`a`b!1 2; e:.:.:d; d~e)
 
   TC((1;"type") , @[.:;"_sin _sin (;)";:])
   TC((1;"type") , @[.:;"_sin _sin (0;)";:])
@@ -1383,6 +1436,14 @@ Z I testsBook()
   TC(5, {b::4; b:5; b}0)   // verify that global assign not interpreted as early return
   TC(5, {b:4; b::5; b}0)
   TC(2, a:1; :b:2; c:3)
+
+  //lower
+  TC("alpha", _"ALPHA")
+  TC("alpha", _"alpha")
+  TC(`ibm,  _`IBM)
+  TC(`ibm,  _`ibm)
+  TC_("(,\"alpha\";,\"beta\")", "_(,\"ALPHA\";,\"BETA\")")
+  TC(`ibm`msft`csco, _`IBM`MSFT`CSCO)
 
   //overMonad
   TC("abcd" ,("abcd";"efgh")/0)

@@ -40,7 +40,7 @@ S HTTP_PORT;
 
 K NIL;    //Useful to avoid actually allocating _n nils (use _n() instead)
 
-S LS;     //special symbol for locals (repeated,invisble)
+S LS;     //special symbol for locals (repeated,invisible)
 I PP=7;   //Print Precision Digits
 I PPMAX=19;
 C PPON=1;
@@ -182,15 +182,17 @@ I VA(V p){R sva(p) || adverbClass(p);}  //(Verb or Adverb)?
 Z I isescape(UC c) {R (c=='"'||c=='\\'||c=='\b'||c=='\n'||c=='\r'||c=='\t');}
 Z I needspt0(F f){if(isnan(f)||-FI==f||FI==f)R 0; Z C b[512];snprintf(b,512,"%.*g",(int)PP,f); R !stringHasChar(b,'.') && !stringHasChar(b,'e');}//no better way I know
 
+Z I OLEN=0;
 Z int splitprint(V u, const char *s, ...)  //print for either stdout or for 5: monadic (_5m)
 {
   Z C b[512];
   va_list args;
   va_start (args, s);
-  if(!u) vprintf (s, args); //stdout
+  if(!u) OLEN += vprintf (s, args); //stdout
   else //5: monadic
   {
     I n=vsnprintf(b,512,s,args);
+    OLEN+=n;
     if(!kapn(u,b,n)){} //todo: err handling
   }
   va_end (args);
@@ -222,7 +224,8 @@ void printAtDepth(V u, K a, I d, I x, I vdep, I b) //u {0=stdout or K* charvec }
   I f;F g;
 
   I pmax = 500;//limit output on long lists. could be improved. would be better as a global variable with <= 0 indicating disabled
-  #define CPMAX {if(!u && i>pmax){O_("...");break;}}
+  // #define CPMAX {if(!u && i>pmax){O_("...");break;}}
+  #define CPMAX {if(!u && OLEN>pmax){O_("...");break;}}
 
   if(0==t) DO(a->n, CPMAX printAtDepth(u,kK(a)[i],d+1,i*m,0,0);O_(i<_i-1?m?"\n":";":""))
   if(1==ABS(t)){
@@ -294,6 +297,7 @@ void printAtDepth(V u, K a, I d, I x, I vdep, I b) //u {0=stdout or K* charvec }
 
 K show(K a)
 {
+  OLEN=0;
   printAtDepth(0,a,0,0,0,0);
   if(a && a->t!=6)O("\n");
   R a;
@@ -540,6 +544,8 @@ TR DT[] =  //Dispatch table is append-only. Reorder/delete/insert breaks backwar
   {0, 2, _vs,"_vs",{0}},    //k3 version
   {0, 1, _hash,"_hash",{0}},
   {0, 1, _md5,"_md5",{0}},
+  {0, 2, _like,"_like",{0}},
+  {0, 2, _rematch,"_rematch",{0}},
   //^^Add new rows here^^
   {-1,-1,TABLE_END,0,{0}}   //sentinel
 };
@@ -551,8 +557,14 @@ L DT_OFFSET(V v){I i=0; while(v!=DT[i].func)i++; R i;} //init only
 
 I kreci=0;  //should be inside DEBUG case but needed in r.c cached verbs, at least until caching method changes
 #ifdef DEBUG
-void tf(N n){if(!n)R;DO(2,tf(n->c[i]));if(n->k)free(n->k-NSLOTS*sizeof(I));repool(n,lsz(sizeof(Node)));} //tree free
-V krec[1000000];
+void tf(N n){
+  if(!n)R;DO(2,tf(n->c[i]));
+  // XXX pahihu symbols are not allocated from buddy
+  // if(n->k)repool(n->k-NSLOTS*sizeof(Slot),lsz(sizeofSym(strlen(n->k))));
+  repool(n,lszNode);} //tree free
+V krec[NKREC];
+I krecLN[NKREC];
+S krecF[NKREC];
 /* Z I CV(K v) { V a[1000]; I n=0; while(v) { dd(v); a[n++]=v; DO(n, DO2(n-i-1, if(a[i]==a[i+j+1]) R 1;)) if(!(7==v->t && 0==v->n)) R 0; V q=kW(v)[0]; v=0; if(q) v= *(K*)q; } R 0; }//seven_type contains cycle? */
 #endif
 

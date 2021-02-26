@@ -2,7 +2,13 @@ PREFIX = /usr/local
 CFLAGS=-g
 PRODFLAGS = -O3 #-pg -g3
 LIB=libkona.a
+SOLIB=libkona.$(SO)
 DEVFLAGS = -O0 -g3 -DDEBUG -Wall
+OBJS = \
+	  src/0.o src/bswap.o src/c.o src/getline.o src/mt.o src/p.o \
+      src/r.o src/k.o src/kc.o src/kx.o src/kg.o src/km.o src/kn.o src/ko.o \
+      src/ks.o src/v.o src/va.o src/vc.o src/vd.o src/vf.o src/vg.o src/vq.o \
+      src/md5.o src/regex.o src/re_fail.o src/glob.o
 
 OS := $(shell uname -s | tr "[:upper:]" "[:lower:]")
 
@@ -11,32 +17,20 @@ ifeq (mingw64_nt-10.0,$(OS))
 CC=gcc -DWIN32=1
 PRODFLAGS += -D_FILE_OFFSET_BITS=64
 LDFLAGS = -lws2_32 -static -lpthread
-OBJS= src/win/mman.o src/win/dlfcn.o src/win/safe-ctype.o src/win/fnmatch.o \
-			src/win/pread.o src/win/usleep.o \
-      src/0.o src/bswap.o src/c.o src/getline.o src/mt.o src/p.o \
-      src/r.o src/k.o src/kc.o src/kx.o src/kg.o src/km.o src/kn.o src/ko.o \
-      src/ks.o src/v.o src/va.o src/vc.o src/vd.o src/vf.o src/vg.o src/vq.o \
-      src/md5.o
+OBJS += src/win/mman.o src/win/dlfcn.o src/win/safe-ctype.o src/win/fnmatch.o \
+	  src/win/pread.o src/win/usleep.o src/win/sysinfo.o
 endif
 
 # Win-32
 ifeq (mingw32_nt-10.0,$(OS))
-CC=gcc -DWIN32=1
-LDFLAGS = -lws2_32 -static -lpthread
-OBJS= src/win/mman.o src/win/dlfcn.o src/win/safe-ctype.o src/win/fnmatch.o \
-			src/win/pread.o src/win/usleep.o \
-      src/0.o src/bswap.o src/c.o src/getline.o src/mt.o src/p.o \
-      src/r.o src/k.o src/kc.o src/kx.o src/kg.o src/km.o src/kn.o src/ko.o \
-      src/ks.o src/v.o src/va.o src/vc.o src/vd.o src/vf.o src/vg.o src/vq.o \
-      src/md5.o
+CC=gcc -DWIN32=1 -D__Kona32__=1
+LDFLAGS = -lws2_32 -lpthread
+OBJS += src/win/mman.o src/win/dlfcn.o src/win/safe-ctype.o src/win/fnmatch.o \
+	  src/win/pread.o src/win/usleep.o src/win/sysinfo.o
 endif
 
 ifeq (android,$(OS))
 CC=arm-linux-androideabi-gcc
-OBJS= src/0.o src/bswap.o src/c.o src/getline.o src/getline_android.o src/mt.o src/p.o  \
-      src/r.o src/k.o src/kc.o src/kx.o src/kg.o src/km.o src/kn.o src/ko.o  \
-      src/ks.o src/v.o src/va.o src/vc.o src/vd.o src/vf.o src/vg.o src/vq.o \
-      src/md5.o
 LDFLAGS = -Wl,--gc-sections -Wl,-z,nocopyreloc -lgcc -no-canonical-prefixes \
           -Wl,--no-undefined -Wl,-z,noexecstack -Wl,-z,relro -Wl,-z,now -mthumb \
           -lc -lm -ldl
@@ -47,45 +41,27 @@ endif
 
 ifeq (linux,$(OS))
 CFLAGS += -pthread
-OBJS= src/0.o src/bswap.o src/c.o src/getline.o src/mt.o src/p.o src/r.o \
-      src/k.o src/kc.o src/kx.o src/kg.o src/km.o src/kn.o src/ko.o src/ks.o \
-      src/v.o src/va.o src/vc.o src/vd.o src/vf.o src/vg.o src/vq.o \
-      src/md5.o
 LDFLAGS = -lm -ldl
+SO = so
 endif
 
 ifeq (freebsd,$(OS))
 CFLAGS += -pthread
 LDFLAGS = -lm
-OBJS= src/0.o src/bswap.o src/c.o src/getline.o src/mt.o src/p.o src/r.o \
-      src/k.o src/kc.o src/kx.o src/kg.o src/km.o src/kn.o src/ko.o src/ks.o \
-      src/v.o src/va.o src/vc.o src/vd.o src/vf.o src/vg.o src/vq.o \
-      src/md5.o
 endif
 
 ifeq (openbsd,$(OS))
 CFLAGS += -pthread
 LDFLAGS = -lm
-OBJS= src/0.o src/bswap.o src/c.o src/getline.o src/mt.o src/p.o src/r.o \
-      src/k.o src/kc.o src/kx.o src/kg.o src/km.o src/kn.o src/ko.o src/ks.o \
-      src/v.o src/va.o src/vc.o src/vd.o src/vf.o src/vg.o src/vq.o \
-      src/md5.o
 endif
 
 ifeq (darwin,$(OS))
 LDFLAGS = -lm
-OBJS= src/0.o src/bswap.o src/c.o src/getline.o src/mt.o src/p.o src/r.o \
-      src/k.o src/kc.o src/kx.o src/kg.o src/km.o src/kn.o src/ko.o src/ks.o \
-      src/v.o src/va.o src/vc.o src/vd.o src/vf.o src/vg.o src/vq.o \
-      src/md5.o
 PRODFLAGS = -O3
+SO = dylib
 endif
 
 ifeq (cygwin_nt-6.3,$(OS))
-OBJS= src/0.o src/bswap.o src/c.o src/getline.o src/mt.o src/p.o src/r.o \
-      src/k.o src/kc.o src/kx.o src/kg.o src/km.o src/kn.o src/ko.o src/ks.o \
-      src/v.o src/va.o src/vc.o src/vd.o src/vf.o src/vg.o src/vq.o \
-      src/md5.o
 LDFLAGS = -lm
 endif
 
@@ -101,8 +77,13 @@ all: k k_test
 
 lib: $(LIB)
 
+lib_dyn: $(SOLIB)
+
 $(LIB): $(OBJS) src/kapi.o
 	$(AR) crv $@ $(OBJS) src/kapi.o
+
+$(SOLIB): $(OBJS) src/kapi.o
+	$(CC) ${CFLAGS} $(OBJS) src/kapi.o -shared -o $@ $(LDFLAGS)
 
 kapi-test: src/kapi-test.o $(LIB)
 	$(CC) ${CFLAGS} $^ -o $@ -L. -lkona $(LDFLAGS)
@@ -116,11 +97,14 @@ k_test: src/kbuild.h $(OBJS_T) src/main.t.o src/tests.t.o
 	$(CC) ${CFLAGS} $(OBJS_T) src/main.t.o src/tests.t.o -o $@ $(LDFLAGS)
 
 k_dyn: CFLAGS += $(PRODFLAGS)
-k_dyn: src/kbuild.h $(OBJS)
-	$(CC) ${CFLAGS} $(OBJS) -rdynamic -o $@ $(LDFLAGS)
+k_dyn: src/kbuild.h $(SOLIB) src/main.o
+	$(CC) ${CFLAGS} $(SOLIB) src/main.o -rdynamic -o $@ $(LDFLAGS)
 
-src/kbuild.h:
+src/kbuild.h: Makefile
+	$(RM) $@
 	echo "#define KBUILD_DATE \"`date +%Y-%m-%d`\"" >$@
+	echo "#define KBUILD_OS \"`uname`\"" >>$@
+	echo "#define KBUILD_ARCH \"`uname -m`\"" >>$@
 
 test: k_test
 
@@ -128,7 +112,11 @@ install:
 	install k $(PREFIX)/bin/k
 
 clean:
-	$(RM) -r k k_test *.exe k.dSYM k_test.dSYM src/*.o src/win/*.o src/kbuild.h
+	$(RM) k k_test *.exe src/kbuild.h
+	$(RM) src/*.o src/win/*.o
+	$(RM) -r k.dSYM k_test.dSYM 
+	$(RM) kapi-test k_dyn
+	$(RM) $(LIB) $(SOLIB)
 
 TAGS: *.c *.h
 	etags *.[ch]

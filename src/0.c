@@ -19,6 +19,7 @@
 #include "0.h"
 #include "k.h"
 #include "km.h"
+#include "ks.h"
 #include "v.h"
 #include "vf.h"
 
@@ -105,11 +106,14 @@ K _0m(K a) {
 
   I c=s?1:0,d=0,e;
   DO(s, if('\n'==v[i] && i < s-1)c++) //1st run: count \n
+  // pahihu: on 32bit Kona, sizeof(V)<sizeof(I) !!!
   K k; z=newK(0,c); if(!z) GC;
-  DO(s, if('\n'!=v[i]&&'\r'!=v[i])kK(z)[d]=(V)1+(L)kK(z)[d]; else if('\n'==v[i])d++) //2nd run: count lengths (cheat & use pointers' space)
-  DO(c,e=(L)kK(z)[i]; k=newK(-3,e); if(!k){cd(z);z=0;GC;}  kK(z)[i]=k)
+  K zi=newK(-1,c); if(!zi){cd(z); GC;}
+  DO(s, if('\n'!=v[i]&&'\r'!=v[i])kI(zi)[d]=1+kI(zi)[d]; else if('\n'==v[i])d++) //2nd run: count lengths
+  DO(c,e=kI(zi)[i]; k=newK(-3,e); if(!k){cd(zi);cd(z);z=0;GC;}  kK(z)[i]=k)
   e=0;
   DO(c, k=kK(z)[i]; memcpy(kC(k),v+e,k->n); e+=k->n; if('\r'==v[e])e++;if('\n'==v[e])e++) //3rd run: populate
+  cd(zi);
 
 cleanup:
   if(v){if(b)free(v);else {I r=munmap(v,s); if(r)R UE;} }

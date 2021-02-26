@@ -9,11 +9,9 @@ K _f();
 K _n();
 V alloc(size_t sz);
 I test();
-K cd(K a);
 K show(K a);
 I matchI(K a,K b);
 K X(S s);
-K Kd();
 extern K KTREE;
 I SC(S a,S b);
 extern F testtime;
@@ -29,6 +27,8 @@ I tp(I x);
 S ts(I x);
 
 #if defined(DEBUG)
-extern V krec[1000000];
+extern V krec[NKREC];
+extern I krecLN[NKREC];
+extern S krecF[NKREC];
 extern I kreci;
 #endif

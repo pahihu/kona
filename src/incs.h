@@ -43,8 +43,11 @@
 
 #define _exit __exit //stdlib.h already defines "_exit" but we need it for reserved r.c's _exit function
 
+#define NKREC 1000000
 extern I kreci;
-extern V krec[1000000];
+#ifdef DEBUG
+extern V krec[NKREC];
+#endif
 extern K _ssr(K a,K b,K c);
 
 #endif

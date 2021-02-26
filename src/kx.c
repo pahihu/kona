@@ -8,17 +8,24 @@
 #include "ko.h"
 #include "kx.h"
 #include "km.h"
+#include "p.h"
 #include "v.h"
+#include "vd.h"
 
 extern volatile sig_atomic_t interrupted;
 
+#define KSET(x,y)  {cd(x);x=y;}
+
 Z K bv_ex(V *p,K k);
 K dv_ex(K a,V *p,K b);
+Z K _ex0(V *v,K k,I r,int _f);
 Z K ex0(V *v,K k,I r);
 Z K ex2(V *v,K k);
 Z V ex_(V a,I r);
-I cirRef(K p,K y);
-I cirRef_(K p,K y,I f);
+Z I cirVal(K p,K y);
+Z I cirVal_(K p,K y,I f);
+Z I cirRef(K *p,K y);
+Z I cirRef_(K *p,K *y,I f);
 K kdef(V v);
 
 __thread I fer=0;    // Flag Early Return
@@ -40,8 +47,24 @@ __thread I frg=0;    // Flag reset globals
          I fnci=0;   // indicator of next function pointer position
          I fom=0;    // Flag overMonad (curried)
          I fam=1;    // Flag amend: 1=OK to print response
+	 I nfam=0;   // Flag: nest fam
+
+Z K djoin(K x,K y) { // join dicts => if used then, segfault
+  K j0=DOT_monadic(x); K j1=DOT_monadic(y);
+  K j2=join(ci(j0),j1); cd(j0);
+  K r=DOT_monadic(j2);
+  cd(j2); cd(j1); cd(j0);
+  R r;}
+
+Z K dejoin(K x, K y) { // join dict / scalar (enlist first) => if used then more failures
+  K ye=enlist(y);
+  K j0=DOT_monadic(x); K j2=join(ci(j0),ye); cd(j0);
+  K r=DOT_monadic(j2);
+  cd(y); cd(ye); cd(j0); cd(j2); 
+  R r;}
 
 Z K cjoin(K x,K y) {
+  VCHK(x);VCHK(y);
   P(3!=ABS(xt),TE)
   P((-3==xt)&&xn,TE)
   if(3==ABS(yt))R ci(y);
@@ -57,6 +80,7 @@ Z K cjoin(K x,K y) {
 }
 
 Z K csplit(K x,K y) {//scan 2x
+  VCHK(x);VCHK(y);
   P(3!=xt,TE);
   P(3!=ABS(yt),TE);
   int delim=*kC(x);S s=kC(y);
@@ -87,6 +111,7 @@ Z K csplit(K x,K y) {//scan 2x
 
 //TODO: for derived verbs like +/ you can add the sub-pieces in parallel
 K overDyad(K a, V *p, K b) {
+  VCHK(a);VCHK(b);
   V *o=p-1; K(*f)(K,K);
 
   K k=0; I i=0;
@@ -125,6 +150,7 @@ cleanup:
 
 Z K scanDyad(K a, V *p, K b) //k4 has 1 +\ 2 3 yield 3 6 instead of 1 3 6
 {
+  VCHK(a);VCHK(b);
   V *o=p-1; K(*f)(K,K);
 
   K k=0;
@@ -154,6 +180,7 @@ Z K scanDyad(K a, V *p, K b) //k4 has 1 +\ 2 3 yield 3 6 instead of 1 3 6
 
 Z K overMonad(K a, V *p, K b)
 {
+  VCHK(a);VCHK(b);
   K u=b,c=0;I flag=0;
 
   I useN=0,n=0,useB=0;
@@ -204,6 +231,7 @@ Z K overMonad(K a, V *p, K b)
 
 Z K scanMonad(K a, V *p, K b)
 {
+  VCHK(a);VCHK(b);
   K u=enlist(b),v,w,c=0,d;I flag=0;//TODO: optimize/memory manage enlists,firsts,reverses here
   U(u);
 
@@ -247,9 +275,18 @@ Z K scanMonad(K a, V *p, K b)
 }
 
 Z K each2(K a, V *p, K b) {
+  VCHK(a);VCHK(b);
   I bt=b->t, bn=b->n; K prnt0=0,grnt0=0;
-  if(bt > 0) R dv_ex(0,p-1,b);
+  if(5 != bt && bt > 0) R dv_ex(0,p-1,b);
   else {
+    if(5==bt){
+      K d=newK(0,bn);U(d) DO(bn,kK(d)[i]=ci(kK(kK(b)[i])[1]));
+      K r=each2(a,p,d); M(r,d) r=promote(r); M(r,d)
+      K z=newK(5,bn); M(z,r,d)
+      DO(bn,S s=*kS(kK(kK(b)[i])[0]);kK(z)[i]=newE(s,ci(kK(r)[i])));
+      cd(r); cd(d);
+      R z;
+    }
     K z = newK(0,bn),d=0; U(z)
     K g; I f=*p==(V)offsetEach && (*(p-1)==(V)offsetOver || *(p-1)==(V)offsetScan) && *(p-2)<(V)DT_SIZE;
     if(0 >bt) DO(bn, g=newK(ABS(bt),1); M(g,z) memcpy(g->k,((V)b->k)+i*bp(bt),bp(bt));
@@ -261,19 +298,20 @@ Z K each2(K a, V *p, K b) {
       DO(bn,
         if(f)d=dv_ex(a,p-1,kK(b)[i]);
         else {
-          if(prnt0){cd(prnt);prnt=ci(prnt0);} if(grnt0){cd(grnt);grnt=ci(grnt0);}
+          if(prnt0)KSET(prnt,ci(prnt0)) if(grnt0)KSET(grnt,ci(grnt0))
           d=dv_ex(0,p-1,kK(b)[i]);}
-        if(!d || !z){if(prnt0){cd(prnt0);prnt0=0;} if(grnt0){cd(grnt0);grnt0=0;}}
+        if(!d || !z){if(prnt0)KSET(prnt0,0) if(grnt0)KSET(grnt0,0)}
         if(grnt && !prnt)prnt=ci(grnt);
         M(d,z) kK(z)[i]=d)}
     z=demote(z); if(z->t==1)z->t=-1;
-    if(prnt0){cd(prnt0);prnt0=0;} if(grnt0){cd(grnt0);grnt0=0;}
+    if(prnt0)KSET(prnt0,0) if(grnt0)KSET(grnt0,0)
     R z;
   }
 }
 
 Z K eachright2(K a, V *p, K b)
 {
+  VCHK(a);VCHK(b);
   I bt=b->t, bn=b->n;
   if(bt > 0) R dv_ex(a,p-1,b);
   K z = newK(0,bn), d;
@@ -285,6 +323,7 @@ Z K eachright2(K a, V *p, K b)
 
 Z K eachleft2(K a, V *p, K b)
 {
+  VCHK(a);VCHK(b);
   if(!a) R VE;
   I at=a->t, an=a->n;
   if(at > 0) R dv_ex(a,p-1,b);
@@ -297,6 +336,7 @@ Z K eachleft2(K a, V *p, K b)
 
 Z K eachpair2(K a, V *p, K b)  //2==k necessary?
 {
+  VCHK(a);VCHK(b);
   V *o=p-1; K(*f)(K,K);
 
   K k=0;
@@ -339,6 +379,7 @@ Z K eachpair2(K a, V *p, K b)  //2==k necessary?
 K dv_ex(K a, V *p, K b)
 {
   if(!p || !*p) R 0; //TODO: ???
+  VCHK(a);VCHK(b);
   U(b)
   V *o = p-1;
 
@@ -436,6 +477,7 @@ K dv_ex(K a, V *p, K b)
 //K3.2 Bug - {b:1_,/";a",/:$a:!x; "{[",b,"]a3}[" ,(1_,/";",/:$a ),"]" } 67890  --> Sometimes works, sometimes stack error, sometimes crash
 K vf_ex(V q, K g)
 {
+  VCHK(g);
   if (interrupted) {interrupted=0; R BE;}
 
   //V w=(*(V*)q);
@@ -456,13 +498,15 @@ K vf_ex(V q, K g)
 
   n=valence(q); I ee=0;
   if(q>(V)DT_SIZE){
+    // O("DBG: q>(V)DT_SIZE valence=%lld\n",n);
     K e=*(K*)q;
+    // O("DBG: e={%lld,%lld}\n",e->t,e->n);
     if(e->t==7 && e->n==1 && (V)kS(kK(e)[CODE])[0]>(V)DT_SIZE && (*(K*)kS(kK(e)[CODE])[0])->t==7){n=2; ee=1;}}
 
   if(ee && !kV(g)[0] && kV(g)[1])fom=1;
 
   if( ((k || (*(K*)q)->t==7) && ( ((UI)q<DT_SIZE || (*(V*)q))  && gn>n && !(!n && 1>=gn)))
-      || (ee && kV(g)[0] && kV(g)[1]) ) {
+      || (ee && g->n>1 && kV(g)[0] && kV(g)[1]) ) {
     if(kK(g)[0]==NULL){VE; GC;}
     if(3!=kK(g)[0]->t || 1==(*(K*)q)->n || kK(g)[1]==NULL) {
       if(g->t==0 && gn==2 && kK(*(K*)q)[CODE]->t==-4
@@ -476,15 +520,18 @@ K vf_ex(V q, K g)
   I argc=0; DO(gn,if(kK(g)[i])argc++)
 
   K a=0,b=0,c=0,d=0;
-  if(gn >0) a=kK(g)[0];
-  if(gn >1) b=kK(g)[1];
-  if(gn >2) c=kK(g)[2];
-  if(gn >3) d=kK(g)[3];
+  if(gn >0){a=kK(g)[0];VCHK(a);}
+  if(gn >1){b=kK(g)[1];VCHK(b);}
+  if(gn >2){c=kK(g)[2];VCHK(c);}
+  if(gn >3){d=kK(g)[3];VCHK(d);}
+  // O("DBG: gn=%lld\n",gn);
 
   //valence overloaded verbs
   if(gn > 2 && (q==offsetWhat || q==offsetSSR)){ z=(q==offsetWhat?what_triadic:_ssr)(a,b,c); GC; }
   if(gn > 2 && (q==offsetAt   || q==offsetDot )){ z= (q==offsetAt?at_tetradic:dot_tetradic)(a,b,c,d); GC;}
   //common verbs
+
+  // O("DBG: k=%lld a=%p b=%p\n",k,a,b);
 
   if(2==k && a && b){ fnc=DT[(L)q].text;
     if(fnci<127){fncp[fnci]=q; fnci++;}
@@ -525,23 +572,27 @@ K vf_ex(V q, K g)
     if(2==n && 1==adverbClass(*u) ) n=gn; //   / \ '  but maybe should exclude '
   }
 
-  if(kK(*(K*)q)[CODE]->n==3 && offsetWhat==(V)kV(kK(*(K*)q)[CODE])[1]){
+  K qc0de=kK(*(K*)q)[CODE];
+  if(7==qc0de->t && 3==qc0de->n && offsetWhat==(V)kV(qc0de)[1]){
     z=what(*(K*)kV(kK(*(K*)q)[CODE])[0],*(K*)kV(g)); GC; }
 
   if(n && (argc<gn || (gn<n && (!special||gn<=1) ))) //Project. Move this ahead of verbs when finished
   {
+    // KLONE: charfn stuff
     z=kclone(f); //Is this an opportunity to capture an under-referenced function?
                  //Consider if it could be in use as part of assignment, etc.
     if(!z)GC;
     I ae=0; K*m=(K*)kV(z)+CONJ;
     if(special && gn!=4)n=2; // .'"98" cases. allows a:.[+] then a 2 3  (. is forced 2-adic & not .[;;;]) is this a kluge?
-    if(3<kK(z)[CODE]->n  && (V*)kK(kK(z)[CODE])[1]==(V)offsetAt && (V*)kK(kK(z)[CODE])[2]==(V)offsetEach){ae=1; n=1;}
+    K zc0de=kK(z)[CODE]; // O("\n%s:%d zc0de=%p [%lld,%lld,%lld]",__FILE__,__LINE__,zc0de,zc0de->t,zc0de->n,rc(zc0de));
+    if(7==zc0de->t && 3<zc0de->n && (V*)kK(zc0de)[1]==(V)offsetAt && (V*)kK(zc0de)[2]==(V)offsetEach){ae=1; n=1;}
     if(!*m) *m=newK(0,n);
     if(!*m){cd(z);GC;}
     K *q=kK(*m);
     DO((*m)->n, if(!q[i] && j<gn) q[i]=ci(kK(g)[j++]))
     if(ae) {
       V w[5]; w[0]=(V)kS(kK(z)[CODE])[0]; w[1]=(V)offsetAt; w[2]=(V)offsetEach; w[3]=(V)kK(kK(z)[CONJ]); w[4]=0;
+      // O("\n%s:%d &w[0]=%p w[0]=%p",__FILE__,__LINE__,&w[0],w[0]);
       K zz= ex2(&w[0],0); cd(g); cd(z); R zz; }
     GC;
   }//K3.2 Projection {[a;b;c]}[;1][1;] returns self. Indicates different (7-0 style?) method
@@ -590,18 +641,20 @@ K vf_ex(V q, K g)
         DO(tree->n, DO2(3,  kK(DI(tree,i))[j] = ci(kK((i<p->n?DI(p,i):DI(s,i-p->n)))[j])))//shallow copy
         kV(f)[CACHE_TREE]=tree; }
       if(fsf && prnt && kV(prnt)[LOCALS] && kV(prnt)[CACHE_TREE]){
-        K j0=dot_monadic(kV(prnt)[LOCALS]); K j1=dot_monadic(kV(prnt)[CACHE_TREE]);
-        K j2=join(ci(j0),j1); cd(j0); cd(kV(prnt)[CACHE_TREE]); kV(prnt)[CACHE_TREE]=dot_monadic(j2);
-        cd(j0); cd(j1); cd(j2); tree=kV(prnt)[CACHE_TREE]; cd(kV(prnt)[CACHE_WD]); kV(prnt)[CACHE_WD]=0; }
+        K j0=DOT_monadic(kV(prnt)[LOCALS]); K j1=DOT_monadic(kV(prnt)[CACHE_TREE]);
+        K j2=join(ci(j0),j1); cd(j0); KSET(kV(prnt)[CACHE_TREE],DOT_monadic(j2));
+        // KSET(kV(prnt)[CACHE_TREE],djoin(kV(prnt)[LOCALS],kV(prnt)[CACHE_TREE]));
+        cd(j0); cd(j1); cd(j2); 
+        tree=kV(prnt)[CACHE_TREE]; KSET(kV(prnt)[CACHE_WD],0); }
 
       DO(p->n,e=EVP(DI(tree,i)); cd(*e); *e=0; if(r && i<r->n) *e=ci(kK(r)[i]); if(!*e && j<g->n) *e=ci(kK(g)[j++])) //merge in: CONJ with function args
 
-      fw=kV(f)[CACHE_WD]; I t=0;
+      fw=RDK(kV(f)[CACHE_WD]); I t=0;
       if(!fw || (t=(UI)kS(kK(fw)[CODE])[0]>DT_SIZE || (UI)kS(kK(fw)[CODE])[1]>DT_SIZE) ) {
-        if(t) cd(kV(f)[CACHE_WD]);
-        K fc = kclone(f); //clone the function to pass for _f
-        cd(kV(fc)[CONJ]); kV(fc)[CONJ]=0;
-        kV(fc)[DEPTH]++; fw=wd_(kC(o),o->n,&tree,fc); kV(f)[CACHE_WD]=fw; cd(fc); }
+        if(t) KSET(kV(f)[CACHE_WD],0);
+        K fc = kclone(f); //clone the function to pass for _f KLONE: charfn stuff
+        KSET(kV(fc)[CONJ],0);
+        kV(fc)[DEPTH]++; fw=wd_(kC(o),o->n,&tree,fc); KSET(kV(f)[CACHE_WD],fw); cd(fc); }
 
       #ifdef DEBUG
       if(stk1>5) {cd(g); kerr("stack"); R _n();}
@@ -619,11 +672,14 @@ K vf_ex(V q, K g)
       ff=1; DO(kK(z)[PARAMS]->n, if(!strcmp(*kS(kK(kK(kK(z)[PARAMS])[i])[0]),"z")){ff=0; break;} ) }
     if(ff) {
       K d=kK(kK(KTREE)[0])[1]; K w=0;
-      DO(d->n, if(!strcmp(*kS(kK(kK(d)[i])[0]),"z")){w=kclone(kK(d)[i]); break;})
+      DO(d->n, if(!strcmp(*kS(kK(kK(d)[i])[0]),"z")){w=kclone(kK(d)[i]); break;}) // KLONE: charfn stuff
       if(w){
-        K p=kK(g)[0]; cd(kK(w)[1]); kK(w)[1]=kclone(p); K we=enlist(w);
-        K j0=dot_monadic(kK(z)[CACHE_TREE]); K j2=join(ci(j0),we); cd(j0);
-        cd(kK(z)[CACHE_TREE]); kK(z)[CACHE_TREE]=dot_monadic(j2); cd(w); cd(we); cd(j0); cd(j2); encp=3; } } }
+        K p=kK(g)[0]; KSET(kK(w)[1],kclone(p)); // KLONE:: charfn stuff
+        K we=enlist(w);
+        K j0=DOT_monadic(kK(z)[CACHE_TREE]); K j2=join(ci(j0),we); cd(j0);
+        KSET(kK(z)[CACHE_TREE],DOT_monadic(j2)); cd(w); cd(we); cd(j0); cd(j2); 
+        // KSET(kK(z)[CACHE_TREE],dejoin(kK(z)[CACHE_TREE],w));
+        encp=3; } } }
   if(encp==1) { I ff=0;
     if(z && z->t==7 && z->n==3 && kV(z)[CODE] && strchr(kC(kK(z)[CODE]),"y"[0]) && kV(z)[PARAMS] && kK(z)[PARAMS]->n) {
       ff=1; DO(kK(z)[PARAMS]->n, if(!strcmp(*kS(kK(kK(kK(z)[PARAMS])[i])[0]),"y")){ff=0; break;} ) }
@@ -633,18 +689,24 @@ K vf_ex(V q, K g)
         DO(d->n, if(!strcmp(*kS(kK(kK(d)[i])[0]),"y")){y=kclone(kK(d)[i]); break;})
       else R NYI;
       if(y) {
-        K p=kK(g)[0]; cd(kK(y)[1]); kK(y)[1]=kclone(p); K ye=enlist(y);
-        K j0=dot_monadic(kK(z)[CACHE_TREE]); K j2=join(ci(j0),ye); cd(j0);
-        cd(kK(z)[CACHE_TREE]); kK(z)[CACHE_TREE]=dot_monadic(j2); cd(y); cd(ye); cd(j0); cd(j2); encp=2; } } }
+        K p=kK(g)[0]; KSET(kK(y)[1],kclone(p)); // KLONE: charfn stuff
+        K ye=enlist(y);
+        K j0=DOT_monadic(kK(z)[CACHE_TREE]); K j2=join(ci(j0),ye); cd(j0);
+        KSET(kK(z)[CACHE_TREE],DOT_monadic(j2)); cd(y); cd(ye); cd(j0); cd(j2); 
+        // KSET(kK(z)[CACHE_TREE],dejoin(kK(z)[CACHE_TREE],y));
+        encp=2; } } }
   if(encp==0) { I ff=0;
     if(z && z->t==7 && z->n==3 && kV(z)[CODE] && strchr(kC(kK(z)[CODE]),"x"[0]) && kV(z)[PARAMS] && kK(z)[PARAMS]->n) {
       ff=1; DO(kK(z)[PARAMS]->n, if(!strcmp(*kS(kK(kK(kK(z)[PARAMS])[i])[0]),"x")){ff=0; break;} ) }
     if(ff) {
       K xx=newK(4,1); *kK(xx)=(V)sp("x");
       K x=newK(0,3); kK(x)[0]=xx; kK(x)[1]=(K)_n(); kK(x)[2]=(K)_n();
-      K p=kK(g)[0]; cd(kK(x)[1]); kK(x)[1]=kclone(p); K xe=enlist(x);
-      K j0=dot_monadic(kK(z)[CACHE_TREE]); K j2=join(ci(j0),xe); cd(j0);
-      cd(kK(z)[CACHE_TREE]); kK(z)[CACHE_TREE]=dot_monadic(j2); cd(x); cd(xe); cd(j0); cd(j2); encp=1; } }
+      K p=kK(g)[0]; KSET(kK(x)[1],kclone(p)); // KLONE: charfn stuff
+      K xe=enlist(x); 
+      K j0=DOT_monadic(kK(z)[CACHE_TREE]); K j2=join(ci(j0),xe); cd(j0);
+      KSET(kK(z)[CACHE_TREE],DOT_monadic(j2)); cd(x); cd(xe); cd(j0); cd(j2); 
+      // KSET(kK(z)[CACHE_TREE],dejoin(kK(z)[CACHE_TREE],x));
+      encp=1; } }
 
 cleanup:
   cd(g);
@@ -657,6 +719,7 @@ Z V ex_(V a, I r)//Expand wd()->7-0 types, expand and evaluate brackets
   K x,y=0,z,tmp;
 
   if(!a || VA(a) || bk(a)) R a;
+  // O("\n%s:%d a=%p",__FILE__,__LINE__,a);fflush(stdout);
   if(!(x=*(K*)a) || 7!=xt || (0<xn && xn<4)) R ci(x); //assert xn>=4 -> conditionals or similar
 
   r=xn<4?r:xn; //suggests maybe r should be stored on 7type itself
@@ -665,29 +728,47 @@ Z V ex_(V a, I r)//Expand wd()->7-0 types, expand and evaluate brackets
   {
     if((tmp=*(K*)(kV(x)+CONJ))) if(offsetColon==*kW(tmp) && (UI)*(kW(tmp)+1)>DT_SIZE)fer=1;
     y=ex_(kV(x)+CONJ,2); //Use 0-type with NULLS if passing to function
+    // XXX access last elt
+#define LEN(x)	(x?x->n:-1)
+    // if(!yt&&yn>1)O("DBG: %lld",LEN(kK(y)[yn-1]));
     U(y);
     if(y->t == 0 && y->n==0){cd(y); y=_n();}
     if(fer>0 && !fCheck) R y;
   }
-  z=ex0(kW(x),y,r);  //eval wd()
-  cd(y);
+  // O("DBG: ex_ y=%p\n",y);
+  z=_ex0(kW(x),y,r,1);  //eval wd()
+  // O("DBG: ex_ y=%p\n",y);
+  // cd(y);
 
   R z;
 }
 
 K ex(K a) {   //Input is (usually, but not always) 7-0 type from wd()
+  I ofam=fam;nfam++;
+  VCHK(a);
   U(a); if(a->t==7 && kVC(a)>(K)DT_SIZE && 7==kVC(a)->t && 6==kVC(a)->n)fwh=1;
-  if(a->t==7 && kV(kK(a)[CODE])[1]==offsetColon && kV(kK(a)[CODE])[2]!=offset3m) fam=0;
+  if(a->t==7){
+    K ac0de=kK(a)[CODE];
+    if(ac0de->n>2 && kV(ac0de)[1]==offsetColon && kV(ac0de)[2]!=offset3m) fam=0;
+  }
   K z=ex_(&a,0); cd(a); if(fer==1)fer=fer1=0;
   fwh=stk=stk1=prj=prj2=fsf=0;
-  if(prnt)cd(prnt);
-  prnt=0;
+  KSET(prnt,0);
+  if(--nfam)fam=ofam;
   R z;
 }
 
-Z K ex0(V*v,K k,I r) //r: {0,1,2} -> {code, (code), [code]}
+Z K ex0(V*v,K k,I r)
+{
+  R _ex0(v,k,r,0);
+}
+
+
+#define CDk(x)	{if(_f)cd(k);x;}
+Z K _ex0(V*v,K k,I r,int _f) //r: {0,1,2} -> {code, (code), [code]}
                      //Reverse execution/return multiple (paren not function or script) "list notation"  {4,5,6,7} -> {:,if,while,do}
 {
+  VCHK(k);
   I n=0, e=1, i,a,b;
   while(v[n])if(bk(v[n++]))e++;
   b=e>1;
@@ -699,43 +780,50 @@ Z K ex0(V*v,K k,I r) //r: {0,1,2} -> {code, (code), [code]}
             if(-1==i||bk(v[i])){
               cd(z); frg++; x=ex1(v+1+i,0,&i,n,1); frg--;
               if(!frg){encp=0;
-                if(encf){cd(encf); encf=0;}
-                if(grnt){cd(grnt); grnt=0;}}
+                if(encf)KSET(encf,0)
+                if(grnt)KSET(grnt,0)}
               U(x) z=bk(x)?_n():x;
-              if(fer>0 && !fCheck)R z;
-              if(grnt && (!prnt || rc(prnt)==2)){if(prnt)cd(prnt); prnt=ci(grnt);}
+              if(fer>0 && !fCheck)CDk(R z);
+              if(grnt && (!prnt || rc(prnt)==2))KSET(prnt,ci(grnt))
             } )
     CS(4, for(i=-1;i<n;i++)
             if(-1==i||bk(v[i])){
               U(x=ex1(v+1+i,0,&i,n,1))
-              if(fer>0 && !fCheck)R x;
-              x=bk(x)?_n():x; while(++i<n&&!bk(v[i])); if(i==n) R x;
-              z=delist(x); if(ABS(z->t)!=1 || z->n!=1){cd(z); R TE;}
+              if(fer>0 && !fCheck)CDk(R x);
+              x=bk(x)?_n():x; while(++i<n&&!bk(v[i])); if(i==n)CDk(R x);
+              z=delist(x); if(ABS(z->t)!=1 || z->n!=1){cd(z);CDk(R TE);}
               a=*kI(z); cd(z);
-              if(a){x=ex1(v+i+1,0,&i,n,1); R x=bk(x)?_n():x;}
+              if(a){x=ex1(v+i+1,0,&i,n,1); CDk(R x=bk(x)?_n():x);}
               else while(i<n&&!bk(v[i]))i++; }
-            R _n() )
+            CDk(R _n()) )
     CSR(5,)
     CSR(6,)
     CS(7, do{I i=0; U(x=ex1(v,0,&i,0,1))
-            if(fer>0)R x; x=bk(x)?_n():x; z=delist(x);
-            if(ABS(z->t)!=1 || z->n!=1){cd(z);R TE;} a=*kI(z);cd(z); i=0;
+            if(fer>0)CDk(R x); x=bk(x)?_n():x; z=delist(x);
+            if(ABS(z->t)!=1 || z->n!=1){cd(z);CDk(R TE);} a=*kI(z);cd(z); i=0;
             if(b){while(++i<n&&!bk(v[i])); if(i>=n)break;}
             SW(r){CSR(5,)
-                  CS(6,if(a&&b){x=ex0(v+i+1,0,0); if(fer>0)R x; cd(x);})
-                  CS(7,DO2(a, x=ex0(v+i+1,0,0); if(fer>0)R x; cd(x);))}}
+                  CS(6,if(a&&b){x=ex0(v+i+1,0,0); if(fer>0)CDk(R x); cd(x);})
+                  CS(7,DO2(a, x=ex0(v+i+1,0,0); if(fer>0)CDk(R x); cd(x);))}}
           while(6==r && a);
-          R _n())
+          CDk(R _n()))
     CD: z=newK(0,n?e:0);
         if(n)for(i=n-1;i>=-1;i--)if(-1==i||bk(v[i])){
+          // O("DBG: n=%lld\n",n);
           if(offsetColon==(v+1+i)[0] && (UI)(v+1+i)[1]>DT_SIZE)fer=1;
           x=ex1(v+1+i,0,&i,n,0);
-          if(fer1 || ((fer>0 && (v[0]==(V)offsetColon || v[2]==(V)1)) && !fCheck)){cd(z); fer1=1; R x;}
-          M(x,z) kK(z)[--e]=bk(x)?2==r?0:_n():x;}  // (c:9;a+b;c:1) oom
+          if(fer1 || ((fer>0 && (v[0]==(V)offsetColon || v[2]==(V)1)) && !fCheck)){cd(z); fer1=1; CDk(R x);}
+          M(x,z) 
+          K kk=bk(x)?2==r?0:_n():x;
+          // O("DBG: e=%lld kk=%p\n",e,kk);
+          kK(z)[--e]=kk;}  // (c:9;a+b;c:1) oom
+          // kK(z)[--e]=bk(x)?2==r?0:_n():x;}  // (c:9;a+b;c:1) oom
+        // if(!z->t&&z->n>1)O("DBG: n=%lld\n",LEN(kK(z)[z->n-1]));
   }
 
   //Note on brackets: [] is _n, not (). Expression [1;1] (0-type with two atoms) is different from [1 1] (integer vector)
 
+  // if(!z->t&&z->n>1)O("DBG: n=%lld\n",LEN(kK(z)[z->n-1]));
   if(1==r)z=collapse(z);
   if(k)
   {
@@ -747,7 +835,7 @@ Z K ex0(V*v,K k,I r) //r: {0,1,2} -> {code, (code), [code]}
       if(encf && DT_SIZE<(UI)&z)x=vf_ex(&encf,k);
       else x=vf_ex(&z,k);
       if(encp!=3)cd(z);
-      R z=x;
+      CDk(R z=x);
     }
     else // checking if looks like f'[] or f/[] or ...
     {
@@ -757,15 +845,19 @@ Z K ex0(V*v,K k,I r) //r: {0,1,2} -> {code, (code), [code]}
 
       K t=0; if(k->n==1) t=first(k);
       if((k->n>1 || (t && t->n==1)) && !sva(*q) && adverbClass(*q))
-      {
-        if(k->n==1 && !prj2)k->n=2;
+      { int ext2=0;
+        if(k->n==1 && !prj2){
+	  // === 181010AP resize, because of KP_MIN=5 ===
+          if(6!=k->t){I v=0;kap(&k,&v);}
+        }
         prj2=1;
-        DO(k->n, if(!kK(k)[i])prj=1)
+        DO(k->n,if(!kK(k)[i])prj=1)
+        // if(ext2)O("DBG: (2) prj=%lld\n",prj);
         if(!prj)    // could be the _n() <-> ;;; replacement above
         {
           x=bv_ex(q,k);
           cd(z);
-          R x;
+          CDk(R x);
         }
       }
       cd(t);
@@ -777,10 +869,11 @@ Z K ex0(V*v,K k,I r) //r: {0,1,2} -> {code, (code), [code]}
     }
   }
 
-  R z;
+  CDk(R z);
 }
 
 Z K bv_ex(V*p,K k) {
+  VCHK(k);
   V q=*p; K x; I n=0;   //assert 0!=k->n    assert k==b->n (otherwise, projection/VE, which shouldn't reach here)
 
   //This may contribute to bv_ex subtriadic problems
@@ -823,6 +916,7 @@ Z K bv_ex(V*p,K k) {
 
 K ex1(V*w,K k,I*i,I n,I f)//convert verb pieces (eg 1+/) to seven-types, default to ex2 (full pieces in between semicolons/newlines)
 {
+  VCHK(k);
   if(offsetColon==w[0] && (UI)w[1]>DT_SIZE && (UI)w[2]>DT_SIZE && fwh==0)
     {fer=1; if(f)*i=n; else *i=-1; K tmp=*(K*)*(w+1); R ci(tmp); }
   //if(in(*w,adverbs)) R NYI;//Adverb at beginning of snippet eg '1 2 3 or ;':1 2 3; or 4;\1+1;4
@@ -866,9 +960,14 @@ K ex1(V*w,K k,I*i,I n,I f)//convert verb pieces (eg 1+/) to seven-types, default
   R a;
 }
 
+
+I cva(V p){P(!KONA_APL_DYAD,sva(p)); U(p);UI q=(UI)p;R q<DT_SIZE?DT[q].arity:valence(p);}
+
 Z K ex2(V*v, K k)  //execute words --- all returns must be Ks. v: word list, k: conjunction?
 {
-  K t0,t2,t3,e,u;
+  // O("\n%s:%d EX2(%p,%p)",__FILE__,__LINE__,v,k);fflush(stdout);
+  VCHK(k);
+  K t2,t3,e,u;
   I i=0;
 
   //TODO: is this messed up ......we can't index like this for (|-+) ?? what about 0-NULL []
@@ -880,30 +979,34 @@ Z K ex2(V*v, K k)  //execute words --- all returns must be Ks. v: word list, k: 
   if(!v[1] && !k) { K z=ex_(*v,1);  // n case
     if(z>(K)DT_SIZE && z->t==7 && z->n==3) {
       if(prnt && kV(z)[PARAMS] && kV(prnt)[CACHE_TREE] && !kV(z)[CACHE_TREE] && !kK(z)[LOCALS]->n) {
-        K j0=dot_monadic(kV(z)[PARAMS]); K j1=dot_monadic(kV(prnt)[CACHE_TREE]); K j2=join(ci(j0),j1); cd(j0);
-        if(encp==0)kV(z)[CACHE_TREE]=dot_monadic(j2); if(encp==1)kV(z)[CACHE_TREE]=dot_monadic(j1);
-        cd(j0); cd(j1); cd(j2); cd(kK(prnt)[CACHE_WD]); kV(prnt)[CACHE_WD]=0; }
+        if(0==encp || 1==encp){
+          K j0=DOT_monadic(kV(z)[PARAMS]); K j1=DOT_monadic(kV(prnt)[CACHE_TREE]); K j2=join(ci(j0),j1); cd(j0);
+          kV(z)[CACHE_TREE]=DOT_monadic(encp?j1:j2); cd(j0); cd(j1); cd(j2); }
+	KSET(kK(prnt)[CACHE_WD],0); }
       if(prnt && kV(prnt)[CODE] && kK(prnt)[CODE]->t==-3 && kC(kK(prnt)[CODE])[0]=="{"[0] &&
         kC(kK(prnt)[CODE])[kK(prnt)[CODE]->n-1]=="}"[0] && strchr(kC(kK(prnt)[CODE]),"y"[0])){
-        if(encf)cd(encf);
-        encf=ci(prnt);}
-      if(encp!=2 || !prnt){if(prnt){if(grnt)cd(grnt);grnt=prnt;}prnt=ci(z);}
+        KSET(encf,ci(prnt));}
+      if(encp!=2 || !prnt){if(prnt)KSET(grnt,prnt) prnt=ci(z);}
       else {cd(z); R prnt;} }
     R z; }
 
   if(!v[1] && sva(*v)) R vf_ex(*v,k);     //TODO: (,/:) and (,\:) both valence 2
   //TODO: brackets may also appear as:     +/\/\[]    {x}/\/\[]    a/\/\[]    (!200)\\[10;20]
 
-  if(bk(v[1])) { K z= ex_(*v,1); if(fer==2 && !fCheck)R (K)0;
+  if(bk(v[1])) { K z= ex_(*v,1); if(fer==2 && !fCheck)R cd(z),(K)0;
     if(prnt && z && z->t==7) {
       if(kV(prnt)[PARAMS] && !kK(prnt)[PARAMS]->n && kV(z)[LOCALS] && !kK(z)[LOCALS]->n
          && kV(prnt)[LOCALS] && kK(prnt)[LOCALS]->n) {
-        kV(z)[CACHE_TREE]=kclone(kK(prnt)[CACHE_TREE]); if(prnt)cd(prnt); prnt=ci(z); }
+        // XXX z(CACHE_TREE) is zero ???
+        KSET(kV(z)[CACHE_TREE],kclone(kK(prnt)[CACHE_TREE])); KSET(prnt,ci(z)); } // KLONE: charfn stuff
       else if(kV(prnt)[LOCALS] && kK(prnt)[LOCALS]->n && kV(z)[PARAMS] && kK(z)[PARAMS]->n) {
 	if (kV(prnt)[CACHE_TREE]) {
-	  K j0=dot_monadic(kV(z)[PARAMS]); K j1=dot_monadic(kV(prnt)[CACHE_TREE]);
-	  K j2=join(ci(j0),j1); cd(j0); kV(z)[CACHE_TREE]=dot_monadic(j2); cd(j0); cd(j1); cd(j2); }
-	else kV(z)[CACHE_TREE]=kclone(kV(z)[PARAMS]); }}
+	  K j0=DOT_monadic(kV(z)[PARAMS]); K j1=DOT_monadic(kV(prnt)[CACHE_TREE]);
+	  K j2=join(ci(j0),j1); cd(j0); 
+          KSET(kV(z)[CACHE_TREE],DOT_monadic(j2)); cd(j0); cd(j1); cd(j2);
+          // KSET(kV(z)[CACHE_TREE],djoin(kV(z)[PARAMS],kV(prnt)[CACHE_TREE])); 
+          }
+	else KSET(kV(z)[CACHE_TREE],kclone(kV(z)[PARAMS])); }} // KLONE: charfn stuff XXX
     R z; }
 
   if(!VA(*v) && (offsetColon == v[1] || (VA(v[1]) && offsetColon==v[2]) ) ) //Handle assignment
@@ -914,12 +1017,13 @@ Z K ex2(V*v, K k)  //execute words --- all returns must be Ks. v: word list, k: 
     U(a=*w);
     if(7==a->t && 0==a->n && (b=kV(a)[CONJ]) && 7==b->t && 0==b->n )
     {
-      U(b=ex_(kV(a)+CONJ,((L)*kW(b)==1 || (L)*(kW(b)+1)==1)?1:2))
+      U(b=ex_(kV(a)+CONJ,((L)*kW(b)==1||(kVC(b)->n>1 && (L)*(kW(b)+1)==1))?1:2))
       w=*kW(a); //K temp=a;  //a=ci(*kW(a)); w=*kW(a); cd(temp);
       if(b->t==0 && b->n==0) {
         if(1e6<(UI)w) {
           K r=*(K*)w;
           if(r->t==5) { p=enumerate(r); cd(b); b=enlist(p); cd(p); } } }
+      P(!*w,VLE); // pahihu d:.+(..); e:d; d.a[..]:.. should be RE
     }
     if(!b)U(b=newK(0,0))
     c=Kv(); //mmo  Optimization: could use A struct instead, with array[] for CODE
@@ -933,20 +1037,27 @@ Z K ex2(V*v, K k)  //execute words --- all returns must be Ks. v: word list, k: 
 
     if(fer>0) { cd(c); cd(d); cd(b); R _n(); }
 
-    /* XXX
-    if(*w){O("\n%lld w: ",rc(*w));show(*w);}else O("\n  w: NULL");
-    if(b){O("\n%lld b: ",rc(b));show(b);}
-    if(c){O("\n%lld c: ",rc(c));show(c);}
-    if(d){O("\n%lld d: ",rc(d));show(d);}
-    */
+    if(KONA_DEBUG){
+      O("-------------------\n");
+      if(a){O("\na: %p ",a);showx(a);}else O("\na: NULL");
+      if(*w){O("\nw: %p ",*w);showx(*w);}else O("\nw: NULL");
+      if(b){O("\nb: %p ",b);showx(b);}else O("\nb: NULL");
+      if(c){O("\nc: %p ",c);showx(c);}else O("\nc: NULL");
+      if(d){O("\nd: %p ",d);showx(d);}else O("\nd: NULL");
+    }
 
-    if(cirRef(*w,d) || (((*w)->t==6 && d) && (d->t==0 || d->t==5 || ABS(d->t)!=d->t))){
+    I cv=cirVal(*w,d); // value reference
+    I cr=cv?cv:cirRef(w,d); // value reference
+    if((cr||cv) || (((*w)->t==6 && d) && (d->t==0 || d->t==5 || ABS(d->t)!=d->t))){ // XXX: list/dict/vector
       K x = d;
-      if(rc(x)) {d=kclone(x); cd(x);}
+      if(cv){KDBG(O("---> kclone(d) VAL\n");) d=kclone(x); cd(x);}
+      else if(cr){KDBG(O("---> kclone(d) REF\n");) d=kclone(x); cd(x);}
+      // if(d->t==0 || d->t==5){DBG(O("---> kcopy(d)\n");) d=kcopy(x); cd(x);}
+      // if(rc(x)>1) {d=kclone(x); cd(x);} // KLONE: ???
     }
     else if((*w)->t!=6){
       K x = *w;
-      if(rc(x)>1) { *w=kclone(x); cd(x); }
+      if(rc(x)>1) { KDBG(O("---> kclone(w)\n");) *w=kclone(x); cd(x); } // KLONE: ???
     }
 
     K h=dot_tetradic_2(w,b,c,d);
@@ -958,36 +1069,52 @@ Z K ex2(V*v, K k)  //execute words --- all returns must be Ks. v: word list, k: 
 
   while(v[1] && adverbClass(v[2+i])) i++;
   //TODO: Catch 0-returned-errors here and below
-  if(!sva(v[0]) && (i || 2==sva(v[1]))) {  //na+. or nv. case  (n noun, a adverb, + means regex one+ and . means regex anything )
+  // O("DBG: v[0]=%p v[1]=%p sva(v[0])=%lld cva(v[1])==%lld\n",v[0],v[1],sva(v[0]),cva(v[1]));
+  if(!sva(v[0]) && (i || 2==cva(v[1]))) {  //na+. or nv. case  (n noun, a adverb, + means regex one+ and . means regex anything )
+    K t0;
     t2=ex2(v+2+i,k); if(fer>0 && strcmp(errmsg,"undescribed")) R t2;
        //these cannot be placed into single function call b/c order of eval is unspecified
+    // O("DBG: t2=%p\n",t2);
     t3=ex_(v[1],1);
+    // O("DBG: t3=%p\n",t3);
+    VCHK(t2);
     if(t3>(K)DT_SIZE && t3->t==7 && t3->n==3) {
-      if(prnt && kV(prnt)[CACHE_TREE] && kV(prnt)[CACHE_WD] && !kK(t3)[LOCALS]->n) {
+      VCHK(t3);
+      if(prnt && kV(prnt)[CACHE_TREE] && RDK(kV(prnt)[CACHE_WD]) && !kK(t3)[LOCALS]->n) {
         if(kK(prnt)[CACHE_TREE]->n) {
-          K j0=dot_monadic(kV(t3)[PARAMS]); K j1=dot_monadic(kV(prnt)[CACHE_TREE]);
-          K j2=join(ci(j0),j1); cd(j0); cd(kK(t3)[CACHE_TREE]); kV(t3)[CACHE_TREE]=dot_monadic(j2); cd(j0); cd(j1); cd(j2); fsf=1; }
+          K j0=DOT_monadic(kV(t3)[PARAMS]); K j1=DOT_monadic(kV(prnt)[CACHE_TREE]);
+          K j2=join(ci(j0),j1); cd(j0); KSET(kK(t3)[CACHE_TREE],DOT_monadic(j2)); cd(j0); cd(j1); cd(j2); 
+          // KSET(kK(t3)[CACHE_TREE],djoin(kV(t3)[PARAMS],kV(prnt)[CACHE_TREE]));
+          fsf=1; }
         else if(kV(prnt)[CONJ]) {
-          K j0=dot_monadic(kV(t3)[PARAMS]); K j1=dot_monadic(kV(prnt)[CACHE_TREE]);
-          K j2=join(ci(j0),j1); cd(j0); kV(t3)[CACHE_TREE]=dot_monadic(j2); cd(j0); cd(j1); cd(j2); } }
-      if(prnt)cd(prnt);
-      prnt=ci(t3); }
+          K j0=DOT_monadic(kV(t3)[PARAMS]); K j1=DOT_monadic(kV(prnt)[CACHE_TREE]);
+          K j2=join(ci(j0),j1); cd(j0); 
+          KSET(kV(t3)[CACHE_TREE],DOT_monadic(j2)); cd(j0); cd(j1); cd(j2); 
+          // KSET(kV(t3)[CACHE_TREE],djoin(kV(t3)[PARAMS],kV(prnt)[CACHE_TREE]));
+          } }
+      KSET(prnt,ci(t3)) }
 
     //if(v[1]!=t3) if(!VA(t3)) show(t3);//for use with below
     u=v[1]; //This u thing fixes repeated use of 7-1 subparen like f:|/0(0|+)\;f a;f b;
             //Not thread-safe. Adding ex_ result to LOCALS on 7-1 is probably better. See below
     v[1]=VA(t3)?t3:(V)&t3;
-    t0=ex_(*v,1); if(fer>0 && strcmp(errmsg,"undescribed")){cd(t2); R(t0);}
+    // O("\n%s:%d v=%p *v=%p",__FILE__,__LINE__,v,*v);fflush(stdout);
+    t0=ex_(*v,1); if(fer>0 && strcmp(errmsg,"undescribed")){cd(t2); if(!VA(t3))cd(t3); R(t0);}
     if(t0>(K)DT_SIZE && t0->t==7 && t0->n==3) {
-      if(prnt && kV(prnt)[CACHE_TREE] && kV(prnt)[CACHE_WD] && !kK(t0)[LOCALS]->n) {
+      VCHK(t0);
+      if(prnt && kV(prnt)[CACHE_TREE] && RDK(kV(prnt)[CACHE_WD]) && !kK(t0)[LOCALS]->n) {
         if(kK(prnt)[CACHE_TREE]->n) {
-          K j0=dot_monadic(kV(t0)[PARAMS]); K j1=dot_monadic(kV(prnt)[CACHE_TREE]);
-          K j2=join(ci(j0),j1); cd(j0); cd(kK(t0)[CACHE_TREE]); kV(t0)[CACHE_TREE]=dot_monadic(j2); cd(j0); cd(j1); cd(j2); fsf=1; }
+          K j0=DOT_monadic(kV(t0)[PARAMS]); K j1=DOT_monadic(kV(prnt)[CACHE_TREE]);
+          K j2=join(ci(j0),j1); cd(j0); KSET(kK(t0)[CACHE_TREE],DOT_monadic(j2)); cd(j0); cd(j1); cd(j2); 
+          // KSET(kK(t0)[CACHE_TREE],djoin(kV(t0)[PARAMS],kV(prnt)[CACHE_TREE]));
+          fsf=1; }
         else if(kV(prnt)[CONJ]) {
-          K j0=dot_monadic(kV(t0)[PARAMS]); K j1=dot_monadic(kV(prnt)[CACHE_TREE]);
-          K j2=join(ci(j0),j1); cd(j0); kV(t0)[CACHE_TREE]=dot_monadic(j2); cd(j0); cd(j1); cd(j2); } }
-      if(prnt)cd(prnt);
-      prnt=ci(t0); }
+          K j0=DOT_monadic(kV(t0)[PARAMS]); K j1=DOT_monadic(kV(prnt)[CACHE_TREE]);
+          K j2=join(ci(j0),j1); cd(j0); 
+          KSET(kV(t0)[CACHE_TREE],DOT_monadic(j2)); cd(j0); cd(j1); cd(j2); 
+          // KSET(kV(t0)[CACHE_TREE],djoin(kV(t0)[PARAMS],kV(prnt)[CACHE_TREE]));
+          } }
+      KSET(prnt,ci(t0)) }
     if(!prnt && t0->t==7 && t0->n==3)prnt=ci(t0);
     if(*(v+1+i)==offsetDot && t0->t==7 && t0->n==1 && kK(kK(t0)[CODE])[1]==(V)offsetEach) {
       K p=kV(t0)[CODE]; I i=p->n-2;  V*q=(V*) kK(p)+i; e=bv_ex(q,t2); }
@@ -1002,29 +1129,38 @@ Z K ex2(V*v, K k)  //execute words --- all returns must be Ks. v: word list, k: 
   if(t3>(K)DT_SIZE && t3->t==7 && t3->n==3){
     if(kV(t3)==kV(grnt)){if(cls)cd(cls);cls=ci(kK(kK(kK(prnt)[7])[0])[1]);}
     if(prnt){
-      if(kV(prnt)[CACHE_WD] && !kK(t3)[LOCALS]->n){
+      if(RDK(kV(prnt)[CACHE_WD]) && !kK(t3)[LOCALS]->n){
         if(kK(prnt)[LOCALS]->n){
-          if(kV(t3)[CACHE_WD] && !kV(t3)[CACHE_TREE]){kK(t3)[CACHE_TREE]=kK(prnt)[CACHE_TREE]; ci(kK(t3)[CACHE_TREE]);}
+          if(RDK(kV(t3)[CACHE_WD]) && !kV(t3)[CACHE_TREE]){kK(t3)[CACHE_TREE]=kK(prnt)[CACHE_TREE]; ci(kK(t3)[CACHE_TREE]);}
           else if(kK(t3)[PARAMS]->n || grnt){
-            K j0=dot_monadic(kV(t3)[PARAMS]); K j1=dot_monadic(kV(prnt)[CACHE_TREE]); K j2=join(ci(j0),j1); cd(j0);
-            if(kV(t3)[CACHE_TREE] && kK(t3)[CACHE_TREE]->n)cd(kK(t3)[CACHE_TREE]);
-            kV(t3)[CACHE_TREE]=dot_monadic(j2); cd(j0); cd(j1); cd(j2); } }
+            K j0=DOT_monadic(kV(t3)[PARAMS]); K j1=DOT_monadic(kV(prnt)[CACHE_TREE]); K j2=join(ci(j0),j1); cd(j0);
+            KSET(kV(t3)[CACHE_TREE],DOT_monadic(j2)); cd(j0); cd(j1); cd(j2); 
+            // KSET(kV(t3)[CACHE_TREE],djoin(kV(t3)[PARAMS],kV(prnt)[CACHE_TREE]));
+            } }
         else{
-          if( kV(kK(prnt)[CACHE_WD])[LOCALS] && kK(kK(prnt)[CACHE_WD])[LOCALS]->n
+          K cw=RDK(kV(prnt)[CACHE_WD]);
+          if( kV(cw)[LOCALS] && kK(cw)[LOCALS]->n
               && kV(prnt)[CACHE_TREE] && kK(prnt)[CACHE_TREE]->n
-              && (!kV(kK(kK(kK(prnt)[CACHE_WD])[LOCALS])[0])[1]
-                  || !kV(kK(kK(kK(kK(prnt)[CACHE_WD])[LOCALS])[0])[1])[CONJ]) ) {
-            K j0=dot_monadic(kV(t3)[PARAMS]); K j1=dot_monadic(kV(prnt)[CACHE_TREE]);
-            K j2=join(ci(j0),j1); cd(j0); kV(t3)[CACHE_TREE]=dot_monadic(j2); cd(j0); cd(j1); cd(j2); } } }
+              && (!kV(kK(kK(cw)[LOCALS])[0])[1]
+                  || !kV(kK(kK(kK(cw)[LOCALS])[0])[1])[CONJ]) ) {
+            K j0=DOT_monadic(kV(t3)[PARAMS]); K j1=DOT_monadic(kV(prnt)[CACHE_TREE]);
+            K j2=join(ci(j0),j1); cd(j0); 
+            KSET(kV(t3)[CACHE_TREE],DOT_monadic(j2)); cd(j0); cd(j1); cd(j2); 
+            // KSET(kV(t3)[CACHE_TREE],djoin(kV(t3)[PARAMS],kV(prnt)[CACHE_TREE]));
+            } } }
       else{
-        if(kV(prnt)[CACHE_TREE] && 1==kK(prnt)[CACHE_TREE]->n && !kV(prnt)[CACHE_WD] && !kV(t3)[CACHE_TREE]){
-          K j0=dot_monadic(kV(t3)[PARAMS]); K j1=dot_monadic(kV(prnt)[CACHE_TREE]);
-          K j2=join(ci(j0),j1); cd(j0); kV(t3)[CACHE_TREE]=dot_monadic(j2); cd(j0); cd(j1); cd(j2); }
+        if(kV(prnt)[CACHE_TREE] && 1==kK(prnt)[CACHE_TREE]->n && !RDK(kV(prnt)[CACHE_WD]) && !kV(t3)[CACHE_TREE]){
+          K j0=DOT_monadic(kV(t3)[PARAMS]); K j1=DOT_monadic(kV(prnt)[CACHE_TREE]);
+          K j2=join(ci(j0),j1); cd(j0); 
+	  kV(t3)[CACHE_TREE]=DOT_monadic(j2); cd(j0); cd(j1); cd(j2); 
+	  // kV(t3)[CACHE_TREE]=djoin(kV(t3)[PARAMS],kV(prnt)[CACHE_TREE]);
+          }
         else if(kV(t3)[PARAMS] && kK(t3)[PARAMS]->n && kV(prnt)[CACHE_TREE] && kK(prnt)[CACHE_TREE]->n==1){
-          K j0=dot_monadic(kV(t3)[PARAMS]); K j1=dot_monadic(kV(prnt)[CACHE_TREE]); K j2=join(ci(j0),j1); cd(j0);
-          if(kV(t3)[CACHE_TREE] && kK(t3)[CACHE_TREE]->n)cd(kK(t3)[CACHE_TREE]);
-          kV(t3)[CACHE_TREE]=dot_monadic(j2); cd(j0); cd(j1); cd(j2); } }
-      if(grnt)cd(prnt); else grnt=prnt;
+          K j0=DOT_monadic(kV(t3)[PARAMS]); K j1=DOT_monadic(kV(prnt)[CACHE_TREE]); K j2=join(ci(j0),j1); cd(j0);
+          KSET(kV(t3)[CACHE_TREE],DOT_monadic(j2)); cd(j0); cd(j1); cd(j2); 
+          // KSET(kV(t3)[CACHE_TREE],djoin(kV(t3)[PARAMS],kV(prnt)[CACHE_TREE]));
+          } }
+      if(grnt)cd(prnt); else grnt=prnt; // XXX
     }
     prnt=ci(t3); }
 
@@ -1032,22 +1168,40 @@ Z K ex2(V*v, K k)  //execute words --- all returns must be Ks. v: word list, k: 
   *v=VA(t3)?t3:(V)&t3;
   if(*(v+i)==(V)offsetEach && !grnt)grnt=ci(prnt);
   e=dv_ex(0,v+i,t2); *v=u;
-  if(*(v+i)==(V)offsetEach && prnt==grnt){cd(grnt);grnt=0;}
-  cd(t2); if(!VA(t3) && (encp!=3 || (encp==3 && kV(t3)[CACHE_WD])))cd(t3);
-    //the encp conditions address the 2 variations of issue #247, neither of which work in k2.8 or k3.2
+  if(*(v+i)==(V)offsetEach && prnt==grnt)KSET(grnt,0)
+  cd(t2); if(!VA(t3))cd(t3);
+  // XXX if(!VA(t3) && (encp!=3 || (encp==3 && kV(t3)[CACHE_WD])))cd(t3);
+  //the encp conditions address the 2 variations of issue #247, neither of which work in k2.8 or k3.2
   R e;
 }
 
-I cirRef(K x,K y){
+Z I cirVal(K x,K y){
+  VCHK(x);VCHK(y);
   if(x&&(x==y))R 1; // XXX
   I f=0;
   if(xt==6 || !y || (yt!=0 && yt!=5) || (UI)x<DT_SIZE) R 0;
-  DO(yn, f=cirRef_(x,kK(y)[yn-i-1],f))
+  DO(yn,f=cirVal_(x,kK(y)[yn-i-1],f);P(f,f);)
   R f;
 }
 
-I cirRef_(K x,K y,I f){
-  if(x==y)f=1;
-  DO(yn, if(!f && (yt==0 || yt==5)) f=cirRef_(x,kK(y)[yn-i-1],f))
+Z I cirVal_(K x,K y,I f){
+  VCHK(x);VCHK(y);
+  if(x==y)R 1;//f=1;
+  DO(yn,if(!f && (yt==0 || yt==5)) f=cirVal_(x,kK(y)[yn-i-1],f);P(f,f);)
+  R f;
+}
+
+Z I cirRef(K *x,K y){
+  if(x&&(x==&y))R 1; // XXX
+  I f=0;
+  if(!y || (yt!=0 && yt!=5) || (UI)x<DT_SIZE) R 0;
+  DO(yn,f=cirRef_(x,&kK(y)[yn-i-1],f);P(f,f);)
+  R f;
+}
+
+Z I cirRef_(K *x,K *yr,I f){
+  if(x==yr)R 1;//f=1;
+  K y=*yr;
+  DO(yn,if(!f && (yt==0 || yt==5)) f=cirRef_(x,&kK(y)[yn-i-1],f);P(f,f);)
   R f;
 }

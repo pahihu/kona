@@ -3,19 +3,34 @@
 #include "incs.h"
 
 #include "k.h"
+#include "kc.h"
 #include "km.h"
 #include "ko.h"
 
-Z I w=0;
 K _kclone(K a);
+K _kcopy(K a);
 K kcloneI(K a,cS f,int n){
-  if(w)O("kclone %s:%d ",f,n);
+  if(KONA_DEBUG)O("\n%s:%d kclone(%p)",f,n,a);
   R _kclone(a);}
+K kcopyI(K a,cS f,int n){//Shallow copy - list/dict
+  if(KONA_DEBUG)O("\n%s:%d kcopy(%p)",f,n,a);
+  R _kcopy(a);}
+K _kcopy(K a)//Shallow copy - list/dict
+{
+  U(a);
+  I t=a->t,n=a->n;
+  P(5!=t && t, (abort(),ME));
+  K z=newK(t,n),b,e;z->t=t;
+  if(5==t)DO(n,b=kK(a)[i];kK(z)[i]=(e=newK(0,3));M(e,z);kK(e)[0]=ci(kK(b)[0]);kK(e)[1]=ci(kK(b)[1]);kK(e)[2]=ci(kK(b)[2]);)
+  else DO(n,kK(z)[i]=ci(kK(a)[i]));
+  R z;
+}
+
 K _kclone(K a)//Deep copy -- eliminate where possible
 {
   if(!a) R 0;
   I t=a->t,n=a->n;
-  K z= 7==t?Kv():newK(-5==t?-1:t,n);z->t=t;
+  K z= 7==t?Kv():6==t?_n():newK(-5==t?-1:t,n);z->t=t;
   if     (4==ABS(t)) DO(n, kS(z)[i]=kS(a)[i])  //memcpy everywhere is better
   else if(3==ABS(t)) DO(n, kC(z)[i]=kC(a)[i])
   else if(2==ABS(t)) DO(n, kF(z)[i]=kF(a)[i])
@@ -43,7 +58,7 @@ K _kclone(K a)//Deep copy -- eliminate where possible
                   {
                     K r=_kclone(*(K*)w); //oom
                     V q=newE(LS,r); //oom
-                    kap((K*) kV(z)+LOCALS,&q);//oom
+                    kap((K*) kV(z)+LOCALS,&q);//oom XXX pahihu: this builds LOCALS(z) which is referenced in CODE(z)
                     cd(q);//kap does ci
                     q=EVP(q); //oom free z etc. kap needs checking
                     v[i]=q;
@@ -60,7 +75,7 @@ K _kclone(K a)//Deep copy -- eliminate where possible
     kV(z)[DEPTH]=kV(a)[DEPTH];
     kV(z)[CONTeXT]=kV(a)[CONTeXT];
     cd(kV(z)[PARAMS]); kV(z)[PARAMS]=_kclone(kV(a)[PARAMS]); //oom ; fill instead of kclone?
-    cd(kV(z)[LOCALS]); kV(z)[LOCALS]=_kclone(kV(a)[LOCALS]); //oom ; fill instead of kclone?
+    // cd(kV(z)[LOCALS]); kV(z)[LOCALS]=_kclone(kV(a)[LOCALS]); //oom ; fill instead of kclone? XXX pahihu why replace this see above
     kV(z)[CONJ]=_kclone(kV(a)[CONJ]);  //oom
   }
 
@@ -86,7 +101,7 @@ K demote(K a)//Attempt to force unnaturally occurring lists into vectors
   I t=a->t, n=a->n;
   if(0!=t || 1>n) R a;
   I p=kK(a)[0]->t;
-  DO(n, if(p!=kK(a)[i]->t)p=0)
+  DO(n, if(p!=kK(a)[i]->t){p=0;break;})
   if(!(1<=p && p <= 4))R a;
   K z=newK(-p,n); M(a,z)
   if     (4==p)DO(n,kS(z)[i]=*kS(kK(a)[i])) //use memcpy instead

@@ -3,6 +3,8 @@
 #include "k.h"
 #include "km.h"
 #include "c.h"
+#include "kbuild.h"
+#include "ks.h"
 
 I fLoad=0;
 
@@ -27,12 +29,67 @@ S fBreak = "n";
 S fBreak = "t";
 #endif
 
+#if defined(__APPLE__)
+#include <sys/types.h>
+#include <sys/sysctl.h>
+int sysctl32(const char*nm)
+{
+  int v;size_t n=sizeof(v);
+  sysctlbyname(nm,&v,&n,NULL,0);
+  return v;
+}
+
+I sysctl64(const char*nm)
+{
+  I v;size_t n=sizeof(v);
+  sysctlbyname(nm,&v,&n,NULL,0);
+  return v;
+}
+
+S sysctlS(const char*nm)
+{
+  S p;size_t len;
+  sysctlbyname(nm,NULL,&len,NULL,0);
+  p=malloc(len);
+  sysctlbyname(nm,p,&len,NULL,0);
+  return p;
+}
+
+int SysInfo(int *ncpu,int64_t *mem,S*hostnm)
+{
+  *ncpu=sysctl32("hw.logicalcpu_max");
+  *mem=sysctl64("hw.memsize")/(1<<20);
+  *hostnm=sysctlS("kern.hostname");
+  R 0;
+}
+#endif
+
+#if defined(WIN32)
+extern int SysInfo(int*ncpu,int64_t*mem,char**hostnm);
+#define realpath(N,R) _fullpath((R),(N),PATH_MAX)
+#endif
+
+#if !defined(__APPLE__) && !defined(WIN32)
+#warning Using dummy SysInfo()
+int SysInfo(int*ncpu,int64_t*mem,char**hostnm)
+{
+  R -1;
+}
+#endif
+
 void boilerplate()
 {
   #ifndef __MINGW32__
     if(!isatty(STDOUT) || !isatty(STDIN)) R;		//kluge:  isatty() fails using mingw-10.0 with msys2
   #endif
-  O("K Console - Enter \\ for help\n\n");
+  O("K Console " KBUILD_DATE "\n");
+  O(KBUILD_OS " " KBUILD_ARCH);
+  int ncpu;I mem;S hostnm;
+  if(!SysInfo(&ncpu,&mem,&hostnm)){
+    O(" %lubit %dcore %lldMB %s",8*sizeof(size_t),ncpu,mem,hostnm);
+    free(hostnm);
+  }
+  O("\nEnter \\ for help\n\n");
   prompt(0);
 }
 
@@ -53,12 +110,12 @@ recheck:
   strcat(b,".k");
   f=fopen(b,"r"); if(f){p=b;GC;}
   if(!n){
-    n=strlen(khome);if(n+strlen(s)+2>PATH_MAX)R 0;
+    n=SN(khome);if(n+SN(s)+2>PATH_MAX)R 0;
     strcpy(b,khome);strcpy(b+n,s); goto recheck; }
   R 0;
 cleanup:
   fclose(f);
-  K kp=newK(-3,strlen(p));M(kp);
+  K kp=newK(-3,SN(p));M(kp);
   strcpy(kC(kp),p);
   R kp; }
 
@@ -200,10 +257,11 @@ K backslash(S s, I n, K*dict)
               "? dyadic   draw. n?m yields n numbers < m \n"
               "? dyadic   deal. -n?m yields n ints < m without replacement\n"
               "? dyadic   sample. n?y yields n random elements from list y (-n for no replacement)\n"
+              "? dyadic   random symbol. n?`\"1\" .. `\"8\"\n"
               "? dyadic   find. x?y yields index of y in list x (or #x)\n"
               "? dyadic   invert. {x^2} ? 2 yields sqrt(2) \n"
               "? triadic  invert-guess. secant method with clues ?[{2^x};17;4]\n"
-              "_ monadic  floor. tolerant floor function \n"
+              "_ monadic  floor/lower. tolerant floor function / lowercase \n"
               "_ dyadic   drop/cut. lose x elts from list y / separate into pieces \n"
               ", monadic  enlist. put x inside a 1-element list \n"
               ", dyadic   join. \"ab\",\"cd\" yields \"abcd\"\n"
@@ -324,9 +382,11 @@ K backslash(S s, I n, K*dict)
               "_hash    hash, (x;_hash x)?y\n"
               "_hat     caret/without, x _hat y\n"
               "_in      true if x is in y\n"
+              "_like    glob match, sS(C) _like C\n"
               "_lin     _in for several values\n"
               "_lsq     matrix division\n"
               "_mul     matrix multiplication\n"
+              "_rematch basic regexp match, sS(C) _rematch C\n"
               "_setenv  set environment variable\n"
               "_sm      string match\n"
               "_ss      positions of substring y in string x\n"
@@ -385,6 +445,7 @@ K backslash(S s, I n, K*dict)
                "3: dyadic   append to binary file, w/o sync `f 3: ,7\n"
                "5: dyadic   append to binary file `f 5: ,7\n"
                "6: dyadic   write raw byte string `f 6: \"\\01\\02\\03\"\n"
+               "6: dyadic   append to text file (,sC) 6: \"hello\"\n"
                "6: monadic  read raw byte string  6: `f\n"
                "\nNetwork\n"
                "Start k listening for IPC on port 1234  ./k -i 1234\n"
@@ -436,12 +497,12 @@ K backslash(S s, I n, K*dict)
   }
 
   // \kr \cd  ?
-
-  if(isspace(s[1]))s++; //Allow system commands to be executed without preceding space
-#ifdef WIN32
-  s++;
-#endif
-  R system(s)?DOE:_n();
+  s++;while(*s&&isspace(*s))s++;
+  if(SN(s)>3&&!SCN(s,"cd ",3)){
+    char p[PATH_MAX+1];
+    if(!realpath(s+3,p))R DOE;
+    R chdir(p)?DOE:_n();
+  }else R system(s)?DOE:_n();
 }
 
 Z K backslash_b(S s,I n) {
@@ -458,9 +519,9 @@ Z K backslash_d(S s,I n,K*dict) {
   if(n==2) {O("%s\n",d_); R _n();}  // yields contents of d_ without quotes (same as k3.2)
   if(n==4 && s[3]=='.') { d_=(S)sp(""); R _n();}
   if(n==4 && s[3]=='^') {
-    if(strlen(d_)==0) R _n();
-    if(strlen(d_)==2) {d_=(S)sp(""); R _n();}
-    if(strlen(d_)>3){ I c=0,i=0; for(i=0;i<strlen(d_);i++)if(d_[i]=='.')c=i; strcpy(z,d_); z[c]='\0'; d_=(S)sp(z); R _n(); } }
+    if(SN(d_)==0) R _n();
+    if(SN(d_)==2) {d_=(S)sp(""); R _n();}
+    if(strlen(d_)>3){ I c=0,i=0; for(i=0;i<SN(d_);i++)if(d_[i]=='.')c=i; strcpy(z,d_); z[c]='\0'; d_=(S)sp(z); R _n(); } }
   if(n==5 && s[3]=='.' && s[4]=='k') { d_=(S)sp(".k"); R _n();}
   if(n==5 && s[3]=='.' && s[4]!='k') {O("absolute backslash-d should begin with .k\n"); R _n();}
   if(isalpha(s[3])){ denameD(dict,s+3,1); strcpy(z,d_); strcat(z,"."); strcat(z,s+3); d_=(S)sp(z); R _n(); }
@@ -472,9 +533,9 @@ Z K backslash_v(S s,I n,K*dict) {
   C z[256]; z[0]='\0';
   if(2==n) strcpy(z,d_);
   if(4==n && s[3]==*"^") {
-    if(strlen(d_)>3) {
+    if(SN(d_)>3) {
       I c=0,i=0;
-      for(i=0;i<strlen(d_);i++) if(d_[i]==*".")c=i;
+      for(i=0;i<SN(d_);i++) if(d_[i]==*".")c=i;
       strcpy(z,d_); z[c]=*"\0"; }
     else R _n(); }
   if(isalpha(s[3])) {

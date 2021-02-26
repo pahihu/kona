@@ -17,6 +17,9 @@
 
 #include "kbuild.h"
 
+#include "regex.h"
+#include "glob.h"
+
 #ifdef WIN32
 #include "win/fnmatch.h"
 #ifndef gmtime_r
@@ -194,7 +197,7 @@ K _ci(K a)
   P(ABS(t) > 1,TE)
   K z=newK(t*3,n);
   if(!t) DO(n,kK(z)[i]=_ci(kK(a)[i]))
-  else   DO(n, kC(z)[i]=  (C) (UC) (kI(a)[i] % 256l) ); //TODO: more complete testing
+  else   DO(n, kC(z)[i]=  (C) (UC) (kI(a)[i] & 255) ); //TODO: more complete testing
   R z;
 }
 
@@ -441,6 +444,37 @@ void vitter(I *a,I n,I N) //Method D
     j+=S+1;
     a[i++]=j;
   }
+}
+
+K _like(K x,K y){
+  P(3!=ABS(yt) || (xt && 3!=ABS(xt) && 4!=ABS(xt)),TE);
+  S pat=kC(y);K z=0;
+  if(!xt)z=newK(-1,xn);
+  else if(4==ABS(xt))z=newK(1==xn?1:-1,xn);
+  else z=newK(1,1);
+  if(z)
+    SW(ABS(xt)){
+    CS(0,DO(xn,y=kK(x)[i];P(3!=ABS(yt)&&4!=yt,(cd(z),TE));kI(z)[i]=amatch(4==yt?*kS(y):kC(y),pat)))
+    CS(3,kI(z)[0]=amatch(kC(x),pat))
+    CS(4,DO(xn,kI(z)[i]=amatch(kS(x)[i],pat)))
+    }
+  R z;
+}
+
+K _rematch(K x,K y){
+  P(3!=ABS(yt) || (xt && 3!=ABS(xt) && 4!=ABS(xt)),TE);
+  S rx=re_comp(kC(y)); P(rx, kerr(rx));
+  K z=0;
+  if(!xt)z=newK(-1,xn);
+  else if(4==ABS(xt))z=newK(1==xn?1:-1,xn);
+  else z=newK(1,1);
+  if(z)
+    SW(ABS(xt)){
+    CS(0,DO(xn,y=kK(x)[i];P(3!=ABS(yt)&&4!=yt,(cd(z),TE));kI(z)[i]=re_exec(4==yt?*kS(y):kC(y))))
+    CS(3,kI(z)[0]=re_exec(kC(x)))
+    CS(4,DO(xn,kI(z)[i]=re_exec(kS(x)[i])))
+    }
+  R z;
 }
 
 Z void svdcmp(F **a, I m, I n, F *w, F **v, F *t);

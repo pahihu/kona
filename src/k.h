@@ -1,6 +1,5 @@
 ;
 extern K KFIXED;
-K cd(K a);
 void finally();
 extern I PG;
 extern I fError;
@@ -10,7 +9,7 @@ extern I fnci;
 extern S recur(S x);
 
 #if defined(DEBUG)
-extern V krec[1000000];
+extern V krec[NKREC];
 extern I kreci;
 void tf(N n);
 #endif
@@ -75,7 +74,6 @@ K times(K a,K b);
 K minus(K a,K b);
 K plus(K a,K b);
 K colon_monadic(K a);
-K dot_monadic(K x);
 K format(K a);
 K count(K a);
 K enlist(K x);
