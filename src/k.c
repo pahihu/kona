@@ -42,7 +42,7 @@ K NIL;    //Useful to avoid actually allocating _n nils (use _n() instead)
 
 S LS;     //special symbol for locals (repeated,invisible)
 I PP=7;   //Print Precision Digits
-I PPMAX=19;
+I PPMAX=17;
 C PPON=1;
 I maX(I a,I b){R a>b?a:b;}
 I miN(I a,I b){R a<b?a:b;}
