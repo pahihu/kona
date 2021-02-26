@@ -1,7 +1,9 @@
 #include "incs.h"
 #include "k.h"
+#include "kc.h"
 #include "kg.h"
 #include "km.h"
+#include "ks.h"
 #include "vc.h"
 #include "vg.h"
 
@@ -85,7 +87,7 @@ Z K charRange(K a)
 Z K symRange(K x)
 {
   K z=newK(-4,0);M(z);
-  setS(2,0);DO(xn,S s=kS(x)[i];if(!SV(s,2)){SV(s,2)=-1;z=kap(&z,&s);})
+  I sm=smark();DO(xn,S s=kS(x)[i];if(sm!=SV(s,1)){SV(s,1)=sm;z=kap(&z,&s);})
   R z;
 }
 
@@ -257,14 +259,16 @@ Z K charGroup(K x)
 
 Z K symGroup(K x)
 {
-  I j=0;
-  K uk=newK(-1,xn);M(uk);I*u=kI(uk);
-  setS(1,0);setS(2,0);
-  DO(xn,S s=kS(x)[i];if(!SV(s,2)){u[j]=(L)s;SV(s,2)=++j;}SV(s,1)++)
-  K y=newK(0,j);M(y,uk);
-  DO(j,S s=(S)(L)u[i];K z=newK(-1,SV(s,1));M(z,y,uk);kK(y)[i]=z;u[i]=0)
-  DO(xn,S s=kS(x)[i];I w=SV(s,2)-1;K z=kK(y)[w];kI(z)[u[w]++]=i)
-  cd(uk);
+  S s;I m=smark();K z,y=newK(-4,0);M(y);
+  DO(xn,S s=kS(x)[i];
+    if(m==SV(s,2))SV(s,1)++;
+    else{SV(s,2)=m;SV(s,1)=1;kap(&y,&s);}) // y:?x
+  // cheating: replace the symbols with list ptrs
+  if(yn==xn){
+    DO(yn,s=kS(y)[i];z=newK(-1,1);M(y,z);kK(y)[i]=z;kI(z)[0]=i);yt=0;
+  }else{
+    DO(yn,s=kS(y)[i];M(y,kK(y)[i]=newK(-1,SV(s,1)));SV(s,2)=i+1;SV(s,1)=0;);yt=0;
+    DO(xn,s=kS(x)[i];I w=SV(s,2)-1;K z=kK(y)[w];kI(z)[SV(s,1)++]=i)}
   R y;
 }
 
@@ -569,11 +573,11 @@ K where(K x)
 {
   P(!xn,newK(-1,0))
   P(1!=ABS(xt),IE)
-  I zn=0,y,j,t=0;
+  I zn=0,y,t=0;
   //DO(xn,if((y=kI(x)[i])<0)R DOE;zn+=y)
-  DO(xn,if((y=kI(x)[i])<0)continue;zn+=y)//skip negatives instead of error
+  DO(xn,if((y=kI(x)[i])>=0)zn+=y;)//skip negatives instead of error
   K z=newK(-1,zn); U(z)
-  DO(xn, for(j=0;j<kI(x)[i];j++)kI(z)[t++]=i)//Handles a-> == +-1
+  DO(xn, DO2(kI(x)[i], kI(z)[t++]=i))
   R z;
 }
 
@@ -613,11 +617,15 @@ K join(K x, K y) {      //TODO: 5,6?
   if(!xk) zt=-ABS(yt);
   else if(!yk) zt=-ABS(xt);  //'else' is sic. In "K3.21 2006-02-01" right empty list takes precedence
   if(zt < -4) zt=0;
-  /*
+#if 0
   if(1==rc(x)&&(zt==xt)&&(xt==yt)){
-    O("self join: x=(%lld,%lld,%lld) y=(%lld,%lld,%lld)\n",rc(x),xt,xk,rc(y),yt,yk);
-    K ox=x;kapn(&x,kK(y),yk);R x==ox?ci(x):x;
-  }*/
+    KDBG(O("\n%s:%d self join: x=%p [%lld,%lld,%lld] y=%p [%lld,%lld,%lld]",__FILE__,__LINE__,x,xt,xk,rc(x),y,yt,yk,rc(y));fflush(stdout);)
+    KDBG(O("\n x=%p ",x);showx(x);O("\n y=%p ",y);showx(y);)
+    K ox=x;kapn(&x,kK(y),yk);
+    KDBG(O("\n:%s:%d joined x=%p [%lld,%lld,%lld]",__FILE__,__LINE__,x,xt,xn,rc(x));fflush(stdout);)
+    R ox==x?ci(x):x;
+  }
+#endif
   I zn=xk+yk;
   K z=newK(zt,zn);U(z)
 

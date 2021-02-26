@@ -76,16 +76,17 @@ K show(K a);
 extern I tests;
 #ifdef DEBUG
 K _cdg(K *pA,S f,I ln);
-#define cd(x)	_cdg(&(x),__FILE__,__LINE__)
+#define cd(x)	_cdg((K*)&(x),__FILE__,__LINE__)
 #else
 K cd(K a);
 #endif
 I OOM_CD(I g, ...);
 I cl2(I v);
-#define rc(x)	((x)->_c>>8)
+#define rc(x)	((x)?(x)->_c>>8:0)
 K mrc(K x,I c);
 K mstat(void);
 void trst();
 void elapsed(S m);
 extern I lszNode,lszPDA;
 V kalloc(I k,I*r);
+#define KP_MIN 5

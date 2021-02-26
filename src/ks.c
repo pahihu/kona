@@ -51,7 +51,7 @@ Z I scn(S a,I na,S b,I nb){
     if(!r)r=1;
   }else r=fastcmp(a,b,na);
   // fprintf(stderr,"DBG: %s(%lld) %s(%lld) r:%lld\n",a,na,b,nb,r);
-  R r<0?-1:r>0?1:0;
+  R r<0?-1:r>0/*?1:0*/;
 }
 
 Z I SEQ(S a,I na,S b,I nb){
@@ -125,8 +125,8 @@ I strlenn(S s,I k){S t=memchr(s,'\0',k); R t?t-s:k;}
 
 I StoI(S s,I *n){S t; errno=0; *n=strtol(s,&t,10); R !(errno!=0||t==s||*t!=0);}
 
-I SC(S a,S b){I x=strcmp(a,b); R x<0?-1:x>0?1:0;}//String Compare: strcmp unfortunately does not draw from {-1,0,1}
-I SCN(S a,S b,I n){I x=strncasecmp(a,b,n); R x<0?-1:x>0?1:0;}
+I SC(S a,S b){I x=strcmp(a,b); R x<0?-1:x>0/*?1:0*/;}//String Compare: strcmp unfortunately does not draw from {-1,0,1}
+I SCN(S a,S b,I n){I x=strncasecmp(a,b,n); R x<0?-1:x>0/*?1:0*/;}
 S spI(S k,I nk)//symbol from phrase: string interning, Ks(sp("aaa")). This should be called before introducing any sym to the instance
 { //We are using this to ensure any two 'character-identical' symbols are in fact represented by the same pointer S
   //See Knuth Algorithm 6.2.2T
@@ -155,29 +155,29 @@ S spI(S k,I nk)//symbol from phrase: string interning, Ks(sp("aaa")). This shoul
     else if(p->b==-a){s->b= 0; r->b=a;}
     p->b=0;
   }
-  t->c[s==t->c[1]?1:0]=p;
+  t->c[s==t->c[1]/*?1:0*/]=p;
   R q->k;
 }
 S sp(S s){R spI(s,strlen(s));}
 
 //S spkC(K a){S u=strdupn(kC(a),a->n),v=sp(u);free(u);R v;}
 S spn(S s,unsigned n){unsigned k=0;while(k<n && s[k])k++; /*S u=strdupn(s,k); if(!u)R 0;*/ S v=spI(s,k); /*free(u);*/ R v;} //safer/memory-efficient strdupn
-Slot wleft(N x,unsigned y,Slot z)
+Slot wleft(N x,Slot z,I m)
 {
   if(!x)R z;
-  z=wleft(x->c[0],y,z);
-  if(x->k&&SV(x->k,y)){Slot o=SV(x->k,y);SV(x->k,y)=z;z+=o;}
-  R wleft(x->c[1],y,z);
+  z=wleft(x->c[0],z,m);
+  if(x->k&&m==SV(x->k,2)&&SV(x->k,1)){Slot o=SV(x->k,1);SV(x->k,1)=z;z+=o;}
+  R wleft(x->c[1],z,m);
 }
-Slot wright(N x,unsigned y,Slot z)
+Slot wright(N x,Slot z,I m)
 {
   if(!x)R z;
-  z=wright(x->c[1],y,z);
-  if(x->k&&SV(x->k,y)){Slot o=SV(x->k,y);SV(x->k,y)=z;z+=o;}
-  R wright(x->c[0],y,z);
+  z=wright(x->c[1],z,m);
+  if(x->k&&m==SV(x->k,2)&&SV(x->k,1)){Slot o=SV(x->k,1);SV(x->k,1)=z;z+=o;}
+  R wright(x->c[0],z,m);
 }
-Z void ssI(N x,unsigned y,Slot z){if(x){DO(2,ssI(x->c[i],y,z));if(x->k)SV(x->k,y)=z;}}
-void setS(unsigned y,Slot z){ssI(SYMBOLS,y,z);}
+// Z void ssI(N x,unsigned y,Slot z){if(x){DO(2,ssI(x->c[i],y,z));if(x->k)SV(x->k,y)=z;}}
+// void setS(unsigned y,Slot z){ssI(SYMBOLS,y,z);}
 void OS(N x,unsigned y)
 {
   if(!x)R;
@@ -185,3 +185,5 @@ void OS(N x,unsigned y)
   if(x->k&&SV(x->k,y))O("%p: %u\n",x->k,SV(x->k,y));
   OS(x->c[1],y);
 }
+I SM=0;I smark(void){R ++SM;}
+I nsym(void){R ns;}

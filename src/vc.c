@@ -3,6 +3,7 @@
 #include "k.h"
 #include "km.h"
 #include "ko.h"
+#include "ks.h"
 #include "vc.h"
 
 /* FC utility */
@@ -34,14 +35,21 @@ K equals(K a, K b)
   I zn=at>0?bn:an;
   K z=newK(t,zn); //oom
 #define EQ(x, y) (x) == (y)
-  if     (2==AT && 2==BT) { SCALAR_EXPR_FUN(FC, kI(z), kF(a), kF(b), ?0:1)
-         DO(zn, if(kF(a)[i]!=kF(a)[i] && kF(b)[i]!=kF(b)[i]) kI(z)[i]=1)}
-  else if(2==AT && 1==BT) SCALAR_EXPR_FUN(FC_FI, kI(z), kF(a), kI(b), ?0:1)
-  else if(1==AT && 2==BT) SCALAR_EXPR_FUN(FC_IF, kI(z), kI(a), kF(b), ?0:1)
-  else if(1==AT && 1==BT) SCALAR_OP_CASE(EQ, kI(z), kI(a), kI(b))
-  else if(3==AT && 3==BT) SCALAR_OP_CASE(EQ, kI(z), kC(a), kC(b))
-  else if(4==AT && 4==BT) SCALAR_OP_CASE(EQ, kI(z), kS(a), kS(b)) //works because of interning
-  else if(0==at || 0==bt) dp(&z,equals,a,b);
+  if(0==at || 0==bt){dp(&z,equals,a,b);R z;}
+  SW(AT){
+  CS(1,
+    if(1==BT){SCALAR_OP_CASE(EQ, kI(z), I,kI(a), I,kI(b))}
+    else if(2==BT){SCALAR_EXPR_FUN(FC_IF, kI(z), kI(a), kF(b), ?0:1)})
+  CS(2,
+    if(1==BT){SCALAR_EXPR_FUN(FC_FI, kI(z), kF(a), kI(b), ?0:1)}
+    else if (2==BT){SCALAR_EXPR_FUN(FC, kI(z), kF(a), kF(b), ?0:1)
+         DO(zn, if(kF(a)[i]!=kF(a)[i] && kF(b)[i]!=kF(b)[i]) kI(z)[i]=1)})
+  CS(3, if(3==BT){SCALAR_OP_CASE(EQ, kI(z), C,kC(a), C,kC(b))})
+  CS(4, 
+    if(-4==at&&4==bt){I sm=smark();SV(*kS(b),1)=sm; DO(zn,kI(z)[i]=sm==SV(kS(a)[i],1))}
+    else if(4==at&&-4==bt){I sm=smark();SV(*kS(a),1)=sm; DO(zn,kI(z)[i]=sm==SV(kS(b)[i],1))}
+    else if(4==BT){SCALAR_OP_CASE(EQ, kI(z), S,kS(a), S,kS(b))}) //works because of interning
+  }
 #undef EQ
   R z;
 }
@@ -112,8 +120,8 @@ Z K lessmore(K a, K b, I x)
     if     (2==AT && 2==BT)  SCALAR_EXPR_FUN(FC, h, kF(a), kF(b), >0)
     else if(2==AT && 1==BT)  SCALAR_EXPR_FUN(FC_FI, h, kF(a), kI(b), >0)
     else if(1==AT && 2==BT)  SCALAR_EXPR_FUN(FC_IF, h, kI(a), kF(b), >0)
-    else if(1==AT && 1==BT)  SCALAR_OP_CASE(GT, kI(z), kI(a), kI(b))
-    else if(3==AT && 3==BT)  SCALAR_OP_CASE(GT, kI(z), kC(a), kC(b))
+    else if(1==AT && 1==BT)  SCALAR_OP_CASE(GT, kI(z), I,kI(a), I,kI(b))
+    else if(3==AT && 3==BT)  SCALAR_OP_CASE(GT, kI(z), C,kC(a), C,kC(b))
     else if(4==AT && 4==BT) {SCALAR_EXPR_FUN(SC, h, kS(a), kS(b), >0)}
 #undef GT
   }

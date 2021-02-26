@@ -25,19 +25,28 @@
 //Linux: cat /proc/cpuinfo | grep cache_alignment
 //OSX: sysctl -a | grep cache
 //Simple tests on Kona confirmed 6 is an improvement over 5
-#define KP_MIN  6 //2^x, must be at least ceil(lg(sizeof(V)))
+// KP_MIN  //2^x, must be at least ceil(lg(sizeof(V)))
 #define KP_MAX 26 //2^x, 26->64MB  //TODO: base on available memory at startup (fixed percent? is 64M/2G a good percent?)
 Z V KP[KP_MAX+1]; //KPOOL
 I PG; //pagesize:  size_t page_size = (size_t) sysconf (_SC_PAGESIZE);
 F mUsed=0.0, mAlloc=0.0, mMap=0.0, mMax=0.0;
+// #define GMALLOC
+
 #ifdef DEBUG
 // #define MEMDEBUG
+// #define CICD
 V mMinM=(V)-1;
 V mMaxM=(V) 0;
 I mMaxL=0;
 #define TRAPP {fflush(stdout);*(volatile I*)0=1;}
 #else
 #define TRAPP
+#endif
+
+#ifdef CICD
+#define CDBG(x)	KDBG(x)
+#else
+#define CDBG(x)
 #endif
 
 #ifdef MEMDEBUG
@@ -88,7 +97,7 @@ Z void CKP(){
   DO(KP_MAX+1,CMR(KP[i]))
 }
 K ReadK(K x,S f,I ln) {
-  if(FreeP==x)O("\n%s:%lld reading garbage",f,ln);
+  if(FreeP==(size_t)x)O("\n%s:%lld reading garbage",f,ln);
   R x;
 }
 K CheckK(K x)
@@ -160,8 +169,7 @@ K cd(K x){
   P(6==xt,0)
   MEMDBG(CheckK(x);)
   dc(x);
-  // DBG(if(!mCDL){H(mCDL);O("%s:%lld cd(%lld,%p,%lld)",f,ln,xt,x,rc(x));})
-  KDBG(H(mCDL);O("%s:%lld cd(%lld,%p,%lld)",f,ln,xt,x,rc(x));)
+  CDBG(H(mCDL);O("%s:%lld cd(%lld,%p,%lld)",f,ln,xt,x,rc(x));)
 
   if(x->_c > 255) R x;
 
@@ -169,9 +177,9 @@ K cd(K x){
   {
     CSR(5,)
     CS(0, 
-      KDBG(mCDL++;H(mCDL-1);O("--- BEGIN CD %p ---",x);)
+      CDBG(mCDL++;H(mCDL-1);O("--- BEGIN CD %p ---",x);)
       STAT(trst()); DO(xn, cd(x->k[xn-i-1])); STAT(elapsed("cd"))
-      KDBG(--mCDL;H(mCDL);O("--- END CD %p ---",x);)
+      CDBG(--mCDL;H(mCDL);O("--- END CD %p ---",x);)
       ) //repool in reverse, attempt to maintain order
   }
 
@@ -182,9 +190,9 @@ K cd(K x){
   SW(xt)
   {
     CS(7, 
-      KDBG(mCDL++;H(mCDL-1);O("--- BEGIN CD %p ---",x);)
+      CDBG(mCDL++;H(mCDL-1);O("--- BEGIN CD %p ---",x);)
       DO(-2+TYPE_SEVEN_SIZE,cd(((V*)x->k)[2+i]))
-      KDBG(--mCDL;H(mCDL);O("--- END CD %p ---",x);)
+      CDBG(--mCDL;H(mCDL);O("--- END CD %p ---",x);)
       ) //-4 special trick: don't recurse on V members. assumes sizeof S==K==V.  (don't free CONTeXT or DEPTH)
   }
 
@@ -222,7 +230,7 @@ K ci(K x)
   P(6==xt,x)
   MEMDBG(CheckK(x);)
   ic(x);
-  KDBG(O("\n%s:%lld ci(%lld,%p,%lld)",f,ln,xt,x,rc(x));)
+  CDBG(O("\n%s:%lld ci(%lld,%p,%lld)",f,ln,xt,x,rc(x));)
 
   #if 0
   SW(xt)
@@ -262,28 +270,32 @@ K newK(I t, I n)
   ic(slsz(z,r)); z->t=t; z->n=n;
   #ifdef DEBUG
   if(kreci<NKREC){krec[kreci]=z;krecLN[kreci]=ln;krecF[kreci++]=f;};
-  KDBG(O("\n%s:%lld newK=%p [%lld,%lld,%lld]",f,ln,z,z->t,z->n,rc(z));)
+  CDBG(O("\n%s:%lld newK=%p [%lld,%lld,%lld]",f,ln,z,z->t,z->n,rc(z));)
   #endif
   MEMDBG(MarkK(z);)
   R z;
 }
 
-// GMALLOC
+#ifdef GMALLOC
 Z V ma(I k)
 {
   V a=malloc(k);
   R memset(a,0,k);
 }
-Z V unPOOL(I lane){ R ma(1<<lane);}
+Z V UNPOOL(I lane){ R ma(1<<lane);}
+#else
+#define UNPOOL(x) unpool(x)
+#endif
 
 Z V kallocI(I k,I r)
 {
   CKP();
-  // GMALLOC
+#ifdef GMALLOC
   R ma(k);
-
+#else
   if(r>KP_MAX)R amem(k,r);// allocate for objects of sz > 2^KP_MAX
   R unpool(r);
+#endif
 }
 
 V kalloc(I k,I*r) //bytes. assumes k>0
@@ -293,8 +305,8 @@ V kalloc(I k,I*r) //bytes. assumes k>0
 }
 
 Z V amem(I k,I r) {
-  K z;I kk=1<<r;I kpg=kk<PG?PG:kk;
-  if(MAP_FAILED==(z=mmap(0,kk,PROT_READ|PROT_WRITE,MAP_PRIVATE|MAP_ANON,-1,0)))R ME;
+  K z;I kpg=k<PG?PG:k;
+  if(MAP_FAILED==(z=mmap(0,k,PROT_READ|PROT_WRITE,MAP_PRIVATE|MAP_ANON,-1,0)))R ME;
   mAlloc+=kpg; //kk<PG?PG:kk;
 #ifdef DEBUG
   if((V)z<mMinM)mMinM=z;
@@ -355,9 +367,9 @@ I cl2(I v) //optimized 64-bit ceil(log_2(I))
 I lsz(I k){R k<=((I)1)<<KP_MIN?KP_MIN:cl2(k);} //pool lane from size. Ignore everywhere lanes < KP_MIN. MAX() was eliminated as an optimization
 I repool(V v,I r)//assert r < KP_MAX 
 {
-  // GMALLOC
+#ifdef GMALLOC
   free(v); R 0;
-
+#else
   I k=((I)1)<<r;
   CKP();
 #ifdef DEBUG
@@ -375,17 +387,19 @@ I repool(V v,I r)//assert r < KP_MAX
   CKP();
   mUsed -= k;
   R 0;
+#endif
 }
 Z I kexpander(K*p,I n) //expand only. 
 {
-  // GMALLOC
+#ifdef GMALLOC
   K a=*p;
   I c=sz(a->t,a->n),d=sz(a->t,n);
   V v=ma(d);
   memcpy(v,a,c);
+  free(a);
   *p = v; slsz(*p,lsz(d));
   R 1;
-#if 0
+#else
   CKP();
   K a=*p;I r = glsz(a);
   if(r>KP_MAX) //Large anonymous mmapped structure - (simulate mremap)
@@ -407,12 +421,11 @@ Z I kexpander(K*p,I n) //expand only.
     if(g) if(MAP_FAILED!=mmap((V)a+e,f,PROT_READ|PROT_WRITE,MAP_PRIVATE|MAP_ANON|MAP_FIXED,-1,0)){mAlloc+=f;mUsed+=f;if(mUsed>mMax)mMax=mUsed;R 1;}  //Add pages to end
 #endif
 #endif
-    r=lsz(d); V v;U(v=amem(d,r))
+    r=lsz(d); V v;U(v=amem(1<<r,r)) // double mem
     I c=sz(a->t,a->n);
     memcpy(v,a,c); *p=v; slsz(*p,r);
     CKP();
-    I res=0; // GMALLOC I res=munmap(a,c); 
-    free(a);
+    I res=munmap(a,c); 
     if(res) { show(kerr("munmap")); R 0; }
     CKP();
     mAlloc-=c;mUsed-=c;
@@ -423,7 +436,7 @@ Z I kexpander(K*p,I n) //expand only.
   //Standard pool object
   if(d<=(1<<r))R 1;
   I s=lsz(d);
-  K x=kallocI(d,s); U(x)
+  K x=kallocI(1<<s,s); U(x) // double mem
   I c=sz(a->t,a->n);
   memcpy(x,a,c);
   CKP();
@@ -521,8 +534,8 @@ extern K kap(K*a,V v){
 //extern K kap(K*a,V v){R kapn_(a,v,1);}
 
 I lszPDA,lszNode;
-N newN(){R unPOOL(lszNode);}
-PDA newPDA(){PDA p=unPOOL(lszPDA);U(p) p->c=alloc(1); if(!p->c){ME;R 0;} R p;}
+N newN(){R UNPOOL(lszNode);}
+PDA newPDA(){PDA p=UNPOOL(lszPDA);U(p) p->c=alloc(1); if(!p->c){ME;R 0;} R p;}
 I push(PDA p, C c){R appender(&p->c,&p->n,&c,1);} 
 C    peek(PDA p){I n=p->n; R n?p->c[n-1]:0;}
 C     pop(PDA p){R p->n>0?p->c[--(p->n)]:0;}

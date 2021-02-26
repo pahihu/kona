@@ -7,8 +7,6 @@ K _dot_monadic(K x,S f,I ln);
 #define DOT_monadic(x)	dot_monadic(x)
 #endif
 K make(K a);
-K kcloneI(K a,const char*f,int n);
-#define kclone(a) kcloneI(a,__FILE__,__LINE__)
 extern S d_;
 extern I fbs;
 K *denameS(S dir_string,S t,I create);

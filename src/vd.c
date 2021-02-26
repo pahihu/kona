@@ -129,6 +129,8 @@ K dot(K a, K b) //NB: b can be a cheating 0-type with NULLs .. ?
 //TODO: catch oom errors etc.
 K dot_ref(K *p, K *x, K *z, I s, K c, K y)
 {
+  KDBG(O("\n%s:%d dot_ref: %p ",__FILE__,__LINE__,p); showx(*p);)
+
   K d=*p, f=x?*x:0;
   I dt=d->t, dn=countI(d), ft=999, fn, yn0=0;
 
@@ -136,16 +138,18 @@ K dot_ref(K *p, K *x, K *z, I s, K c, K y)
   else R NYI;
   if(y) {yn0=countI(y);}
 
+  if(rc(*p)>1){K x=*p;*p=kclone(x);cd(x);}
+
   if(-1==s && 0==fn && -3!=ft)
   {
     I argc = y?2:1;
     K args=newK(0,argc);U(args)//Cheating 0-type w/ NULLs
-    // O("\n(1) dot_ref: p=%p k=%p ",p,*p); showx(*p);
     kK(args)[0]=ci(*p);
     if(argc > 1) kK(args)[1] = ci(y);
     K r = specialAmendDot(c,args);
     cd(args);
     U(r)
+    KDBG(O("\n%s:%d dot_ref: %p rc=%lld ",__FILE__,__LINE__,p,rc(*p)); showx(*p);)
     cd(*p);
     // XXX: it seems silly to me to make a klone() of a value
     // which has been computed just above, but it crashes Kona
@@ -172,6 +176,7 @@ K dot_ref(K *p, K *x, K *z, I s, K c, K y)
   if(0>=s) at_ref(p,f,c,y); //what errors will this take care of ?
   else if(0==ft)
   {
+    KDBG(O("\n%s:%d dot_ref",__FILE__,__LINE__);)
     if(!atomI(f) && y && !atomI(y) && fn != yn0) R LE;
     I n = (atomI(f) && y)?yn0:fn;
     if(y) U(y=promote(y))
@@ -180,6 +185,7 @@ K dot_ref(K *p, K *x, K *z, I s, K c, K y)
   }
   else if(1==ABS(ft))
   {
+    KDBG(O("\n%s:%d dot_ref",__FILE__,__LINE__);)
     if(f && !atomI(f) && y && !atomI(y) && fn != yn0) R LE;
     if( 1==ft && dt > 0) R TE; // (5,6)
 
@@ -199,6 +205,7 @@ K dot_ref(K *p, K *x, K *z, I s, K c, K y)
   }
   else if(4==ABS(ft))
   {
+    KDBG(O("\n%s:%d dot_ref",__FILE__,__LINE__);)
     if(!atomI(f) && y && !atomI(y) && fn != yn0) R LE;
     if( 4==ft && 0 >= dt) R TE;
     if(-4==ft && 0 >= dt) R IE;
@@ -216,6 +223,7 @@ K dot_ref(K *p, K *x, K *z, I s, K c, K y)
   }
   else if(6==ft)
   {
+    KDBG(O("\n%s:%d dot_ref",__FILE__,__LINE__);)
     if(6==dt) R NULL; //identity
     if(y && !atomI(y) &&  yn0 != d->n) R LE;
     if(y) U(y=promote(y))
@@ -234,15 +242,19 @@ K dot_tetradic_2(K *g, K b, K c, K y)
 
   if(0==bn || 6==bt)
   {
+    KDBG(O("\n%s:%d dot_ref",__FILE__,__LINE__);)
     dot_ref(g,&b,0,bn-1,c,y); //could factor further by promoting everything...
   }
   else if(0==bt || 1==ABS(bt) || 4==ABS(bt))
   {
+    KDBG(O("\n%s:%d dot_ref",__FILE__,__LINE__);)
     b=promote(b); bt=0; bn=countI(b); //oom
     K *f=kK(b); dot_ref(g,f,bn>0?1+f:0,bn-1,c,y); //bn!=0 ???? copy/paste comment
     cd(b);
   }
   else R TE; //Type Error  7,5,+-3,+-2 TODO: Move inside if possible... ?
+
+  KDBG(O("\n%s:%d dot_ref",__FILE__,__LINE__);)
 
   R *g;
 }
@@ -322,14 +334,15 @@ K make(K a){
   R makeI(a);}
 
 Z K unmake(K a){
-  K z=kclone(a); z->t=0; R z; // KLONE: deep clone unnecessary
-#if 0
+#if 1
   KDBG(O("\nsrc/vd.c:319 --- BEGIN UNMAKE ---");)
   K z=kcopy(a); z->t=0; // XXX this is the culprit of all memory leaks
   KDBG(O("\nsrc/vd.c:321 --- END UNMAKE ---");)
   R z; // <=== XXX 5 memory leaks
+#else
+  K z=kclone(a); z->t=0; R z; // KLONE: deep clone unnecessary
 #endif
-}//TODO: deep clone inefficient
+}
 
 Z K makeable(K a) //TODO: this has to be reworked. can't hang out raw in dot_monadic as it is currently
 {

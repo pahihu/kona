@@ -3,6 +3,14 @@
 #include "k.h"
 #include "kc.h"
 #include "km.h"
+#include "ks.h"
+#include "p.h"
+
+#ifdef DEBUG
+#define SHOW(x)	showp(x,0)
+#else
+#define SHOW(x)	show(x)
+#endif
 
 //  Note:
 //
@@ -60,7 +68,7 @@ I tc(S a, S b) //test comparison .  R 0,1,2
 
   O("\nFailed: Memory Leak - %s, %s \nAllocated K: %lld\nUnfreed K  : %lld\nLeak %%     : %f", a,b,kreci, c, c/(F)kreci);
   I j=-1;
-  DO(c, do j++; while(!krec[j] && j < kreci); if(j>=kreci) break; K k=krec[j]; if(k){O("\nc:%lld t:%lld n:%lld | k:%p (%s:%lld)\n",rc(k),k->t,k->n,k,krecF[j],krecLN[j]); show(k);} )
+  DO(c, do j++; while(!krec[j] && j < kreci); if(j>=kreci) break; K k=krec[j]; if(k){O("\nc:%lld t:%lld n:%lld | k:%p (%s:%lld)\n",rc(k),k->t,k->n,k,krecF[j],krecLN[j]); SHOW(k); } )
   R 0;
 }
 
@@ -1366,7 +1374,16 @@ Z I testsBook()
 
   TC(3 2 1 0, <`d`cc`bbb`aaaa) // pahihu scn() fix
 
+  TC(5 3, m:{x,y}[5]; m[3]) // pahihu shallow cpy
+  TC(5 3, m:{x,y}[5]; {m[x]}[3])
+  TC(5 3, m:{x,y}[5]; {{m[x]}[3]}[])
+  // TC(5 3, {m:{x,y}; m[5;3]}[]) weird segfault
+
   TC(1, d:`a`b!1 2; e:.:.:d; d~e)
+  TC_("(\"ab\";\"ba\")", "p:{[n]:[1=#n;,n;{x,\',/p[n _dv x]}\'n]}; ,/p[\"ab\"]") // pahihu variations of issue #377: leaks
+  TC_("(\"ab\";\"ba\")", "p:{[n]:[1=#n;,n;{x,\',/p[n _dv x]}\'n]}; ,/p\"ab\"") // pahihu variations of issue #377: NO leaks
+  TC_("(,\"ab\";,\"ba\")", "p:{[n]:[1=#n;,n;{x,\',/p[n _dv x]}\'n]}; p[\"ab\"]") // pahihu variations of issue #377: NO leaks
+  TC_("(\"ab\";\"ba\")", "p:{[n]:[1=#n;,n;{x,\',/p[n _dv x]}\'n]}; ,/p@\"ab\"") // pahihu variations of issue #377: NO leaks
 
   TC((1;"type") , @[.:;"_sin _sin (;)";:])
   TC((1;"type") , @[.:;"_sin _sin (0;)";:])

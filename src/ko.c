@@ -7,7 +7,7 @@
 #include "km.h"
 #include "ko.h"
 
-K _kclone(K a);
+K _kclone(K x);
 K _kcopy(K a);
 K kcloneI(K a,cS f,int n){
   if(KONA_DEBUG)O("\n%s:%d kclone(%p)",f,n,a);
@@ -15,14 +15,14 @@ K kcloneI(K a,cS f,int n){
 K kcopyI(K a,cS f,int n){//Shallow copy - list/dict
   if(KONA_DEBUG)O("\n%s:%d kcopy(%p)",f,n,a);
   R _kcopy(a);}
-K _kcopy(K a)//Shallow copy - list/dict
+K _kcopy(K x)//Shallow copy - list/dict, deep copy - TYPE_SEVEN, others ci()
 {
-  U(a);
-  I t=a->t,n=a->n;
-  P(5!=t && t, (abort(),ME));
-  K z=newK(t,n),b,e;z->t=t;
-  if(5==t)DO(n,b=kK(a)[i];kK(z)[i]=(e=newK(0,3));M(e,z);kK(e)[0]=ci(kK(b)[0]);kK(e)[1]=ci(kK(b)[1]);kK(e)[2]=ci(kK(b)[2]);)
-  else DO(n,kK(z)[i]=ci(kK(a)[i]));
+  U(x);
+  if(7==xt)R _kclone(x);
+  if(0!=xt && 5!=xt)R ci(x);
+  K z=newK(xt,xn),b,e;
+  if(5==xt)DO(xn,b=kK(x)[i];kK(z)[i]=(e=newK(0,3));M(e,z);kK(e)[0]=_kcopy(kK(b)[0]);kK(e)[1]=_kcopy(kK(b)[1]);kK(e)[2]=_kcopy(kK(b)[2]);)
+  else DO(xn,kK(z)[i]=_kcopy(kK(x)[i]));
   R z;
 }
 
@@ -75,7 +75,7 @@ K _kclone(K a)//Deep copy -- eliminate where possible
     kV(z)[DEPTH]=kV(a)[DEPTH];
     kV(z)[CONTeXT]=kV(a)[CONTeXT];
     cd(kV(z)[PARAMS]); kV(z)[PARAMS]=_kclone(kV(a)[PARAMS]); //oom ; fill instead of kclone?
-    // cd(kV(z)[LOCALS]); kV(z)[LOCALS]=_kclone(kV(a)[LOCALS]); //oom ; fill instead of kclone? XXX pahihu why replace this see above
+    if(1!=vt){cd(kV(z)[LOCALS]); kV(z)[LOCALS]=_kclone(kV(a)[LOCALS]);} //oom ; fill instead of kclone? XXX pahihu why replace this see above
     kV(z)[CONJ]=_kclone(kV(a)[CONJ]);  //oom
   }
 

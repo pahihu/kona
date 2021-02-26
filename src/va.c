@@ -51,10 +51,10 @@ K power(K a, K b)
   #define KPOW_FI(x,y) kpow(x,I2F(y))
   #define KPOW_IF(x,y) kpow(I2F(x),y)
   #define KPOW_II(x,y) kpow(I2F(x),I2F(y))
-  if(2==ABS(at)&&2==ABS(bt)){ SCALAR_OP_CASE(kpow,kF(z),kF(a),kF(b)) }
-  else if(2==ABS(at)&&1==ABS(bt)){ SCALAR_OP_CASE(KPOW_FI,kF(z),kF(a),kI(b)) }
-  else if(1==ABS(at)&&2==ABS(bt)){ SCALAR_OP_CASE(KPOW_IF,kF(z),kI(a),kF(b)) }
-  else if(1==ABS(at)&&1==ABS(bt)){ SCALAR_OP_CASE(KPOW_II,kF(z),kI(a),kI(b)) }
+  if(2==ABS(at)&&2==ABS(bt)){ SCALAR_OP_CASE(kpow, kF(z), F,kF(a), F,kF(b)) }
+  else if(2==ABS(at)&&1==ABS(bt)){ SCALAR_OP_CASE(KPOW_FI, kF(z), F,kF(a), I,kI(b)) }
+  else if(1==ABS(at)&&2==ABS(bt)){ SCALAR_OP_CASE(KPOW_IF, kF(z), I,kI(a), F,kF(b)) }
+  else if(1==ABS(at)&&1==ABS(bt)){ SCALAR_OP_CASE(KPOW_II, kF(z), I,kI(a), I,kI(b)) }
   else if(0==at||0==bt){ dp(&z,power,a,b); }
 #endif
   R z;
@@ -71,10 +71,10 @@ K plus(K a, K b) //compare plus() to times() or minus()
 #else
   #define PLUS_FI(x, y) ((x) + I2F(y))
   #define PLUS_IF(x, y) (I2F(x) + (y))
-  if(2==ABS(at)&&2==ABS(bt)){ SCALAR_OP_CASE(PLUS,kF(z),kF(a),kF(b)) }
-  else if(2==ABS(at)&&1==ABS(bt)){ SCALAR_OP_CASE(PLUS_FI,kF(z),kF(a),kI(b)) }
-  else if(1==ABS(at)&&2==ABS(bt)){ SCALAR_OP_CASE(PLUS_IF,kF(z),kI(a),kF(b)) }
-  else if(1==ABS(at)&&1==ABS(bt)){ SCALAR_OP_CASE(PLUS,kI(z),kI(a),kI(b)) }
+  if(2==ABS(at)&&2==ABS(bt)){ SCALAR_OP_CASE(PLUS, kF(z), F,kF(a), F,kF(b)) }
+  else if(2==ABS(at)&&1==ABS(bt)){ SCALAR_OP_CASE(PLUS_FI, kF(z), F,kF(a), I,kI(b)) }
+  else if(1==ABS(at)&&2==ABS(bt)){ SCALAR_OP_CASE(PLUS_IF, kF(z), I,kI(a), F,kF(b)) }
+  else if(1==ABS(at)&&1==ABS(bt)){ SCALAR_OP_CASE(PLUS, kI(z), I,kI(a), I,kI(b)) }
   else if(0==at||0==bt){ dp(&z,plus,a,b); }
   #undef PLUS_FI
   #undef PLUS_IF
@@ -95,10 +95,10 @@ K times(K a, K b)//TODO: Float results will respect intermediate OI or Oi. Other
 #else
   #define TIMES_FI(x, y) ((x) * I2F(y))
   #define TIMES_IF(x, y) (I2F(x) * (y))
-       if(2==ABS(at)&&2==ABS(bt)){ SCALAR_OP_CASE(TIMES,   kF(z),kF(a),kF(b)) }
-  else if(2==ABS(at)&&1==ABS(bt)){ SCALAR_OP_CASE(TIMES_FI,kF(z),kF(a),kI(b)) }
-  else if(1==ABS(at)&&2==ABS(bt)){ SCALAR_OP_CASE(TIMES_IF,kF(z),kI(a),kF(b)) }
-  else if(1==ABS(at)&&1==ABS(bt)){ SCALAR_OP_CASE(TIMES,   kI(z),kI(a),kI(b)) }
+       if(2==ABS(at)&&2==ABS(bt)){ SCALAR_OP_CASE(TIMES,   kF(z), F,kF(a), F,kF(b)) }
+  else if(2==ABS(at)&&1==ABS(bt)){ SCALAR_OP_CASE(TIMES_FI,kF(z), F,kF(a), I,kI(b)) }
+  else if(1==ABS(at)&&2==ABS(bt)){ SCALAR_OP_CASE(TIMES_IF,kF(z), I,kI(a), F,kF(b)) }
+  else if(1==ABS(at)&&1==ABS(bt)){ SCALAR_OP_CASE(TIMES,   kI(z), I,kI(a), I,kI(b)) }
   else if(0==at||0==bt){ dp(&z,times,a,b); }
   #undef TIMES_FI
   #undef TIMES_IF
@@ -171,10 +171,10 @@ K minus(K a, K b)
 #else
   #define MINUS_FI(x, y)  ((x) - I2F(y))
   #define MINUS_IF(x, y)  (I2F(x) - (y))
-  if(2==ABS(at)&&2==ABS(bt)){ SCALAR_OP_CASE(MINUS,kF(z),kF(a),kF(b)) }
-  else if(2==ABS(at)&&1==ABS(bt)){ SCALAR_OP_CASE(MINUS_FI,kF(z),kF(a),kI(b)) }
-  else if(1==ABS(at)&&2==ABS(bt)){ SCALAR_OP_CASE(MINUS_IF,kF(z),kI(a),kF(b)) }
-  else if(1==ABS(at)&&1==ABS(bt)){ SCALAR_OP_CASE(MINUS,kI(z),kI(a),kI(b)) }
+  if(2==ABS(at)&&2==ABS(bt)){ SCALAR_OP_CASE(MINUS, kF(z), F,kF(a), F,kF(b)) }
+  else if(2==ABS(at)&&1==ABS(bt)){ SCALAR_OP_CASE(MINUS_FI, kF(z), F,kF(a), I,kI(b)) }
+  else if(1==ABS(at)&&2==ABS(bt)){ SCALAR_OP_CASE(MINUS_IF, kF(z), I,kI(a), F,kF(b)) }
+  else if(1==ABS(at)&&1==ABS(bt)){ SCALAR_OP_CASE(MINUS, kI(z), I,kI(a), I,kI(b)) }
   else if(0==at||0==bt){ dp(&z,minus,a,b); }
   #undef MINUS_FI
   #undef MINUS_IF

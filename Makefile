@@ -103,8 +103,8 @@ k_dyn: src/kbuild.h $(SOLIB) src/main.o
 src/kbuild.h: Makefile
 	$(RM) $@
 	echo "#define KBUILD_DATE \"`date +%Y-%m-%d`\"" >$@
-	echo "#define KBUILD_OS \"`uname`\"" >>$@
-	echo "#define KBUILD_ARCH \"`uname -m`\"" >>$@
+	echo "define KBUILD_OS \"`uname`\"" >>$@
+	echo "define KBUILD_ARCH \"`uname -m`\"" >>$@
 
 test: k_test
 

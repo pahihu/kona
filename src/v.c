@@ -57,6 +57,9 @@ K lookupEntryOrCreate(K *p, S k) {    //****only *dict or *_n are passed to here
   P(strchr(k,'.'),DOE)
   x=newEntry(k);
   if(6==a->t){cd(*p); *p=newK(5,0);} //mm/o is this done right?
+  // XXX pahihu I am not sure.. causes segfault under gmalloc
+  // dot_ref() releases this dict because not referenced from the K-tree
+  // later because wd() contains a ref to it, causes a segfault
   kap(p,&x); //oom
   cd(x);
   R x;
@@ -203,7 +206,7 @@ K specialAmendDot(K c, K args) //If c is like colon_dyadic return args@1, else d
   R vf_ex(&c,args);
 }
 
-I atomI(K a){R a->t>0?1:0;}//_n is atom
+I atomI(K a){R a->t>0/*?1:0*/;}//_n is atom
 K atom(K a){R Ki(atomI(a));}//_n is atom
 
 //TODO: Is this a stable thing if my function mucks with the tree above me? No, but find 'reference error'
@@ -305,8 +308,8 @@ K not_attribute(K a)
   I t=a->t, n=a->n;
   K z;
   if     (4==ABS(t)){U(z=newK(t,  n)) DO(n,if(!(kS(z)[i]=notsp(kS(a)[i]))){cd(z);R 0;}) }
-  else if(2==ABS(t)){U(z=newK(t/2,n)) DO(n,kI(z)[i]= (0==kF(a)[i])?1:0;)}//sic
-  else if(1==ABS(t)){U(z=newK(t,  n)) DO(n,kI(z)[i]= (0==kI(a)[i])?1:0;)}
+  else if(2==ABS(t)){U(z=newK(t/2,n)) DO(n,kI(z)[i]= (0==kF(a)[i])/*?1:0*/;)}//sic
+  else if(1==ABS(t)){U(z=newK(t,  n)) DO(n,kI(z)[i]= (0==kI(a)[i])/*?1:0*/;)}
   else if(0==ABS(t)){U(z=newK(t,  n)) DO(n,if(!(kK(z)[i]=not_attribute(kK(a)[i]))){cd(z);R 0;})}//if 0, valid list contains >0 syms
   else R TE;
   R z;
