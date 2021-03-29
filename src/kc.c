@@ -80,12 +80,14 @@ Z void multihomeini(S*x)
 }
 
 I args(int n,S*v) {
-  K a,k; I c,len; U(KONA_ARGS=newK(0, n))
+  K a,k; I c,len,lastn; U(KONA_ARGS=newK(0, n))
+  lastn=n;
   DO(n, len=strlen(v[i]);
         if(!(a=newK(-3, len))){cd(KONA_ARGS);R 0;}
         strncpy(kC(a),v[i],len);
-        kK(KONA_ARGS)[i]=a )
-  while(-1!=(c=getopt(n,v,":2gh:i:e:x:")))SW(c) {
+        if(i&&!strcmp(v[i],"--"))lastn=i;
+        kK(KONA_ARGS)[i]=a)
+  while(-1!=(c=getopt(lastn,v,":2gh:i:e:x:")))SW(c) {
     CS('2',  KONA_APL_DYAD=1;)
     CS('g',  KONA_DEBUG=1;)
     CS('h',  if(IPC_PORT)O("-i accepted, cannot also have -h\n"); else HTTP_PORT=optarg;)
@@ -96,7 +98,7 @@ I args(int n,S*v) {
     CS('?',  O("%c\nabort",optopt); exit(0)) }
   multihomeini(IPC_PORT?&IPC_PORT:&HTTP_PORT);
   S h=getenv("KINIT");if(h) load(h);
-  while(optind < n) load(v[optind++]);
+  while(optind < lastn) load(v[optind++]);
   R 0; }
 
 K KFIXED;
