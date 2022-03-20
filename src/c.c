@@ -3,6 +3,7 @@
 #include "k.h"
 #include "km.h"
 #include "c.h"
+#include "kc.h"
 #include "kbuild.h"
 #include "ks.h"
 
@@ -82,15 +83,17 @@ void boilerplate()
   #ifndef __MINGW32__
     if(!isatty(STDOUT) || !isatty(STDIN)) R;		//kluge:  isatty() fails using mingw-10.0 with msys2
   #endif
-  O("K Console " KBUILD_DATE "\n");
-  O(KBUILD_OS " " KBUILD_ARCH);
-  int ncpu;I mem;S hostnm;
-  if(!SysInfo(&ncpu,&mem,&hostnm)){
-    O(" %lubit %dcore %lldMB %s",8*sizeof(size_t),ncpu,mem,hostnm);
-    free(hostnm);
+  if(!KONA_QUIET){
+    O("K Console " KBUILD_DATE "\n");
+    O(KBUILD_OS " " KBUILD_ARCH);
+    int ncpu;I mem;S hostnm;
+    if(!SysInfo(&ncpu,&mem,&hostnm)){
+      O(" %lubit %dcore %lldMB %s",8*sizeof(size_t),ncpu,mem,hostnm);
+      free(hostnm);
+    }
+    O("\nEnter \\ for help\n\n");
+    prompt(0);
   }
-  O("\nEnter \\ for help\n\n");
-  prompt(0);
 }
 
 //Q. What if a script is \loaded (via remote call) while the terminal is waiting with an open PDA for matching parentheses/quote marks?

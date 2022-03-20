@@ -31,6 +31,7 @@ extern void win_usleep(unsigned int); //buggy TDMGCC64 usleep()
 K KONA_GSET=0,KONA_IDX=0;
 I KONA_APL_DYAD=0;
 I KONA_DEBUG=0;
+I KONA_QUIET=0;
 
 Z I randomBits();
 I oerr(){R O("%s %s\n",errmsg,"error");}
@@ -87,12 +88,13 @@ I args(int n,S*v) {
         strncpy(kC(a),v[i],len);
         if(i&&!strcmp(v[i],"--"))lastn=i;
         kK(KONA_ARGS)[i]=a)
-  while(-1!=(c=getopt(lastn,v,":2gh:i:e:x:")))SW(c) {
+  while(-1!=(c=getopt(lastn,v,":2gqh:i:e:x:")))SW(c) {
     CS('2',  KONA_APL_DYAD=1;)
     CS('g',  KONA_DEBUG=1;)
     CS('h',  if(IPC_PORT)O("-i accepted, cannot also have -h\n"); else HTTP_PORT=optarg;)
     CS('i',  if(HTTP_PORT)O("-h accepted, cannot also have -i\n"); else {IPC_PORT=optarg;*kI(KONA_PORT)=atol(IPC_PORT);})
     CS('e',  k=X(optarg); cd(k); exit(0) )
+    CS('q',  KONA_QUIET=1;)
     CS('x',  k=X(optarg); printAtDepth(0,k,0,0,0,0); O("\n"); cd(k); exit(0) )
     CSR(':', )
     CS('?',  O("%c\nabort",optopt); exit(0)) }

@@ -10,6 +10,7 @@ extern K KONA_IDX;
 extern K KONA_CLIENT;
 extern I KONA_APL_DYAD;
 extern I KONA_DEBUG;
+extern I KONA_QUIET;
 K _n();
 extern F mUsed;
 extern F mMax;
