@@ -1,4 +1,4 @@
-CC=gcc-15 -march=native -flto
+CC=cc -march=native -flto
 PREFIX = /usr/local
 CFLAGS= #-g
 PRODFLAGS = -O3 #-pg -g3

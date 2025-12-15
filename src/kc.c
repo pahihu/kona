@@ -71,11 +71,19 @@ K KONA_ARGS; //saved values from argv[1:]
 
 Z void multihomeini(S*x)
 {
+  Z S hif;Z I nhif;
   Z C port[64+1];
   S s=*x;if(!s)R;
-  S p=strchr(s,':');if(!p)R;
-  strcpy(port,p+1);
-  HOST_IFACE=spn(s,p-s);*x=port;
+  S p=strchr(s,':');
+  if(p){
+    strcpy(port,p+1);
+    hif=s; nhif=p-s;
+  }else{
+    strcpy(port,s);
+    hif="localhost";
+    nhif=9;
+  }
+  HOST_IFACE=spn(hif,nhif);*x=port;
   K h=Ks(HOST_IFACE);
   cd(KONA_CLIENT);KONA_CLIENT=_host(h);cd(h);
 }
