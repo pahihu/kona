@@ -30,47 +30,23 @@ S fBreak = "n";
 S fBreak = "t";
 #endif
 
-#if defined(__APPLE__)
-#include <sys/types.h>
-#include <sys/sysctl.h>
-int sysctl32(const char*nm)
+#if defined(__APPLE__) || defined(__linux__)
+int SysInfo(int*ncpu,int64_t*mem,char**hostnm)
 {
-  int v;size_t n=sizeof(v);
-  sysctlbyname(nm,&v,&n,NULL,0);
-  return v;
+  S p;
+  long np = sysconf(_SC_PHYS_PAGES);
+  long psize = sysconf(_SC_PAGE_SIZE);
+  long nmlen = sysconf(_SC_HOST_NAME_MAX);
+  *ncpu = sysconf(_SC_NPROCESSORS_ONLN);
+  if(np<0||psize<0||*ncpu<0||nmlen<0)R-1;
+  *mem = (np*psize)/(1<<20);
+  p=malloc(nmlen);
+  R p?gethostname(*hostnm=p,nmlen),0:-1;
 }
-
-I sysctl64(const char*nm)
-{
-  I v;size_t n=sizeof(v);
-  sysctlbyname(nm,&v,&n,NULL,0);
-  return v;
-}
-
-S sysctlS(const char*nm)
-{
-  S p;size_t len;
-  sysctlbyname(nm,NULL,&len,NULL,0);
-  p=malloc(len);
-  sysctlbyname(nm,p,&len,NULL,0);
-  return p;
-}
-
-int SysInfo(int *ncpu,int64_t *mem,S*hostnm)
-{
-  *ncpu=sysctl32("hw.logicalcpu_max");
-  *mem=sysctl64("hw.memsize")/(1<<20);
-  *hostnm=sysctlS("kern.hostname");
-  R 0;
-}
-#endif
-
-#if defined(WIN32)
+#elif defined(WIN32)
 extern int SysInfo(int*ncpu,int64_t*mem,char**hostnm);
 #define realpath(N,R) _fullpath((R),(N),PATH_MAX)
-#endif
-
-#if !defined(__APPLE__) && !defined(WIN32)
+#else
 #warning Using dummy SysInfo()
 int SysInfo(int*ncpu,int64_t*mem,char**hostnm)
 {
@@ -88,7 +64,7 @@ void boilerplate()
     O(KBUILD_OS " " KBUILD_ARCH);
     int ncpu;I mem;S hostnm;
     if(!SysInfo(&ncpu,&mem,&hostnm)){
-      O(" %lubit %dcore %lldMB %s",8*sizeof(size_t),ncpu,mem,hostnm);
+      O(" %lubit %dcore %lld%cB %s",8*sizeof(size_t),ncpu,mem>1024?mem>>10:mem,mem>1024?'G':'M',hostnm);
       free(hostnm);
     }
     O("\nEnter \\ for help\n\n");
