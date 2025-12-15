@@ -92,7 +92,7 @@ size_t FreeP =((size_t)0x8BADF00D8BADF00D);
 #ifdef DEBUG
 #define CMR(p) if((p)&&((p)<mMinM||(p)>=mMaxM))TRAPP
 Z void CKP(){
-  if(PG!=4096)TRAPP;
+  if(PG&4095)TRAPP;
   DO(KP_MIN,if(KP[i])TRAPP)
   DO(KP_MAX+1,CMR(KP[i]))
 }
