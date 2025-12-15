@@ -16,29 +16,32 @@ cm: ms#cv: " ABCDEFGHIJ"@,/1?'vs#11
 im: ms#iv: ,/1?'vs#500
 fm: ms#fv: iv+0.01*1!iv
 bm: ms#bv: ,/1?'vs#2
+N: 200
+M: 20
 
-tests: (("int add\t" ; 200; "im+im+im+im+im")
-        ("fp add\t" ; 200; "fm+fm+fm+fm+fm")
-        ("int mult" ; 200; "im*im*im*im*im")
-        ("fp mult\t" ; 200; "fm*fm*fm*fm*fm")
-        ("index\t" ; 250; "(!#bv)@&bv" )
-        ("char compr" ; 200; "cv@&bv" )
-        ("int compr" ; 200; "iv@&bv" )
-        ("int + red" ; 200; "+/iv" )
-        ("int | red" ; 200; "|/iv" )
-        ("bool scan" ; 100; "(~=)\\bm" )
-        ("mat rotate" ; 100; "(!500)!\\:cm" )
-        ("char trans" ; 100; "+cm" )
-        ("int trans" ; 100; "+im" )
-        ("vec of vecs"; 200; ",:'cm" )
-        ("partition" ; 200; "aa:(&bv)_ cv" )
-        ("shape each" ; 200; "^:'aa" )
-        ("vec compar" ; 200; "&/cv=cv" )
-        ("int sort" ; 200; "iv@<iv" )
-        ("bool compar"; 200; "bv|1!bv" )
-        ("iota\t" ; 200; "iv?/:_ fv" ))
+tests: (("int add\t" ; N; "im+im+im+im+im")
+        ("fp add\t" ; N; "fm+fm+fm+fm+fm")
+        ("int mult" ; N; "im*im*im*im*im")
+        ("fp mult\t" ; N; "fm*fm*fm*fm*fm")
+        ("index\t" ; M*N; "(!#bv)@&bv" )
+        ("char compr" ; M*N; "cv@&bv" )
+        ("int compr" ; M*N; "iv@&bv" )
+        ("int + red" ; M*N; "+/iv" )
+        ("int | red" ; M*N; "|/iv" )
+        ("bool scan" ; N%2; "(~=)\\bm" )
+        ("mat rotate" ; N%2; "(!500)!\\:cm" )
+        ("char trans" ; N%2; "+cm" )
+        ("int trans" ; N%2; "+im" )
+        ("vec of vecs"; M*N; ",:'cm" )
+        ("partition" ; M*N; "aa:(&bv)_ cv" )
+        ("shape each" ; M*N; "^:'aa" )
+        ("vec compar" ; M*N; "&/cv=cv" )
+        ("int sort" ; M*N; "iv@<iv" )
+        ("bool compar"; M*N; "bv|1!bv" )
+        ("iota\t" ; N; "iv?/:_ fv" ))
 
-time: {t:0; s:"\\t ",y; do[x; t+:.:s]; t}
+/time: {t:0; s:"\\t ",y; do[x; t+:.:s]; t}
+time: {t:0; s:"\\t do[",($x),";",y,"]"; .:s}
 wout: {`0:x,"\t",($y),"\n"}
 run : {wout[x[0]; t:time[x[1];x[2]]]; t}
 

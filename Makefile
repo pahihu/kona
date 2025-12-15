@@ -1,5 +1,6 @@
+CC=cc -flto
 PREFIX = /usr/local
-CFLAGS=-g
+CFLAGS= #-g
 PRODFLAGS = -O3 #-pg -g3
 LIB=libkona.a
 SOLIB=libkona.$(SO)
@@ -57,7 +58,7 @@ endif
 
 ifeq (darwin,$(OS))
 LDFLAGS = -lm
-PRODFLAGS = -O3
+PRODFLAGS = -fomit-frame-pointer -O3
 SO = dylib
 endif
 
